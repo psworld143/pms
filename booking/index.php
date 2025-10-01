@@ -3,7 +3,7 @@ session_start();
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-require_once '../../config/database.php';
+require_once __DIR__ . '/../includes/database.php';
 require_once 'includes/functions.php';
 
 // Check if user is logged in
@@ -20,7 +20,7 @@ $page_title = 'Dashboard';
 
 // Include unified header (automatically selects appropriate navbar)
 include 'includes/header-unified.php';
-// Include unified sidebar (automatically selects appropriate sidebar)
+// Include unified sidebar (automatically selects appropriate sidebar based on user role)
 include 'includes/sidebar-unified.php';
 ?>
 

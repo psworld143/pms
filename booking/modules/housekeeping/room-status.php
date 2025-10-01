@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../../../../config/database.php';
+require_once '../../config/database.php';;
 require_once '../../includes/functions.php';
 // Check if user is logged in and has housekeeping access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['housekeeping', 'manager'])) {
@@ -273,29 +273,7 @@ include '../../includes/sidebar-unified.php';
     <?php include '../../includes/footer.php'; ?>
 
 <?php
-// Helper functions for status badges and labels
-function getStatusBadgeClass($status) {
-    switch ($status) {
-        case 'available': return 'bg-green-100 text-green-800';
-        case 'occupied': return 'bg-red-100 text-red-800';
-        case 'reserved': return 'bg-yellow-100 text-yellow-800';
-        case 'maintenance': return 'bg-blue-100 text-blue-800';
-        case 'out_of_service': return 'bg-gray-100 text-gray-800';
-        default: return 'bg-gray-100 text-gray-800';
-    }
-}
-
-function getStatusLabel($status) {
-    switch ($status) {
-        case 'available': return 'Available';
-        case 'occupied': return 'Occupied';
-        case 'reserved': return 'Reserved';
-        case 'maintenance': return 'Maintenance';
-        case 'out_of_service': return 'Out of Service';
-        default: return ucfirst($status);
-    }
-}
-
+// Helper functions for housekeeping status badges and labels
 function getHousekeepingStatusBadgeClass($status) {
     switch ($status) {
         case 'clean': return 'bg-green-100 text-green-800';

@@ -11,97 +11,85 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
 // Define navigation items based on user role
 $navigation_items = [
     'dashboard' => [
-        'url' => '../index.php',
+        'url' => '/pms/booking/index.php',
         'icon' => 'fas fa-tachometer-alt',
         'label' => 'Dashboard',
         'roles' => ['manager', 'front_desk', 'housekeeping']
     ],
     'front_desk' => [
-        'url' => '../modules/front-desk/',
+        'url' => '/pms/booking/modules/front-desk/',
         'icon' => 'fas fa-concierge-bell',
         'label' => 'Front Desk',
         'roles' => ['manager', 'front_desk'],
         'submenu' => [
-            'reservations' => ['url' => '../modules/front-desk/manage-reservations.php', 'label' => 'Reservations'],
-            'check_in' => ['url' => '../modules/front-desk/check-in.php', 'label' => 'Check In'],
-            'check_out' => ['url' => '../modules/front-desk/check-out.php', 'label' => 'Check Out'],
-            'walk_ins' => ['url' => '../modules/front-desk/walk-ins.php', 'label' => 'Walk-ins'],
-            'guest_services' => ['url' => '../modules/front-desk/guest-services.php', 'label' => 'Guest Services']
+            'reservations' => ['url' => '/pms/booking/modules/front-desk/manage-reservations.php', 'label' => 'Reservations'],
+            'check_in' => ['url' => '/pms/booking/modules/front-desk/check-in.php', 'label' => 'Check In'],
+            'check_out' => ['url' => '/pms/booking/modules/front-desk/check-out.php', 'label' => 'Check Out'],
+            'walk_ins' => ['url' => '/pms/booking/modules/front-desk/walk-ins.php', 'label' => 'Walk-ins'],
+            'guest_services' => ['url' => '/pms/booking/modules/front-desk/guest-services.php', 'label' => 'Guest Services']
         ]
     ],
     'housekeeping' => [
-        'url' => '../modules/housekeeping/',
+        'url' => '/pms/booking/modules/housekeeping/',
         'icon' => 'fas fa-broom',
         'label' => 'Housekeeping',
         'roles' => ['manager', 'housekeeping'],
         'submenu' => [
-            'room_status' => ['url' => '../modules/housekeeping/room-status.php', 'label' => 'Room Status'],
-            'tasks' => ['url' => '../modules/housekeeping/tasks.php', 'label' => 'Tasks'],
-            'maintenance' => ['url' => '../modules/housekeeping/maintenance.php', 'label' => 'Maintenance'],
-            'inventory' => ['url' => '../modules/housekeeping/inventory.php', 'label' => 'Inventory']
+            'room_status' => ['url' => '/pms/booking/modules/housekeeping/room-status.php', 'label' => 'Room Status'],
+            'tasks' => ['url' => '/pms/booking/modules/housekeeping/tasks.php', 'label' => 'Tasks'],
+            'maintenance' => ['url' => '/pms/booking/modules/housekeeping/maintenance.php', 'label' => 'Maintenance'],
+            'inventory' => ['url' => '/pms/booking/modules/housekeeping/inventory.php', 'label' => 'Inventory']
         ]
     ],
     'guests' => [
-        'url' => '../modules/guests/',
+        'url' => '/pms/booking/modules/guests/',
         'icon' => 'fas fa-users',
         'label' => 'Guest Management',
         'roles' => ['manager', 'front_desk'],
         'submenu' => [
-            'profiles' => ['url' => '../modules/guests/profiles.php', 'label' => 'Guest Profiles'],
-            'vip' => ['url' => '../modules/guests/vip-management.php', 'label' => 'VIP Guests'],
-            'feedback' => ['url' => '../modules/guests/feedback.php', 'label' => 'Feedback'],
-            'loyalty' => ['url' => '../modules/guests/loyalty.php', 'label' => 'Loyalty Program']
+            'profiles' => ['url' => '/pms/booking/modules/guests/profiles.php', 'label' => 'Guest Profiles'],
+            'vip' => ['url' => '/pms/booking/modules/guests/vip-management.php', 'label' => 'VIP Guests'],
+            'feedback' => ['url' => '/pms/booking/modules/guests/feedback.php', 'label' => 'Feedback'],
+            'loyalty' => ['url' => '/pms/booking/modules/guests/loyalty.php', 'label' => 'Loyalty Program']
         ]
     ],
     'billing' => [
-        'url' => '../modules/billing/',
+        'url' => '/pms/booking/modules/billing/',
         'icon' => 'fas fa-credit-card',
         'label' => 'Billing & Payments',
         'roles' => ['manager', 'front_desk'],
         'submenu' => [
-            'invoices' => ['url' => '../modules/billing/invoices.php', 'label' => 'Invoices'],
-            'payments' => ['url' => '../modules/billing/payments.php', 'label' => 'Payments'],
-            'discounts' => ['url' => '../modules/billing/discounts.php', 'label' => 'Discounts'],
-            'vouchers' => ['url' => '../modules/billing/vouchers.php', 'label' => 'Vouchers'],
-            'reports' => ['url' => '../modules/billing/reports.php', 'label' => 'Reports']
+            'invoices' => ['url' => '/pms/booking/modules/billing/invoices.php', 'label' => 'Invoices'],
+            'payments' => ['url' => '/pms/booking/modules/billing/payments.php', 'label' => 'Payments'],
+            'discounts' => ['url' => '/pms/booking/modules/billing/discounts.php', 'label' => 'Discounts'],
+            'vouchers' => ['url' => '/pms/booking/modules/billing/vouchers.php', 'label' => 'Vouchers'],
+            'reports' => ['url' => '/pms/booking/modules/billing/reports.php', 'label' => 'Reports']
         ]
     ],
     'management' => [
-        'url' => '../modules/management/',
+        'url' => '/pms/booking/modules/management/',
         'icon' => 'fas fa-chart-line',
         'label' => 'Management',
         'roles' => ['manager'],
         'submenu' => [
-            'reports' => ['url' => '../modules/management/reports.php', 'label' => 'Reports'],
-            'analytics' => ['url' => '../modules/management/analytics.php', 'label' => 'Analytics'],
-            'staff' => ['url' => '../modules/management/staff.php', 'label' => 'Staff Management'],
-            'settings' => ['url' => '../modules/management/settings.php', 'label' => 'Settings']
-        ]
-    ],
-    'inventory' => [
-        'url' => '../modules/inventory/',
-        'icon' => 'fas fa-boxes',
-        'label' => 'Inventory',
-        'roles' => ['manager', 'housekeeping'],
-        'submenu' => [
-            'items' => ['url' => '../modules/inventory/items.php', 'label' => 'Items'],
-            'categories' => ['url' => '../modules/inventory/categories.php', 'label' => 'Categories'],
-            'transactions' => ['url' => '../modules/inventory/transactions.php', 'label' => 'Transactions'],
-            'reports' => ['url' => '../modules/inventory/reports.php', 'label' => 'Reports']
+            'reports' => ['url' => '/pms/booking/modules/management/reports-dashboard.php', 'label' => 'Reports'],
+            'analytics' => ['url' => '/pms/booking/modules/management/analytics.php', 'label' => 'Analytics'],
+            'staff' => ['url' => '/pms/booking/modules/management/staff.php', 'label' => 'Staff Management'],
+            'settings' => ['url' => '/pms/booking/modules/management/settings.php', 'label' => 'Settings']
         ]
     ],
     'training' => [
-        'url' => '../modules/training/',
+        'url' => '/pms/booking/modules/training/',
         'icon' => 'fas fa-graduation-cap',
         'label' => 'Training & Simulations',
         'roles' => ['manager', 'front_desk', 'housekeeping'],
         'submenu' => [
-            'dashboard' => ['url' => '../modules/training/training-dashboard.php', 'label' => 'Training Dashboard'],
-            'scenarios' => ['url' => '../modules/training/scenarios.php', 'label' => 'Scenarios'],
-            'customer_service' => ['url' => '../modules/training/customer-service.php', 'label' => 'Customer Service'],
-            'problem_solving' => ['url' => '../modules/training/problem-solving.php', 'label' => 'Problem Solving'],
-            'progress' => ['url' => '../modules/training/progress.php', 'label' => 'My Progress'],
-            'certificates' => ['url' => '../modules/training/certificates.php', 'label' => 'Certificates']
+            'dashboard' => ['url' => '/pms/booking/modules/training/training-dashboard.php', 'label' => 'Training Dashboard'],
+            'scenarios' => ['url' => '/pms/booking/modules/training/scenarios.php', 'label' => 'Scenarios'],
+            'customer_service' => ['url' => '/pms/booking/modules/training/customer-service.php', 'label' => 'Customer Service'],
+            'problem_solving' => ['url' => '/pms/booking/modules/training/problem-solving.php', 'label' => 'Problem Solving'],
+            'progress' => ['url' => '/pms/booking/modules/training/progress.php', 'label' => 'My Progress'],
+            'certificates' => ['url' => '/pms/booking/modules/training/certificates.php', 'label' => 'Certificates']
         ]
     ]
 ];
@@ -174,13 +162,13 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
             <?php endif; ?>
             
             <?php if (in_array($user_role, ['manager', 'housekeeping'])): ?>
-                <a href="../modules/housekeeping/room-status.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
+                <a href="/pms/booking/modules/housekeeping/room-status.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
                     <i class="fas fa-clipboard-list text-xs mr-2"></i>
                     Room Status
                 </a>
             <?php endif; ?>
             
-            <a href="../modules/training/training-dashboard.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
+            <a href="/pms/booking/modules/training/training-dashboard.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
                 <i class="fas fa-play text-xs mr-2"></i>
                 Start Training
             </a>

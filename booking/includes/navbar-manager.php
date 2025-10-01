@@ -56,7 +56,7 @@ $user_name = $_SESSION['user_name'];
                     <h3 class="text-lg font-semibold text-gray-800">Quick Actions</h3>
                 </div>
                 <div class="py-2">
-                    <a href="../modules/management/reports.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/management/reports-dashboard.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-chart-bar mr-3"></i>
                         View Reports
                     </a>
@@ -64,11 +64,7 @@ $user_name = $_SESSION['user_name'];
                         <i class="fas fa-users-cog mr-3"></i>
                         Staff Management
                     </a>
-                    <a href="../modules/inventory/" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-boxes mr-3"></i>
-                        Inventory Check
-                    </a>
-                    <a href="../modules/billing/reports.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/billing/reports.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-dollar-sign mr-3"></i>
                         Revenue Report
                     </a>
@@ -97,16 +93,16 @@ $user_name = $_SESSION['user_name'];
                         <i class="fas fa-user-circle mr-3"></i>
                         Profile
                     </a>
-                    <a href="../modules/management/settings.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/management/settings.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-cog mr-3"></i>
                         System Settings
                     </a>
-                    <a href="../modules/management/audit-log.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/management/audit-log.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-history mr-3"></i>
                         Audit Log
                     </a>
                     <hr class="my-2">
-                    <a href="logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <a href="/pms/booking/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                         <i class="fas fa-sign-out-alt mr-3"></i>
                         Logout
                     </a>

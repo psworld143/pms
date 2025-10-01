@@ -26,124 +26,124 @@ class UnifiedNavigation {
         
         $navigation = [
             'dashboard' => [
-                'url' => '/seait/pms/booking/index.php',
+                'url' => '/pms/booking/index.php',
                 'icon' => 'fas fa-tachometer-alt',
                 'label' => 'Dashboard',
                 'roles' => ['manager', 'front_desk', 'housekeeping', 'pos_user', 'student']
             ],
             'booking' => [
-                'url' => '/seait/pms/booking/',
+                'url' => '/pms/booking/',
                 'icon' => 'fas fa-bed',
                 'label' => 'Booking System',
                 'roles' => ['manager', 'front_desk', 'housekeeping', 'student'],
                 'submenu' => [
                     'reservations' => [
-                        'url' => '/seait/pms/booking/modules/front-desk/manage-reservations.php',
+                        'url' => '/pms/booking/modules/front-desk/manage-reservations.php',
                         'label' => 'Reservations',
                         'roles' => ['manager', 'front_desk', 'student']
                     ],
                     'check_in' => [
-                        'url' => '/seait/pms/booking/modules/front-desk/check-in.php',
+                        'url' => '/pms/booking/modules/front-desk/check-in.php',
                         'label' => 'Check In',
                         'roles' => ['manager', 'front_desk', 'student']
                     ],
                     'check_out' => [
-                        'url' => '/seait/pms/booking/modules/front-desk/check-out.php',
+                        'url' => '/pms/booking/modules/front-desk/check-out.php',
                         'label' => 'Check Out',
                         'roles' => ['manager', 'front_desk', 'student']
                     ],
                     'housekeeping' => [
-                        'url' => '/seait/pms/booking/modules/housekeeping/',
+                        'url' => '/pms/booking/modules/housekeeping/',
                         'label' => 'Housekeeping',
                         'roles' => ['manager', 'housekeeping', 'student']
                     ]
                 ]
             ],
             'inventory' => [
-                'url' => '/seait/pms/inventory/',
+                'url' => '/pms/inventory/',
                 'icon' => 'fas fa-boxes',
                 'label' => 'Inventory',
                 'roles' => ['manager', 'housekeeping', 'student'],
                 'submenu' => [
                     'items' => [
-                        'url' => '/seait/pms/inventory/items.php',
+                        'url' => '/pms/inventory/items.php',
                         'label' => 'Items',
                         'roles' => ['manager', 'housekeeping', 'student']
                     ],
                     'transactions' => [
-                        'url' => '/seait/pms/inventory/transactions.php',
+                        'url' => '/pms/inventory/transactions.php',
                         'label' => 'Transactions',
                         'roles' => ['manager', 'housekeeping', 'student']
                     ],
                     'requests' => [
-                        'url' => '/seait/pms/inventory/requests.php',
+                        'url' => '/pms/inventory/requests.php',
                         'label' => 'Requests',
                         'roles' => ['manager', 'housekeeping', 'student']
                     ],
                     'training' => [
-                        'url' => '/seait/pms/inventory/training.php',
+                        'url' => '/pms/inventory/training.php',
                         'label' => 'Training',
                         'roles' => ['student']
                     ],
                     'reports' => [
-                        'url' => '/seait/pms/inventory/reports.php',
+                        'url' => '/pms/inventory/reports.php',
                         'label' => 'Reports',
                         'roles' => ['manager', 'student']
                     ]
                 ]
             ],
             'pos' => [
-                'url' => '/seait/pms/pos/',
+                'url' => '/pms/pos/',
                 'icon' => 'fas fa-cash-register',
                 'label' => 'Point of Sale',
                 'roles' => ['manager', 'front_desk', 'pos_user', 'student'],
                 'submenu' => [
                     'restaurant' => [
-                        'url' => '/seait/pms/pos/restaurant/',
+                        'url' => '/pms/pos/restaurant/',
                         'label' => 'Restaurant',
                         'roles' => ['manager', 'front_desk', 'pos_user', 'student']
                     ],
                     'room_service' => [
-                        'url' => '/seait/pms/pos/room-service/',
+                        'url' => '/pms/pos/room-service/',
                         'label' => 'Room Service',
                         'roles' => ['manager', 'front_desk', 'pos_user', 'student']
                     ],
                     'spa' => [
-                        'url' => '/seait/pms/pos/spa/',
+                        'url' => '/pms/pos/spa/',
                         'label' => 'Spa Services',
                         'roles' => ['manager', 'front_desk', 'pos_user', 'student']
                     ],
                     'events' => [
-                        'url' => '/seait/pms/pos/events/',
+                        'url' => '/pms/pos/events/',
                         'label' => 'Events',
                         'roles' => ['manager', 'front_desk', 'pos_user', 'student']
                     ]
                 ]
             ],
             'reports' => [
-                'url' => '/seait/pms/booking/modules/management/reports-dashboard.php',
+                'url' => '/pms/booking/modules/management/reports-dashboard.php',
                 'icon' => 'fas fa-chart-bar',
                 'label' => 'Reports',
                 'roles' => ['manager', 'student']
             ],
             'training' => [
-                'url' => '/seait/pms/booking/modules/student/',
+                'url' => '/pms/booking/modules/student/',
                 'icon' => 'fas fa-graduation-cap',
                 'label' => 'Training',
                 'roles' => ['student'],
                 'submenu' => [
                     'scenarios' => [
-                        'url' => '/seait/pms/booking/modules/student/scenarios.php',
+                        'url' => '/pms/booking/modules/student/scenarios.php',
                         'label' => 'Scenarios',
                         'roles' => ['student']
                     ],
                     'progress' => [
-                        'url' => '/seait/pms/booking/modules/student/progress.php',
+                        'url' => '/pms/booking/modules/student/progress.php',
                         'label' => 'Progress',
                         'roles' => ['student']
                     ],
                     'certificates' => [
-                        'url' => '/seait/pms/booking/modules/student/certificates.php',
+                        'url' => '/pms/booking/modules/student/certificates.php',
                         'label' => 'Certificates',
                         'roles' => ['student']
                     ]
@@ -246,16 +246,16 @@ class UnifiedNavigation {
      */
     public function getBreadcrumbs() {
         $breadcrumbs = [
-            ['label' => 'Home', 'url' => '/seait/pms/booking/index.php']
+            ['label' => 'Home', 'url' => '/pms/booking/index.php']
         ];
         
         $current_url = $_SERVER['REQUEST_URI'];
         
         // Add module-specific breadcrumbs
         if (strpos($current_url, '/inventory/') !== false) {
-            $breadcrumbs[] = ['label' => 'Inventory', 'url' => '/seait/pms/inventory/'];
+            $breadcrumbs[] = ['label' => 'Inventory', 'url' => '/pms/inventory/'];
         } elseif (strpos($current_url, '/pos/') !== false) {
-            $breadcrumbs[] = ['label' => 'POS', 'url' => '/seait/pms/pos/'];
+            $breadcrumbs[] = ['label' => 'POS', 'url' => '/pms/pos/'];
         }
         
         // Add current page

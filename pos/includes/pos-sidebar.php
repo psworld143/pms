@@ -8,93 +8,93 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
 // Define POS navigation items based on user role
 $navigation_items = [
     'dashboard' => [
-        'url' => '/seait/pms/pos/index.php',
+        'url' => '/pms/pos/index.php',
         'icon' => 'fas fa-tachometer-alt',
         'label' => 'POS Dashboard',
         'roles' => ['manager', 'front_desk', 'pos_user', 'student']
     ],
     'restaurant' => [
-        'url' => '/seait/pms/pos/restaurant/',
+        'url' => '/pms/pos/restaurant/',
         'icon' => 'fas fa-utensils',
         'label' => 'Restaurant POS',
         'roles' => ['manager', 'front_desk', 'pos_user', 'student'],
         'submenu' => [
-            'menu' => ['url' => '/seait/pms/pos/restaurant/menu.php', 'label' => 'Menu Management'],
-            'orders' => ['url' => '/seait/pms/pos/restaurant/orders.php', 'label' => 'Active Orders'],
-            'tables' => ['url' => '/seait/pms/pos/restaurant/tables.php', 'label' => 'Table Management'],
-            'reports' => ['url' => '/seait/pms/pos/restaurant/reports.php', 'label' => 'Restaurant Reports']
+            'menu' => ['url' => '/pms/pos/restaurant/menu.php', 'label' => 'Menu Management'],
+            'orders' => ['url' => '/pms/pos/restaurant/orders.php', 'label' => 'Active Orders'],
+            'tables' => ['url' => '/pms/pos/restaurant/tables.php', 'label' => 'Table Management'],
+            'reports' => ['url' => '/pms/pos/restaurant/reports.php', 'label' => 'Restaurant Reports']
         ]
     ],
     'room_service' => [
-        'url' => '/seait/pms/pos/room-service/',
+        'url' => '/pms/pos/room-service/',
         'icon' => 'fas fa-bed',
         'label' => 'Room Service',
         'roles' => ['manager', 'front_desk', 'pos_user', 'student'],
         'submenu' => [
-            'orders' => ['url' => '/seait/pms/pos/room-service/orders.php', 'label' => 'Room Orders'],
-            'delivery' => ['url' => '/seait/pms/pos/room-service/delivery.php', 'label' => 'Delivery Status'],
-            'menu' => ['url' => '/seait/pms/pos/room-service/menu.php', 'label' => 'Room Service Menu'],
-            'reports' => ['url' => '/seait/pms/pos/room-service/reports.php', 'label' => 'Room Service Reports']
+            'orders' => ['url' => '/pms/pos/room-service/orders.php', 'label' => 'Room Orders'],
+            'delivery' => ['url' => '/pms/pos/room-service/delivery.php', 'label' => 'Delivery Status'],
+            'menu' => ['url' => '/pms/pos/room-service/menu.php', 'label' => 'Room Service Menu'],
+            'reports' => ['url' => '/pms/pos/room-service/reports.php', 'label' => 'Room Service Reports']
         ]
     ],
     'spa' => [
-        'url' => '/seait/pms/pos/spa/',
+        'url' => '/pms/pos/spa/',
         'icon' => 'fas fa-spa',
         'label' => 'Spa & Wellness',
         'roles' => ['manager', 'front_desk', 'pos_user', 'student'],
         'submenu' => [
-            'services' => ['url' => '/seait/pms/pos/spa/services.php', 'label' => 'Spa Services'],
-            'appointments' => ['url' => '/seait/pms/pos/spa/appointments.php', 'label' => 'Appointments'],
-            'therapists' => ['url' => '/seait/pms/pos/spa/therapists.php', 'label' => 'Therapists'],
-            'reports' => ['url' => '/seait/pms/pos/spa/reports.php', 'label' => 'Spa Reports']
+            'services' => ['url' => '/pms/pos/spa/services.php', 'label' => 'Spa Services'],
+            'appointments' => ['url' => '/pms/pos/spa/appointments.php', 'label' => 'Appointments'],
+            'therapists' => ['url' => '/pms/pos/spa/therapists.php', 'label' => 'Therapists'],
+            'reports' => ['url' => '/pms/pos/spa/reports.php', 'label' => 'Spa Reports']
         ]
     ],
     'gift_shop' => [
-        'url' => '/seait/pms/pos/gift-shop/',
+        'url' => '/pms/pos/gift-shop/',
         'icon' => 'fas fa-gift',
         'label' => 'Gift Shop',
         'roles' => ['manager', 'front_desk', 'pos_user', 'student'],
         'submenu' => [
-            'inventory' => ['url' => '/seait/pms/pos/gift-shop/inventory.php', 'label' => 'Inventory'],
-            'sales' => ['url' => '/seait/pms/pos/gift-shop/sales.php', 'label' => 'Sales'],
-            'products' => ['url' => '/seait/pms/pos/gift-shop/products.php', 'label' => 'Products'],
-            'reports' => ['url' => '/seait/pms/pos/gift-shop/reports.php', 'label' => 'Gift Shop Reports']
+            'inventory' => ['url' => '/pms/pos/gift-shop/inventory.php', 'label' => 'Inventory'],
+            'sales' => ['url' => '/pms/pos/gift-shop/sales.php', 'label' => 'Sales'],
+            'products' => ['url' => '/pms/pos/gift-shop/products.php', 'label' => 'Products'],
+            'reports' => ['url' => '/pms/pos/gift-shop/reports.php', 'label' => 'Gift Shop Reports']
         ]
     ],
     'events' => [
-        'url' => '/seait/pms/pos/events/',
+        'url' => '/pms/pos/events/',
         'icon' => 'fas fa-calendar-alt',
         'label' => 'Event Services',
         'roles' => ['manager', 'front_desk', 'pos_user', 'student'],
         'submenu' => [
-            'bookings' => ['url' => '/seait/pms/pos/events/bookings.php', 'label' => 'Event Bookings'],
-            'services' => ['url' => '/seait/pms/pos/events/services.php', 'label' => 'Event Services'],
-            'venues' => ['url' => '/seait/pms/pos/events/venues.php', 'label' => 'Venues'],
-            'reports' => ['url' => '/seait/pms/pos/events/reports.php', 'label' => 'Event Reports']
+            'bookings' => ['url' => '/pms/pos/events/bookings.php', 'label' => 'Event Bookings'],
+            'services' => ['url' => '/pms/pos/events/services.php', 'label' => 'Event Services'],
+            'venues' => ['url' => '/pms/pos/events/venues.php', 'label' => 'Venues'],
+            'reports' => ['url' => '/pms/pos/events/reports.php', 'label' => 'Event Reports']
         ]
     ],
     'quick_sales' => [
-        'url' => '/seait/pms/pos/quick-sales/',
+        'url' => '/pms/pos/quick-sales/',
         'icon' => 'fas fa-bolt',
         'label' => 'Quick Sales',
         'roles' => ['manager', 'front_desk', 'pos_user', 'student'],
         'submenu' => [
-            'transactions' => ['url' => '/seait/pms/pos/quick-sales/transactions.php', 'label' => 'Transactions'],
-            'items' => ['url' => '/seait/pms/pos/quick-sales/items.php', 'label' => 'Quick Items'],
-            'history' => ['url' => '/seait/pms/pos/quick-sales/history.php', 'label' => 'Sales History'],
-            'reports' => ['url' => '/seait/pms/pos/quick-sales/reports.php', 'label' => 'Quick Sales Reports']
+            'transactions' => ['url' => '/pms/pos/quick-sales/transactions.php', 'label' => 'Transactions'],
+            'items' => ['url' => '/pms/pos/quick-sales/items.php', 'label' => 'Quick Items'],
+            'history' => ['url' => '/pms/pos/quick-sales/history.php', 'label' => 'Sales History'],
+            'reports' => ['url' => '/pms/pos/quick-sales/reports.php', 'label' => 'Quick Sales Reports']
         ]
     ],
     'reports' => [
-        'url' => '/seait/pms/pos/reports/',
+        'url' => '/pms/pos/reports/',
         'icon' => 'fas fa-chart-bar',
         'label' => 'Reports & Analytics',
         'roles' => ['manager', 'pos_user'],
         'submenu' => [
-            'sales' => ['url' => '/seait/pms/pos/reports/sales.php', 'label' => 'Sales Reports'],
-            'inventory' => ['url' => '/seait/pms/pos/reports/inventory.php', 'label' => 'Inventory Reports'],
-            'performance' => ['url' => '/seait/pms/pos/reports/performance.php', 'label' => 'Performance Reports'],
-            'analytics' => ['url' => '/seait/pms/pos/reports/analytics.php', 'label' => 'Analytics Dashboard']
+            'sales' => ['url' => '/pms/pos/reports/sales.php', 'label' => 'Sales Reports'],
+            'inventory' => ['url' => '/pms/pos/reports/inventory.php', 'label' => 'Inventory Reports'],
+            'performance' => ['url' => '/pms/pos/reports/performance.php', 'label' => 'Performance Reports'],
+            'analytics' => ['url' => '/pms/pos/reports/analytics.php', 'label' => 'Analytics Dashboard']
         ]
     ]
 ];
@@ -165,27 +165,44 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
     <div class="p-4 border-t border-gray-200">
         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h3>
         <div class="space-y-2">
-            <a href="/seait/pms/pos/quick-sales/" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
+            <a href="/pms/pos/quick-sales/" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
                 <i class="fas fa-plus text-xs mr-2"></i>
                 New Transaction
             </a>
             
-            <a href="/seait/pms/pos/restaurant/" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
+            <a href="/pms/pos/restaurant/" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
                 <i class="fas fa-utensils text-xs mr-2"></i>
                 Restaurant Orders
             </a>
             
-            <a href="/seait/pms/pos/room-service/" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
+            <a href="/pms/pos/room-service/" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
                 <i class="fas fa-bed text-xs mr-2"></i>
                 Room Service
             </a>
             
             <?php if (isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode']): ?>
-                <a href="../../booking/modules/training/training-dashboard.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
+                <a href="/pms/booking/modules/training/training-dashboard.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
                     <i class="fas fa-play text-xs mr-2"></i>
                     Training Dashboard
                 </a>
             <?php endif; ?>
+        </div>
+    </div>
+    
+    <!-- Module Links Section -->
+    <div class="p-4 border-t border-gray-200">
+        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Other Modules</h3>
+        <div class="space-y-2">
+            <a href="/pms/booking/" 
+               class="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors">
+                <i class="fas fa-bed mr-2"></i>
+                Booking System
+            </a>
+            <a href="/pms/inventory/" 
+               class="flex items-center px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors">
+                <i class="fas fa-boxes mr-2"></i>
+                Inventory
+            </a>
         </div>
     </div>
 </nav>

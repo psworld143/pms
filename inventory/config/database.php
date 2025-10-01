@@ -5,7 +5,7 @@
  */
 
 // Include the main PMS database configuration
-require_once __DIR__ . '/../../../config/database.php';
+require_once __DIR__ . '/../../includes/database.php';
 // Inventory-specific database functions
 class InventoryDatabase {
     private $pdo;

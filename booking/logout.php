@@ -7,7 +7,7 @@ if (session_status() === PHP_SESSION_NONE) {
 // Log the logout activity if user is logged in
 if (isset($_SESSION['user_id'])) {
     try {
-        require_once '../../config/database.php';
+        require_once '../includes/database.php';
         require_once 'includes/functions.php';
         
         // Log the logout activity

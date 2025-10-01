@@ -9,7 +9,7 @@ require_once __DIR__ . '/config/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../booking/login.php');
+    header('Location: login.php');
     exit();
 }
 
@@ -92,52 +92,12 @@ $low_stock_items = $inventory_db->getLowStockItems(10);
     </script>
 </head>
 <body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center">
-                    <i class="fas fa-boxes text-primary text-2xl mr-3"></i>
-                    <h1 class="text-2xl font-bold text-gray-900">Inventory Management</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-600">Welcome, <?php echo htmlspecialchars($_SESSION['name'] ?? 'Student'); ?></span>
-                    <a href="../booking/logout.php" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm">
-                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                    </a>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex space-x-8">
-                <a href="index.php" class="border-b-2 border-primary text-primary py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                </a>
-                <a href="items.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-box mr-2"></i>Items
-                </a>
-                <a href="transactions.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-exchange-alt mr-2"></i>Transactions
-                </a>
-                <a href="requests.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-clipboard-list mr-2"></i>Requests
-                </a>
-                <a href="training.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-graduation-cap mr-2"></i>Training
-                </a>
-                <a href="reports.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-chart-bar mr-2"></i>Reports
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Include unified inventory header and sidebar -->
+    <?php include 'includes/inventory-header.php'; ?>
+    <?php include 'includes/sidebar-inventory.php'; ?>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-lg shadow p-6">

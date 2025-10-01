@@ -10,7 +10,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $current_url = $_SERVER['REQUEST_URI'];
 
 // Use absolute paths for navigation
-$base_path = '/seait/pms/booking/';
+$base_path = '/pms/booking/';
 
 // Function to check if a URL is active
 function isActiveUrl($url, $current_url) {

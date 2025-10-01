@@ -61,15 +61,21 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
             }
         }
         
-        #sidebar-overlay {
-            transition: opacity 0.3s ease-in-out;
-            z-index: 40;
-        }
-        
         /* Responsive layout fixes */
         .main-content {
             margin-left: 0;
-            padding-top: 4rem;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Ensure sidebar is above main content */
+        #sidebar {
+            z-index: 45 !important;
+        }
+        
+        #sidebar-overlay {
+            transition: opacity 0.3s ease-in-out;
+            z-index: 35 !important;
         }
         
         @media (min-width: 1024px) {
@@ -118,7 +124,7 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
         <?php include 'includes/pos-sidebar.php'; ?>
 
         <!-- Main Content -->
-        <main class="main-content p-4 lg:p-6 flex-1 transition-all duration-300">
+        <main class="main-content pt-20 px-4 pb-4 lg:px-6 lg:pb-6 flex-1 transition-all duration-300">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Point of Sale Dashboard</h2>
                 <div class="text-right">

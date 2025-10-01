@@ -28,12 +28,22 @@ function toggleSubmenu(menuId) {
     const submenu = document.getElementById('submenu-' + menuId);
     const chevron = document.getElementById('chevron-' + menuId);
     
+    // Check if any submenu item is currently active
+    const activeSubmenuItem = submenu.querySelector('a.text-blue-600, a.border-blue-500, a.text-primary, a.active');
+    
     if (submenu.classList.contains('hidden')) {
+        // Open submenu
         submenu.classList.remove('hidden');
         chevron.style.transform = 'rotate(180deg)';
+        // Store that this submenu is manually opened
+        submenu.setAttribute('data-manually-opened', 'true');
     } else {
-        submenu.classList.add('hidden');
-        chevron.style.transform = 'rotate(0deg)';
+        // Only close submenu if no active item exists AND it wasn't manually opened
+        const isManuallyOpened = submenu.getAttribute('data-manually-opened') === 'true';
+        if (!activeSubmenuItem && !isManuallyOpened) {
+            submenu.classList.add('hidden');
+            chevron.style.transform = 'rotate(0deg)';
+        }
     }
 }
 

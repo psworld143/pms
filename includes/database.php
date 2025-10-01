@@ -16,7 +16,6 @@ define('DB_PASS', '');
 
 // Application configuration
 define('SITE_NAME', 'Hotel PMS Training System');
-define('SITE_URL', 'http://localhost/seait/pms/');
 define('TIMEZONE', 'Asia/Manila');
 
 // Set timezone

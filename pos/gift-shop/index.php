@@ -1,11 +1,11 @@
 <?php
 session_start();
-require_once '../../../config/database.php';
+require_once '../../includes/database.php';
 require_once '../includes/pos-functions.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../booking/login.php');
+// Check if user is logged in to POS
+if (!isset($_SESSION['pos_user_id'])) {
+    header('Location: ../login.php');
     exit();
 }
 
@@ -17,13 +17,53 @@ $gift_shop_stats = getGiftShopStats();
 // Set page title
 $page_title = 'Gift Shop POS';
 
-// Include POS-specific header and sidebar
-include '../includes/pos-header.php';
-include '../includes/pos-sidebar.php';
 ?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?php echo $page_title; ?> - Hotel POS System</title>
+    <link rel="icon" type="image/png" href="../../../assets/images/seait-logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="../assets/css/pos-styles.css">
+    <style>
+        /* Responsive layout fixes */
+        .main-content {
+            margin-left: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Ensure sidebar is above main content */
+        #sidebar {
+            z-index: 45 !important;
+        }
+        
+        #sidebar-overlay {
+            z-index: 35 !important;
+        }
+        
+        @media (min-width: 1024px) {
+            .main-content {
+                margin-left: 16rem;
+            }
+        }
+    </style>
+    <script>
+        tailwind.config = { theme: { extend: { colors: { primary: '#667eea', secondary: '#764ba2', success: '#28a745', danger: '#dc3545', warning: '#ffc107', info: '#17a2b8' } } } }
+    </script>
+</head>
+<body class="bg-gray-50">
+    <div class="flex min-h-screen">
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
+        <?php include '../includes/pos-header.php'; ?>
+        <?php include '../includes/pos-sidebar.php'; ?>
 
         <!-- Main Content -->
-        <main class="main-content p-4 lg:p-6 flex-1 transition-all duration-300">
+        <main class="main-content pt-20 px-4 pb-4 lg:px-6 lg:pb-6 flex-1 transition-all duration-300">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Gift Shop POS System</h2>
                 <div class="text-right">

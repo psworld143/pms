@@ -1,6 +1,7 @@
 <?php
 session_start();
-require_once '../../../../config/database.php';
+require_once "../../config/database.php";
+require_once '../../includes/functions.php';
 // Check if user is logged in and has front desk role
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'front_desk') {
     header('Location: ../../login.php');
@@ -9,36 +10,17 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'front_desk') {
 
 $user_id = $_SESSION['user_id'];
 $user_name = $_SESSION['user_name'];
+
+// Set page title
+$page_title = 'VIP Guests - Simple Test';
+
+// Include unified navigation (automatically selects based on user role)
+include '../../includes/header-unified.php';
+include '../../includes/sidebar-unified.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VIP Guests - Simple Test</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="bg-gray-50">
-    <!-- Simple Header -->
-    <header class="bg-white shadow-sm border-b border-gray-200 fixed top-0 left-0 right-0 z-50">
-        <div class="flex items-center justify-between px-4 py-3">
-            <div class="flex items-center">
-                <h1 class="text-xl font-semibold text-gray-800">VIP Guests - Simple Test</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-                <span class="text-sm text-gray-600">Welcome, <?php echo htmlspecialchars($user_name); ?></span>
-                <a href="../../logout.php" class="text-red-600 hover:text-red-800">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </a>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="pt-16 min-h-screen">
-        <div class="p-6">
+        <!-- Main Content -->
+        <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
             <div class="max-w-4xl mx-auto">
                 <h2 class="text-2xl font-bold text-gray-800 mb-6">VIP Guests Management</h2>
                 
@@ -192,7 +174,8 @@ $user_name = $_SESSION['user_name'];
                     </div>
                 </div>
             </div>
-        </div>
-    </main>
-</body>
-</html>
+        </main>
+
+    <script src="../../assets/js/main.js"></script>
+    
+    <?php include '../../includes/footer.php'; ?>

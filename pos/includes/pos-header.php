@@ -8,8 +8,13 @@ $user_name = $_SESSION['pos_user_name'] ?? 'POS User';
 $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
 
 // Get school logo and abbreviation from database
-require_once '../../../config/database.php';
-require_once '../../includes/functions.php';
+require_once __DIR__ . '/../../includes/database.php';
+require_once __DIR__ . '/../../booking/includes/functions.php';
+
+// Create database connection variable for compatibility
+$conn = $pdo;
+
+// Get school information (with fallback values)
 $school_logo = get_school_logo($conn);
 $school_abbreviation = get_school_abbreviation($conn);
 ?>
@@ -83,7 +88,7 @@ $school_abbreviation = get_school_abbreviation($conn);
                         </a>
                         <hr class="my-2">
                     <?php endif; ?>
-                    <a href="logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <a href="/pms/pos/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                         <i class="fas fa-sign-out-alt mr-3"></i>
                         Logout
                     </a>
@@ -92,3 +97,37 @@ $school_abbreviation = get_school_abbreviation($conn);
         </div>
     </div>
 </header>
+
+<!-- Inline JavaScript for immediate dropdown functionality -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // User dropdown functionality
+    const userMenuToggle = document.getElementById('user-menu-toggle');
+    const userDropdown = document.getElementById('user-dropdown');
+    
+    if (userMenuToggle && userDropdown) {
+        userMenuToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            userDropdown.classList.toggle('hidden');
+        });
+        
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('#user-menu-toggle') && !event.target.closest('#user-dropdown')) {
+                userDropdown.classList.add('hidden');
+            }
+        });
+    }
+    
+    // Notifications dropdown functionality
+    const notificationsToggle = document.getElementById('notifications-toggle');
+    const notificationsDropdown = document.getElementById('notifications-dropdown');
+    
+    if (notificationsToggle && notificationsDropdown) {
+        notificationsToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            notificationsDropdown.classList.toggle('hidden');
+        });
+    }
+});
+</script>

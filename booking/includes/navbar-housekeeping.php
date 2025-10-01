@@ -56,21 +56,17 @@ $user_name = $_SESSION['user_name'];
                     <h3 class="text-lg font-semibold text-gray-800">Quick Actions</h3>
                 </div>
                 <div class="py-2">
-                    <a href="../modules/housekeeping/room-status.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/housekeeping/room-status.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-clipboard-list mr-3"></i>
                         Room Status
                     </a>
-                    <a href="../modules/housekeeping/tasks.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/housekeeping/tasks.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-tasks mr-3"></i>
                         My Tasks
                     </a>
-                    <a href="../modules/housekeeping/maintenance.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/housekeeping/maintenance.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-tools mr-3"></i>
                         Maintenance
-                    </a>
-                    <a href="../modules/housekeeping/inventory.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-boxes mr-3"></i>
-                        Inventory
                     </a>
                 </div>
             </div>
@@ -97,16 +93,16 @@ $user_name = $_SESSION['user_name'];
                         <i class="fas fa-user-circle mr-3"></i>
                         Profile
                     </a>
-                    <a href="../modules/housekeeping/settings.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/housekeeping/settings.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-cog mr-3"></i>
                         Settings
                     </a>
-                    <a href="../modules/housekeeping/activity-log.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/housekeeping/activity-log.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-history mr-3"></i>
                         Activity Log
                     </a>
                     <hr class="my-2">
-                    <a href="logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <a href="/pms/booking/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                         <i class="fas fa-sign-out-alt mr-3"></i>
                         Logout
                     </a>

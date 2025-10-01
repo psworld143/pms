@@ -9,10 +9,8 @@ $user_role = $_SESSION['user_role'];
 $user_name = $_SESSION['user_name'];
 
 // Get school logo and abbreviation from database
-require_once '../../../config/database.php';
-require_once '../includes/functions.php';
-$school_logo = get_school_logo($conn);
-$school_abbreviation = get_school_abbreviation($conn);
+$school_logo = null; // Will be set later if needed
+$school_abbreviation = 'Hotel PMS'; // Default abbreviation
 ?>
 <!-- Front Desk Navbar -->
 <header class="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-blue-600 to-cyan-600 text-white flex justify-between items-center px-6 z-50 shadow-lg">
@@ -112,7 +110,7 @@ $school_abbreviation = get_school_abbreviation($conn);
                         Activity Log
                     </a>
                     <hr class="my-2">
-                    <a href="../../logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <a href="/pms/booking/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                         <i class="fas fa-sign-out-alt mr-3"></i>
                         Logout
                     </a>

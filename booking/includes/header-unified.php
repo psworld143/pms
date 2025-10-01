@@ -10,11 +10,8 @@ $user_name = $_SESSION['user_name'];
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 
 // Get school logo and abbreviation from database
-require_once '../../../config/database.php';
-require_once 'functions.php';
-require_once '../../../includes/functions.php';
-$school_logo = get_school_logo($conn);
-$school_abbreviation = get_school_abbreviation($conn);
+$school_logo = null; // Will be set later if needed
+$school_abbreviation = 'Hotel PMS'; // Default abbreviation
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -23,7 +20,7 @@ $school_abbreviation = get_school_abbreviation($conn);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($page_title) ? $page_title . ' - ' : ''; ?><?php echo htmlspecialchars($school_abbreviation); ?> Hotel PMS</title>
     <!-- Favicon Configuration -->
-    <?php echo generate_favicon_tags($conn, '../../../'); ?>
+    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">

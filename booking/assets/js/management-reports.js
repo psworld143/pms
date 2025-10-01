@@ -1,8 +1,25 @@
 // Management & Reports JavaScript
+// Chart instances storage
+let chartInstances = {};
+let chartsLoading = {
+    occupancy: false,
+    revenue: false
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     initializeManagementReports();
     loadCharts();
     loadDailyReports();
+});
+
+// Clean up chart instances when page is unloaded
+window.addEventListener('beforeunload', function() {
+    Object.values(chartInstances).forEach(chart => {
+        if (chart && typeof chart.destroy === 'function') {
+            chart.destroy();
+        }
+    });
+    chartInstances = {};
 });
 
 function initializeManagementReports() {
@@ -58,18 +75,38 @@ function loadCharts() {
 }
 
 function loadOccupancyChart() {
+    // Prevent multiple simultaneous loads
+    if (chartsLoading.occupancy) {
+        return;
+    }
+    
+    chartsLoading.occupancy = true;
+    
+    // Destroy existing chart if it exists
+    if (chartInstances.occupancyChart) {
+        chartInstances.occupancyChart.destroy();
+        chartInstances.occupancyChart = null;
+    }
+    
     fetch('../../api/get-occupancy-data.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && data.data) {
+                // Process the data to extract labels and values
+                const labels = data.data.map(item => {
+                    const date = new Date(item.date);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+                const values = data.data.map(item => item.occupancy_rate);
+                
                 const ctx = document.getElementById('occupancyChart').getContext('2d');
-                new Chart(ctx, {
+                chartInstances.occupancyChart = new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: data.labels,
+                        labels: labels,
                         datasets: [{
                             label: 'Occupancy Rate (%)',
-                            data: data.values,
+                            data: values,
                             borderColor: '#3B82F6',
                             backgroundColor: 'rgba(59, 130, 246, 0.1)',
                             tension: 0.4,
@@ -94,29 +131,62 @@ function loadOccupancyChart() {
                             legend: {
                                 display: false
                             }
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuart'
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
                         }
                     }
                 });
+            } else {
+                console.error('No data available for occupancy chart');
             }
         })
         .catch(error => {
             console.error('Error loading occupancy chart:', error);
+        })
+        .finally(() => {
+            chartsLoading.occupancy = false;
         });
 }
 
 function loadRevenueChart() {
+    // Prevent multiple simultaneous loads
+    if (chartsLoading.revenue) {
+        return;
+    }
+    
+    chartsLoading.revenue = true;
+    
+    // Destroy existing chart if it exists
+    if (chartInstances.revenueChart) {
+        chartInstances.revenueChart.destroy();
+        chartInstances.revenueChart = null;
+    }
+    
     fetch('../../api/get-revenue-data.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
+            if (data.success && data.data) {
+                // Process the data to extract labels and values
+                const labels = data.data.map(item => {
+                    const date = new Date(item.date);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                });
+                const values = data.data.map(item => item.revenue);
+                
                 const ctx = document.getElementById('revenueChart').getContext('2d');
-                new Chart(ctx, {
+                chartInstances.revenueChart = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                        labels: data.labels,
+                        labels: labels,
                         datasets: [{
                             label: 'Revenue (₱)',
-                            data: data.values,
+                            data: values,
                             backgroundColor: '#10B981',
                             borderColor: '#059669',
                             borderWidth: 1
@@ -139,13 +209,26 @@ function loadRevenueChart() {
                             legend: {
                                 display: false
                             }
+                        },
+                        animation: {
+                            duration: 1000,
+                            easing: 'easeInOutQuart'
+                        },
+                        interaction: {
+                            intersect: false,
+                            mode: 'index'
                         }
                     }
                 });
+            } else {
+                console.error('No data available for revenue chart');
             }
         })
         .catch(error => {
             console.error('Error loading revenue chart:', error);
+        })
+        .finally(() => {
+            chartsLoading.revenue = false;
         });
 }
 
@@ -158,7 +241,7 @@ function loadDailyReports() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayDailyReports(data.reports);
+                displayDailyReports(data);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading daily reports', 'error');
             }
@@ -177,7 +260,7 @@ function loadWeeklyReports() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayWeeklyReports(data.reports);
+                displayWeeklyReports(data);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading weekly reports', 'error');
             }
@@ -196,7 +279,7 @@ function loadMonthlyReports() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayMonthlyReports(data.reports);
+                displayMonthlyReports(data);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading monthly reports', 'error');
             }
@@ -215,7 +298,7 @@ function loadInventoryReports() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayInventoryReports(data.reports);
+                displayInventoryReports(data);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading inventory reports', 'error');
             }
@@ -227,10 +310,10 @@ function loadInventoryReports() {
 }
 
 // Display functions
-function displayDailyReports(reports) {
+function displayDailyReports(data) {
     const container = document.getElementById('daily-reports-container');
     
-    if (!reports || reports.length === 0) {
+    if (!data || !data.summary) {
         container.innerHTML = `
             <div class="text-center py-8">
                 <i class="fas fa-chart-line text-gray-400 text-4xl mb-4"></i>
@@ -241,46 +324,110 @@ function displayDailyReports(reports) {
         return;
     }
     
-    const tableHtml = `
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Occupancy</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-ins</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-outs</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Room Rate</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    ${reports.map(report => `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatDate(report.date)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full ${getOccupancyClass(report.occupancy_rate)}">
-                                    ${report.occupancy_rate}%
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.revenue).toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.check_ins}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.check_outs}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.avg_room_rate).toFixed(2)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+    const summary = data.summary;
+    const reservations = data.reservations || [];
+    const checkIns = data.check_ins || [];
+    const checkOuts = data.check_outs || [];
+    
+    // Display summary cards
+    const summaryHtml = `
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <i class="fas fa-calendar-day text-blue-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Total Reservations</p>
+                        <p class="text-2xl font-bold text-gray-900">${summary.total_reservations}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <i class="fas fa-sign-in-alt text-green-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Check-ins</p>
+                        <p class="text-2xl font-bold text-gray-900">${summary.check_ins}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <i class="fas fa-sign-out-alt text-red-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Check-outs</p>
+                        <p class="text-2xl font-bold text-gray-900">${summary.check_outs}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <i class="fas fa-percentage text-yellow-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Occupancy Rate</p>
+                        <p class="text-2xl font-bold text-gray-900">${summary.occupancy_rate}%</p>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
     
-    container.innerHTML = tableHtml;
+    // Display reservations table
+    const tableHtml = `
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Reservations for ${formatDate(data.date)}</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${reservations.map(reservation => `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="text-sm font-medium text-gray-900">${reservation.guest_name}</div>
+                                    <div class="text-sm text-gray-500">${reservation.guest_email}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${reservation.room_number} (${reservation.room_type})</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_in)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_out)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(reservation.status)}">
+                                        ${reservation.status.replace('_', ' ').toUpperCase()}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(reservation.total_amount || 0).toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = summaryHtml + tableHtml;
 }
 
-function displayWeeklyReports(reports) {
+function displayWeeklyReports(data) {
     const container = document.getElementById('weekly-reports-container');
     
-    if (!reports || reports.length === 0) {
+    if (!data || !data.data || data.data.length === 0) {
         container.innerHTML = `
             <div class="text-center py-8">
                 <i class="fas fa-chart-line text-gray-400 text-4xl mb-4"></i>
@@ -292,45 +439,46 @@ function displayWeeklyReports(reports) {
     }
     
     const tableHtml = `
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Week</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Occupancy</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Revenue</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Guests</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Room Rate</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RevPAR</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    ${reports.map(report => `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${report.week}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full ${getOccupancyClass(report.avg_occupancy)}">
-                                    ${report.avg_occupancy}%
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.total_revenue).toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.total_guests}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.avg_room_rate).toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.revpar).toFixed(2)}</td>
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Weekly Report: ${data.start_date} to ${data.end_date}</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservations</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                         </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.data.map(report => `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatDate(report.date)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.daily_reservations}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.daily_revenue || 0).toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div class="flex justify-between">
+                    <span class="text-sm font-medium text-gray-900">Weekly Totals:</span>
+                    <span class="text-sm text-gray-900">${data.totals.total_reservations} reservations, ₱${parseFloat(data.totals.total_revenue || 0).toFixed(2)} revenue</span>
+                </div>
+            </div>
         </div>
     `;
     
     container.innerHTML = tableHtml;
 }
 
-function displayMonthlyReports(reports) {
+function displayMonthlyReports(data) {
     const container = document.getElementById('monthly-reports-container');
     
-    if (!reports || reports.length === 0) {
+    if (!data || !data.data || data.data.length === 0) {
         container.innerHTML = `
             <div class="text-center py-8">
                 <i class="fas fa-chart-line text-gray-400 text-4xl mb-4"></i>
@@ -342,47 +490,56 @@ function displayMonthlyReports(reports) {
     }
     
     const tableHtml = `
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Month</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Occupancy</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Revenue</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Guests</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg. Room Rate</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">RevPAR</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ADR</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    ${reports.map(report => `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${report.month}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full ${getOccupancyClass(report.avg_occupancy)}">
-                                    ${report.avg_occupancy}%
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.total_revenue).toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.total_guests}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.avg_room_rate).toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.revpar).toFixed(2)}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.adr).toFixed(2)}</td>
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Monthly Report: ${data.month}</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservations</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
                         </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${data.data.map(report => `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatDate(report.date)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.daily_reservations}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.daily_revenue || 0).toFixed(2)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div class="grid grid-cols-3 gap-4">
+                    <div>
+                        <span class="text-sm font-medium text-gray-500">Total Reservations:</span>
+                        <span class="text-sm text-gray-900 ml-2">${data.totals.total_reservations}</span>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-500">Total Revenue:</span>
+                        <span class="text-sm text-gray-900 ml-2">₱${parseFloat(data.totals.total_revenue || 0).toFixed(2)}</span>
+                    </div>
+                    <div>
+                        <span class="text-sm font-medium text-gray-500">Avg. Reservation Value:</span>
+                        <span class="text-sm text-gray-900 ml-2">₱${parseFloat(data.totals.average_reservation_value || 0).toFixed(2)}</span>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
     
     container.innerHTML = tableHtml;
 }
 
-function displayInventoryReports(reports) {
+function displayInventoryReports(data) {
     const container = document.getElementById('inventory-reports-container');
     
-    if (!reports || reports.length === 0) {
+    if (!data || !data.inventory_items || data.inventory_items.length === 0) {
         container.innerHTML = `
             <div class="text-center py-8">
                 <i class="fas fa-boxes text-gray-400 text-4xl mb-4"></i>
@@ -393,43 +550,100 @@ function displayInventoryReports(reports) {
         return;
     }
     
-    const tableHtml = `
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min. Stock</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Updated</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    ${reports.map(report => `
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4">
-                                <div class="text-sm font-medium text-gray-900">${report.item_name}</div>
-                                <div class="text-sm text-gray-500">₱${parseFloat(report.unit_price).toFixed(2)}</div>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.category_name}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.current_stock}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.minimum_stock}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full ${getStockStatusClass(report.current_stock, report.minimum_stock)}">
-                                    ${getStockStatusLabel(report.current_stock, report.minimum_stock)}
-                                </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(report.last_updated)}</td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
+    const summary = data.stock_summary;
+    const items = data.inventory_items;
+    
+    // Display summary cards
+    const summaryHtml = `
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-blue-100 rounded-lg">
+                        <i class="fas fa-boxes text-blue-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Total Items</p>
+                        <p class="text-2xl font-bold text-gray-900">${summary.total_items}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-red-100 rounded-lg">
+                        <i class="fas fa-exclamation-triangle text-red-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Low Stock</p>
+                        <p class="text-2xl font-bold text-gray-900">${summary.low_stock_items}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-yellow-100 rounded-lg">
+                        <i class="fas fa-exclamation-circle text-yellow-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Warning</p>
+                        <p class="text-2xl font-bold text-gray-900">${summary.medium_stock_items}</p>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-lg shadow">
+                <div class="flex items-center">
+                    <div class="p-2 bg-green-100 rounded-lg">
+                        <i class="fas fa-check-circle text-green-600"></i>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-500">Good Stock</p>
+                        <p class="text-2xl font-bold text-gray-900">${summary.good_stock_items}</p>
+                    </div>
+                </div>
+            </div>
         </div>
     `;
     
-    container.innerHTML = tableHtml;
+    // Display inventory items table
+    const tableHtml = `
+        <div class="bg-white rounded-lg shadow">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h3 class="text-lg font-medium text-gray-900">Inventory Items</h3>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min. Stock</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        ${items.map(item => `
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-4">
+                                    <div class="text-sm font-medium text-gray-900">${item.name}</div>
+                                    <div class="text-sm text-gray-500">₱${parseFloat(item.unit_price || 0).toFixed(2)}</div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.category_name || 'N/A'}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.current_stock}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.minimum_stock}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full ${getStockStatusClass(item.current_stock, item.minimum_stock)}">
+                                        ${item.stock_status}
+                                    </span>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = summaryHtml + tableHtml;
 }
 
 // Report generation functions
@@ -819,6 +1033,16 @@ function getOccupancyClass(rate) {
     if (rate >= 80) return 'bg-green-100 text-green-800';
     if (rate >= 60) return 'bg-yellow-100 text-yellow-800';
     return 'bg-red-100 text-red-800';
+}
+
+function getStatusClass(status) {
+    switch (status) {
+        case 'confirmed': return 'bg-blue-100 text-blue-800';
+        case 'checked_in': return 'bg-green-100 text-green-800';
+        case 'checked_out': return 'bg-gray-100 text-gray-800';
+        case 'cancelled': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
 }
 
 function getStockStatusClass(current, minimum) {

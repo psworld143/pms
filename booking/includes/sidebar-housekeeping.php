@@ -11,7 +11,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
 // Housekeeping navigation items
 $navigation_items = [
     'dashboard' => [
-        'url' => '../modules/housekeeping/index.php',
+        'url' => '/pms/booking/modules/housekeeping/index.php',
         'icon' => 'fas fa-tachometer-alt',
         'label' => 'Dashboard',
         'active' => ($current_page === 'index')
@@ -20,33 +20,23 @@ $navigation_items = [
         'icon' => 'fas fa-broom',
         'label' => 'Housekeeping',
         'submenu' => [
-            'room_status' => ['url' => '../modules/housekeeping/room-status.php', 'label' => 'Room Status', 'icon' => 'fas fa-bed'],
-            'tasks' => ['url' => '../modules/housekeeping/tasks.php', 'label' => 'My Tasks', 'icon' => 'fas fa-tasks'],
-            'maintenance' => ['url' => '../modules/housekeeping/maintenance.php', 'label' => 'Maintenance', 'icon' => 'fas fa-tools'],
-            'cleaning_schedule' => ['url' => '../modules/housekeeping/cleaning-schedule.php', 'label' => 'Cleaning Schedule', 'icon' => 'fas fa-calendar-alt'],
-            'quality_check' => ['url' => '../modules/housekeeping/quality-check.php', 'label' => 'Quality Check', 'icon' => 'fas fa-clipboard-check']
-        ]
-    ],
-    'inventory' => [
-        'icon' => 'fas fa-boxes',
-        'label' => 'Inventory',
-        'submenu' => [
-            'items' => ['url' => '../modules/inventory/items.php', 'label' => 'Items', 'icon' => 'fas fa-box'],
-            'categories' => ['url' => '../modules/inventory/categories.php', 'label' => 'Categories', 'icon' => 'fas fa-tags'],
-            'transactions' => ['url' => '../modules/inventory/transactions.php', 'label' => 'Transactions', 'icon' => 'fas fa-exchange-alt'],
-            'low_stock' => ['url' => '../modules/inventory/low-stock.php', 'label' => 'Low Stock Alerts', 'icon' => 'fas fa-exclamation-triangle']
+            'room_status' => ['url' => '/pms/booking/modules/housekeeping/room-status.php', 'label' => 'Room Status', 'icon' => 'fas fa-bed'],
+            'tasks' => ['url' => '/pms/booking/modules/housekeeping/tasks.php', 'label' => 'My Tasks', 'icon' => 'fas fa-tasks'],
+            'maintenance' => ['url' => '/pms/booking/modules/housekeeping/maintenance.php', 'label' => 'Maintenance', 'icon' => 'fas fa-tools'],
+            'cleaning_schedule' => ['url' => '/pms/booking/modules/housekeeping/cleaning-schedule.php', 'label' => 'Cleaning Schedule', 'icon' => 'fas fa-calendar-alt'],
+            'quality_check' => ['url' => '/pms/booking/modules/housekeeping/quality-check.php', 'label' => 'Quality Check', 'icon' => 'fas fa-clipboard-check']
         ]
     ],
     'training' => [
         'icon' => 'fas fa-graduation-cap',
         'label' => 'Training & Simulations',
         'submenu' => [
-            'dashboard' => ['url' => '../modules/training/training-dashboard.php', 'label' => 'Training Dashboard', 'icon' => 'fas fa-tachometer-alt'],
-            'scenarios' => ['url' => '../modules/training/scenarios.php', 'label' => 'Scenarios', 'icon' => 'fas fa-theater-masks'],
-            'customer_service' => ['url' => '../modules/training/customer-service.php', 'label' => 'Customer Service', 'icon' => 'fas fa-headset'],
-            'problem_solving' => ['url' => '../modules/training/problem-solving.php', 'label' => 'Problem Solving', 'icon' => 'fas fa-lightbulb'],
-            'progress' => ['url' => '../modules/training/progress.php', 'label' => 'My Progress', 'icon' => 'fas fa-chart-line'],
-            'certificates' => ['url' => '../modules/training/certificates.php', 'label' => 'Certificates', 'icon' => 'fas fa-certificate']
+            'dashboard' => ['url' => '/pms/booking/modules/training/training-dashboard.php', 'label' => 'Training Dashboard', 'icon' => 'fas fa-tachometer-alt'],
+            'scenarios' => ['url' => '/pms/booking/modules/training/scenarios.php', 'label' => 'Scenarios', 'icon' => 'fas fa-theater-masks'],
+            'customer_service' => ['url' => '/pms/booking/modules/training/customer-service.php', 'label' => 'Customer Service', 'icon' => 'fas fa-headset'],
+            'problem_solving' => ['url' => '/pms/booking/modules/training/problem-solving.php', 'label' => 'Problem Solving', 'icon' => 'fas fa-lightbulb'],
+            'progress' => ['url' => '/pms/booking/modules/training/progress.php', 'label' => 'My Progress', 'icon' => 'fas fa-chart-line'],
+            'certificates' => ['url' => '/pms/booking/modules/training/certificates.php', 'label' => 'Certificates', 'icon' => 'fas fa-certificate']
         ]
     ]
 ];
@@ -108,19 +98,19 @@ $navigation_items = [
     <div class="p-4 border-t border-gray-200">
         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 sidebar-text">Quick Actions</h3>
         <div class="space-y-2">
-            <a href="../modules/housekeeping/room-status.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+            <a href="/pms/booking/modules/housekeeping/room-status.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
                 <i class="fas fa-clipboard-list text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">Room Status</span>
             </a>
-            <a href="../modules/housekeeping/tasks.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+            <a href="/pms/booking/modules/housekeeping/tasks.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
                 <i class="fas fa-tasks text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">My Tasks</span>
             </a>
-            <a href="../modules/housekeeping/maintenance.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+            <a href="/pms/booking/modules/housekeeping/maintenance.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
                 <i class="fas fa-tools text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">Maintenance</span>
             </a>
-            <a href="../modules/housekeeping/inventory.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
+            <a href="/pms/booking/modules/housekeeping/inventory.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors">
                 <i class="fas fa-boxes text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">Inventory</span>
             </a>

@@ -142,7 +142,7 @@ class PMSSessionManager {
      */
     public function requireAuth($redirect_url = null) {
         if (!$this->isLoggedIn()) {
-            $login_url = $redirect_url ?: '/seait/pms/booking/login.php';
+            $login_url = $redirect_url ?: '/pms/booking/login.php';
             header("Location: $login_url");
             exit();
         }
@@ -155,7 +155,7 @@ class PMSSessionManager {
         $this->requireAuth($redirect_url);
         
         if (!$this->hasModuleAccess($module)) {
-            $error_url = $redirect_url ?: '/seait/pms/booking/login.php';
+            $error_url = $redirect_url ?: '/pms/booking/login.php';
             header("Location: $error_url?error=access_denied");
             exit();
         }

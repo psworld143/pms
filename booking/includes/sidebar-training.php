@@ -18,7 +18,7 @@ function isActiveUrl($url, $current_url) {
     // Handle relative paths in sidebar URLs
     if (strpos($url, '../') === 0) {
         // Convert relative path to absolute path for comparison
-        $url = str_replace('../', '/seait/pms/booking/', $url);
+        $url = str_replace('../', '/pms/booking/', $url);
     }
     
     // Extract just the filename from the URL for comparison
@@ -44,7 +44,7 @@ function hasActiveSubmenu($submenu, $current_url) {
 $navigation_items = [
     [
         'title' => 'Dashboard',
-        'url' => '../modules/training/training-dashboard.php',
+        'url' => '/pms/booking/modules/training/training-dashboard.php',
         'icon' => 'fas fa-tachometer-alt',
         'active' => isActiveUrl('training-dashboard.php', $current_url)
     ],
@@ -55,25 +55,25 @@ $navigation_items = [
         'submenu' => [
             [
                 'title' => 'All Scenarios',
-                'url' => '../modules/training/scenarios.php',
+                'url' => 'scenarios.php',
                 'active' => (isActiveUrl('scenarios.php', $current_url) && !isset($_GET['category'])) || 
                            (isActiveUrl('scenario-start.php', $current_url) && !isset($_GET['category']))
             ],
             [
                 'title' => 'Front Desk',
-                'url' => '../modules/training/scenarios.php?category=front_desk',
+                'url' => 'scenarios.php?category=front_desk',
                 'active' => (isActiveUrl('scenarios.php', $current_url) && isset($_GET['category']) && $_GET['category'] === 'front_desk') ||
                            (isActiveUrl('scenario-start.php', $current_url) && isset($_GET['id']))
             ],
             [
                 'title' => 'Housekeeping',
-                'url' => '../modules/training/scenarios.php?category=housekeeping',
+                'url' => 'scenarios.php?category=housekeeping',
                 'active' => (isActiveUrl('scenarios.php', $current_url) && isset($_GET['category']) && $_GET['category'] === 'housekeeping') ||
                            (isActiveUrl('scenario-start.php', $current_url) && isset($_GET['id']))
             ],
             [
                 'title' => 'Management',
-                'url' => '../modules/training/scenarios.php?category=management',
+                'url' => 'scenarios.php?category=management',
                 'active' => (isActiveUrl('scenarios.php', $current_url) && isset($_GET['category']) && $_GET['category'] === 'management') ||
                            (isActiveUrl('scenario-start.php', $current_url) && isset($_GET['id']))
             ]
@@ -86,17 +86,17 @@ $navigation_items = [
         'submenu' => [
             [
                 'title' => 'Complaints',
-                'url' => '../modules/training/customer-service.php?type=complaints',
+                'url' => 'customer-service.php?type=complaints',
                 'active' => isActiveUrl('customer-service.php', $current_url) && isset($_GET['type']) && $_GET['type'] === 'complaints'
             ],
             [
                 'title' => 'Requests',
-                'url' => '../modules/training/customer-service.php?type=requests',
+                'url' => 'customer-service.php?type=requests',
                 'active' => isActiveUrl('customer-service.php', $current_url) && isset($_GET['type']) && $_GET['type'] === 'requests'
             ],
             [
                 'title' => 'Emergencies',
-                'url' => '../modules/training/customer-service.php?type=emergencies',
+                'url' => 'customer-service.php?type=emergencies',
                 'active' => isActiveUrl('customer-service.php', $current_url) && isset($_GET['type']) && $_GET['type'] === 'emergencies'
             ]
         ]
@@ -108,22 +108,22 @@ $navigation_items = [
         'submenu' => [
             [
                 'title' => 'Low Priority',
-                'url' => '../modules/training/problem-solving.php?severity=low',
+                'url' => 'problem-solving.php?severity=low',
                 'active' => isActiveUrl('problem-solving.php', $current_url) && isset($_GET['severity']) && $_GET['severity'] === 'low'
             ],
             [
                 'title' => 'Medium Priority',
-                'url' => '../modules/training/problem-solving.php?severity=medium',
+                'url' => 'problem-solving.php?severity=medium',
                 'active' => isActiveUrl('problem-solving.php', $current_url) && isset($_GET['severity']) && $_GET['severity'] === 'medium'
             ],
             [
                 'title' => 'High Priority',
-                'url' => '../modules/training/problem-solving.php?severity=high',
+                'url' => 'problem-solving.php?severity=high',
                 'active' => isActiveUrl('problem-solving.php', $current_url) && isset($_GET['severity']) && $_GET['severity'] === 'high'
             ],
             [
                 'title' => 'Critical',
-                'url' => '../modules/training/problem-solving.php?severity=critical',
+                'url' => 'problem-solving.php?severity=critical',
                 'active' => isActiveUrl('problem-solving.php', $current_url) && isset($_GET['severity']) && $_GET['severity'] === 'critical'
             ]
         ]
@@ -135,17 +135,17 @@ $navigation_items = [
         'submenu' => [
             [
                 'title' => 'My Progress',
-                'url' => '../modules/training/progress.php',
+                'url' => 'progress.php',
                 'active' => isActiveUrl('progress.php', $current_url) && !isset($_GET['view'])
             ],
             [
                 'title' => 'Certificates',
-                'url' => '../modules/training/certificates.php',
+                'url' => 'certificates.php',
                 'active' => isActiveUrl('certificates.php', $current_url)
             ],
             [
                 'title' => 'Leaderboard',
-                'url' => '../modules/training/leaderboard.php',
+                'url' => 'leaderboard.php',
                 'active' => isActiveUrl('leaderboard.php', $current_url)
             ]
         ]
@@ -157,17 +157,17 @@ $navigation_items = [
         'submenu' => [
             [
                 'title' => 'Training Materials',
-                'url' => '../modules/training/materials.php',
+                'url' => 'materials.php',
                 'active' => isActiveUrl('materials.php', $current_url)
             ],
             [
                 'title' => 'Best Practices',
-                'url' => '../modules/training/best-practices.php',
+                'url' => 'best-practices.php',
                 'active' => isActiveUrl('best-practices.php', $current_url)
             ],
             [
                 'title' => 'FAQ',
-                'url' => '../modules/training/faq.php',
+                'url' => 'faq.php',
                 'active' => isActiveUrl('faq.php', $current_url)
             ]
         ]

@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../../../../config/database.php';
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 // Check if user is logged in and has manager access
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
@@ -10,56 +10,17 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
 
 // Get management statistics
 $management_stats = getManagementStatistics();
+
+// Set page title
+$page_title = 'Management & Reports';
+
+// Include unified navigation (automatically selects based on user role)
+include '../../includes/header-unified.php';
+include '../../includes/sidebar-unified.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Management & Reports - Hotel PMS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3B82F6',
-                        'primary-dark': '#2563EB',
-                        secondary: '#6B7280',
-                        success: '#10B981',
-                        warning: '#F59E0B',
-                        danger: '#EF4444'
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center">
-                    <a href="../index.php" class="text-gray-400 hover:text-gray-600 mr-4">
-                        <i class="fas fa-arrow-left"></i>
-                    </a>
-                    <h1 class="text-xl font-semibold text-gray-900">Management & Reports</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-500"><?php echo date('M d, Y H:i'); ?></span>
-                    <a href="../../logout.php" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Main Content -->
+        <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
         <!-- Key Performance Indicators -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-lg shadow-sm border p-6">
@@ -147,13 +108,17 @@ $management_stats = getManagementStatistics();
             <!-- Occupancy Chart -->
             <div class="bg-white rounded-lg shadow-sm border p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Occupancy Rate Trend</h3>
-                <canvas id="occupancyChart" width="400" height="200"></canvas>
+                <div class="chart-container">
+                    <canvas id="occupancyChart"></canvas>
+                </div>
             </div>
             
             <!-- Revenue Chart -->
             <div class="bg-white rounded-lg shadow-sm border p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Revenue Trend</h3>
-                <canvas id="revenueChart" width="400" height="200"></canvas>
+                <div class="chart-container">
+                    <canvas id="revenueChart"></canvas>
+                </div>
             </div>
         </div>
 
@@ -250,7 +215,7 @@ $management_stats = getManagementStatistics();
                 </div>
             </div>
         </div>
-    </div>
+        </main>
 
     <!-- Inventory Management Modal -->
     <div id="inventory-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -385,7 +350,28 @@ $management_stats = getManagementStatistics();
         </div>
     </div>
 
+    <style>
+        /* Chart container styles to prevent stretching */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .chart-container canvas {
+            max-height: 300px !important;
+            max-width: 100% !important;
+        }
+        
+        /* Prevent chart from resizing continuously */
+        #occupancyChart, #revenueChart {
+            display: block !important;
+            box-sizing: border-box !important;
+        }
+    </style>
+    
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../../assets/js/main.js"></script>
     <script src="../../assets/js/management-reports.js"></script>
-</body>
-</html>
+    
+    <?php include '../../includes/footer.php'; ?>

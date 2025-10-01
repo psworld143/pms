@@ -41,15 +41,41 @@ require_once '../includes/pos-functions.php';
             }
         }
     </script>
+    <style>
+        /* Responsive layout fixes */
+        .main-content {
+            margin-left: 0;
+            position: relative;
+            z-index: 1;
+        }
+        
+        /* Ensure sidebar is above main content */
+        #sidebar {
+            z-index: 45 !important;
+        }
+        
+        #sidebar-overlay {
+            z-index: 35 !important;
+        }
+        
+        @media (min-width: 1024px) {
+            .main-content {
+                margin-left: 16rem;
+            }
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <div class="flex min-h-screen">
+        <!-- Sidebar Overlay for Mobile -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
+        
+        <!-- Include POS-specific header and sidebar -->
         <?php include '../includes/pos-header.php'; ?>
         <?php include '../includes/pos-sidebar.php'; ?>
         
         <!-- Main Content -->
-        <div class="flex-1 lg:ml-64">
-            <div class="main-content p-6">
+        <main class="main-content pt-20 px-4 pb-4 lg:px-6 lg:pb-6 flex-1 transition-all duration-300">
                 <!-- Page Header -->
                 <div class="mb-6">
                     <h1 class="text-2xl font-bold text-gray-800 mb-2">Restaurant Orders</h1>
@@ -183,8 +209,7 @@ require_once '../includes/pos-functions.php';
                         </table>
                     </div>
                 </div>
-            </div>
-        </div>
+        </main>
     </div>
 
     <script>
@@ -201,5 +226,7 @@ require_once '../includes/pos-functions.php';
             console.log('Cancelling order:', orderId);
         }
     </script>
+
+    <?php include '../includes/pos-footer.php'; ?>
 </body>
 </html>

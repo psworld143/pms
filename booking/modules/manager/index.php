@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../../../../config/database.php';
+require_once '../../config/database.php';;
 require_once '../../includes/functions.php';
 // Check if user is logged in and has manager access
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
@@ -8,88 +8,19 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
     exit();
 }
 
-$user_role = $_SESSION['user_role'];
-$user_name = $_SESSION['user_name'];
-
 // Get management statistics
 $stats = getManagementStats();
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Management Dashboard - Hotel PMS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#667eea',
-                        secondary: '#764ba2'
-                    }
-                }
-            }
-        }
-    </script>
-</head>
-<body class="bg-gray-50">
-    <div class="flex min-h-screen">
-        <!-- Header -->
-        <header class="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-primary to-secondary text-white flex justify-between items-center px-6 z-50 shadow-lg">
-            <div class="flex items-center">
-                <a href="../../index.php" class="mr-4">
-                    <i class="fas fa-arrow-left text-white"></i>
-                </a>
-                <i class="fas fa-chart-line text-yellow-400 mr-3 text-xl"></i>
-                <h1 class="text-xl font-semibold">Management Dashboard</h1>
-            </div>
-            <div class="flex items-center space-x-4">
-                <span>Welcome, <?php echo htmlspecialchars($user_name); ?></span>
-                <span class="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm font-medium">
-                    <?php echo ucfirst($user_role); ?>
-                </span>
-                <a href="../../logout.php" class="bg-white bg-opacity-10 px-4 py-2 rounded hover:bg-opacity-20 transition-colors">
-                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
-                </a>
-            </div>
-        </header>
 
-        <!-- Sidebar -->
-        <nav class="fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white shadow-lg overflow-y-auto z-40">
-            <ul class="py-6">
-                <li class="mb-1">
-                    <a href="index.php" class="flex items-center px-6 py-3 text-primary bg-blue-50 border-l-4 border-primary">
-                        <i class="fas fa-tachometer-alt w-5 mr-3"></i>Dashboard
-                    </a>
-                </li>
-                <li class="mb-1">
-                    <a href="reports.php" class="flex items-center px-6 py-3 text-gray-600 hover:text-primary hover:bg-gray-50 border-l-4 border-transparent hover:border-primary transition-colors">
-                        <i class="fas fa-chart-bar w-5 mr-3"></i>Reports
-                    </a>
-                </li>
-                <li class="mb-1">
-                    <a href="staff-management.php" class="flex items-center px-6 py-3 text-gray-600 hover:text-primary hover:bg-gray-50 border-l-4 border-transparent hover:border-primary transition-colors">
-                        <i class="fas fa-users w-5 mr-3"></i>Staff Management
-                    </a>
-                </li>
-                <li class="mb-1">
-                    <a href="inventory-management.php" class="flex items-center px-6 py-3 text-gray-600 hover:text-primary hover:bg-gray-50 border-l-4 border-transparent hover:border-primary transition-colors">
-                        <i class="fas fa-boxes w-5 mr-3"></i>Inventory
-                    </a>
-                </li>
-                <li class="mb-1">
-                    <a href="settings.php" class="flex items-center px-6 py-3 text-gray-600 hover:text-primary hover:bg-gray-50 border-l-4 border-transparent hover:border-primary transition-colors">
-                        <i class="fas fa-cog w-5 mr-3"></i>Settings
-                    </a>
-                </li>
-            </ul>
-        </nav>
+// Set page title
+$page_title = 'Management Dashboard';
+
+// Include unified navigation (automatically selects based on user role)
+include '../../includes/header-unified.php';
+include '../../includes/sidebar-unified.php';
+?>
 
         <!-- Main Content -->
-        <main class="ml-64 mt-16 p-6 flex-1">
+        <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-semibold text-gray-800">Management Dashboard</h2>
                 <div class="text-right">
@@ -200,11 +131,11 @@ $stats = getManagementStats();
                         <i class="fas fa-broom text-green-600 text-xl mr-3"></i>
                         <span class="font-medium text-green-800">Housekeeping</span>
                     </a>
-                    <a href="reports.php" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
+                    <a href="../management/reports-dashboard.php" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
                         <i class="fas fa-chart-bar text-purple-600 text-xl mr-3"></i>
                         <span class="font-medium text-purple-800">View Reports</span>
                     </a>
-                    <a href="staff-management.php" class="flex items-center p-4 bg-orange-50 border-2 border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 transition-all duration-300">
+                    <a href="../management/staff.php" class="flex items-center p-4 bg-orange-50 border-2 border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 transition-all duration-300">
                         <i class="fas fa-users text-orange-600 text-xl mr-3"></i>
                         <span class="font-medium text-orange-800">Staff Management</span>
                     </a>
@@ -215,16 +146,15 @@ $stats = getManagementStats();
             <div class="bg-white rounded-lg p-6 shadow-md">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-semibold text-gray-800">Recent Activity</h3>
-                    <a href="activity-logs.php" class="text-primary hover:text-primary-dark">View All</a>
+                    <a href="../management/audit-log.php" class="text-primary hover:text-primary-dark">View All</a>
                 </div>
                 <div id="recent-activity" class="overflow-x-auto">
                     <!-- Recent activity will be loaded here -->
                 </div>
             </div>
         </main>
-    </div>
 
     <script src="../../assets/js/main.js"></script>
     <script src="../../assets/js/manager-dashboard.js"></script>
-</body>
-</html>
+    
+    <?php include '../../includes/footer.php'; ?>

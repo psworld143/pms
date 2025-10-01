@@ -9,7 +9,7 @@ require_once __DIR__ . '/config/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../booking/login.php');
+    header('Location: login.php');
     exit();
 }
 
@@ -134,55 +134,23 @@ if ($stats['completed'] > 0) {
     </script>
 </head>
 <body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center">
-                    <a href="index.php" class="text-primary hover:text-secondary mr-4">
-                        <i class="fas fa-arrow-left text-xl"></i>
-                    </a>
-                    <i class="fas fa-graduation-cap text-primary text-2xl mr-3"></i>
-                    <h1 class="text-2xl font-bold text-gray-900">Inventory Training</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-600">Training Progress</span>
-                    <div class="bg-primary text-white px-3 py-1 rounded-full text-sm">
-                        <?php echo $stats['completed']; ?>/<?php echo $stats['total_scenarios']; ?>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex space-x-8">
-                <a href="index.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                </a>
-                <a href="items.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-box mr-2"></i>Items
-                </a>
-                <a href="transactions.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-exchange-alt mr-2"></i>Transactions
-                </a>
-                <a href="requests.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-clipboard-list mr-2"></i>Requests
-                </a>
-                <a href="training.php" class="border-b-2 border-primary text-primary py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-graduation-cap mr-2"></i>Training
-                </a>
-                <a href="reports.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-chart-bar mr-2"></i>Reports
-                </a>
-            </div>
-        </div>
-    </nav>
+    <!-- Include unified inventory header and sidebar -->
+    <?php include 'includes/inventory-header.php'; ?>
+    <?php include 'includes/sidebar-inventory.php'; ?>
 
     <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
+            <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Inventory Training</h2>
+            <div class="flex items-center space-x-4">
+                <span class="text-sm text-gray-600">Training Progress</span>
+                <div class="bg-primary text-white px-3 py-1 rounded-full text-sm">
+                    <?php echo $stats['completed']; ?>/<?php echo $stats['total_scenarios']; ?>
+                </div>
+            </div>
+        </div>
+
+        <!-- Training Content -->
         <!-- Messages -->
         <?php if (isset($success_message)): ?>
             <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">

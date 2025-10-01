@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../../../../config/database.php';
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 // Check if user is logged in and has manager access
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {

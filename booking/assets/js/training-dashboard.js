@@ -144,7 +144,9 @@ function loadScenarios() {
     if (categoryFilter) params.append('category', categoryFilter);
     
     // Fetch scenarios from API
-    fetch(`../../api/get-training-scenarios.php?${params.toString()}`)
+    fetch(`../../api/get-training-scenarios.php?${params.toString()}`, {
+        credentials: 'same-origin'
+    })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -197,7 +199,9 @@ function loadCustomerService() {
     if (typeFilter) params.append('type', typeFilter);
     
     // Fetch customer service scenarios from API
-    fetch(`../../api/get-customer-service-scenarios.php?${params.toString()}`)
+    fetch(`../../api/get-customer-service-scenarios.php?${params.toString()}`, {
+        credentials: 'same-origin'
+    })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -250,7 +254,9 @@ function loadProblemScenarios() {
     if (severityFilter) params.append('severity', severityFilter);
     
     // Fetch problem scenarios from API
-    fetch(`../../api/get-problem-scenarios.php?${params.toString()}`)
+    fetch(`../../api/get-problem-scenarios.php?${params.toString()}`, {
+        credentials: 'same-origin'
+    })
         .then(response => {
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
@@ -540,7 +546,9 @@ function displayProgress(progress) {
 
 // Scenario functions
 function startScenario(scenarioId) {
-    fetch(`../../api/get-scenario-details.php?id=${scenarioId}`)
+    fetch(`../../api/get-scenario-details.php?id=${scenarioId}`, {
+        credentials: 'same-origin'
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -642,6 +650,7 @@ function submitScenario() {
     fetch('../../api/submit-scenario.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify(answers)
     })
     .then(response => response.json())
@@ -663,7 +672,9 @@ function submitScenario() {
 
 // Customer service functions
 function startCustomerService(scenarioId) {
-    fetch(`../../api/get-customer-service-details.php?id=${scenarioId}`)
+    fetch(`../../api/get-customer-service-details.php?id=${scenarioId}`, {
+        credentials: 'same-origin'
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -741,6 +752,7 @@ function submitCustomerService() {
     fetch('../../api/submit-customer-service.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ 
             response: response,
             scenario_id: scenarioId
@@ -765,7 +777,9 @@ function submitCustomerService() {
 
 // Problem scenario functions
 function startProblemScenario(scenarioId) {
-    fetch(`../../api/get-problem-details.php?id=${scenarioId}`)
+    fetch(`../../api/get-problem-details.php?id=${scenarioId}`, {
+        credentials: 'same-origin'
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -865,6 +879,7 @@ function submitProblem() {
     fetch('../../api/submit-problem.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
         body: JSON.stringify({ solution: solution })
     })
     .then(response => response.json())
@@ -886,7 +901,9 @@ function submitProblem() {
 
 // Utility functions
 function exportProgress() {
-    fetch('../../api/export-training-progress.php')
+    fetch('../../api/export-training-progress.php', {
+        credentials: 'same-origin'
+    })
         .then(response => response.blob())
         .then(blob => {
             const url = window.URL.createObjectURL(blob);

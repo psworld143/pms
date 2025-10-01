@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once '../../../../config/database.php';
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 // Check if user is logged in and has housekeeping access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['housekeeping', 'manager'])) {
@@ -95,10 +95,6 @@ include '../../includes/sidebar-unified.php';
                     <a href="maintenance.php" class="flex items-center p-4 bg-orange-50 border-2 border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 transition-all duration-300">
                         <i class="fas fa-tools text-orange-600 text-xl mr-3"></i>
                         <span class="font-medium text-orange-800">Maintenance</span>
-                    </a>
-                    <a href="inventory.php" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
-                        <i class="fas fa-boxes text-purple-600 text-xl mr-3"></i>
-                        <span class="font-medium text-purple-800">Inventory</span>
                     </a>
                 </div>
             </div>

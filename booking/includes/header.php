@@ -102,7 +102,7 @@ $school_abbreviation = get_school_abbreviation($conn);
                                 Settings
                             </a>
                             <hr class="my-2">
-                            <a href="../../logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                            <a href="/pms/booking/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                 <i class="fas fa-sign-out-alt mr-3"></i>
                                 Logout
                             </a>

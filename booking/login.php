@@ -1,6 +1,16 @@
 <?php
+// Configure session cookie parameters for better compatibility
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => false,
+    'httponly' => false,
+    'samesite' => 'Lax'
+]);
+
 session_start();
-require_once '../../config/database.php';
+require_once '../includes/database.php';
 require_once 'includes/functions.php';
 
 // Redirect if already logged in
@@ -132,9 +142,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                     <h1 class="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                        Hotel PMS
+                        Booking System
                     </h1>
-                    <p class="text-gray-600 mt-2 text-sm font-medium">Training System for Hospitality Management</p>
+                    <p class="text-gray-600 mt-2 text-sm font-medium">Hotel Reservation & Guest Management</p>
                     <div class="flex items-center justify-center mt-3 space-x-2">
                         <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
                         <span class="text-success text-xs font-medium">System Online</span>
@@ -187,23 +197,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                     
-                    <button type="submit" class="w-full bg-gradient-to-r from-primary via-secondary to-accent text-white py-4 px-6 rounded-xl font-semibold btn-hover transition-all duration-300 shadow-lg relative overflow-hidden group">
-                        <span class="relative z-10 flex items-center justify-center">
+                    <button type="submit" class="w-full bg-white border-2 border-green-500 text-green-600 py-4 px-6 rounded-xl font-semibold hover:bg-green-50 hover:border-green-600 transition-all duration-300 shadow-lg">
+                        <span class="flex items-center justify-center">
                             <i class="fas fa-sign-in-alt mr-2"></i>Sign In
                         </span>
-                        <div class="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
                     </button>
                 </form>
-                
 
+                <!-- Demo Credentials -->
+                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                    <h4 class="text-sm font-medium text-blue-800 mb-2 flex items-center">
+                        <i class="fas fa-key mr-2"></i>
+                        Demo Credentials for Testing
+                    </h4>
+                    <div class="text-xs text-blue-700 space-y-1">
+                        <div><strong>Manager:</strong> manager1 / password</div>
+                        <div><strong>Front Desk:</strong> frontdesk1 / password</div>
+                        <div><strong>Housekeeping:</strong> housekeeping1 / password</div>
+                        <div class="text-blue-600 font-medium mt-2">All roles have full access to booking system</div>
+                    </div>
+                </div>
             </div>
             
             <!-- Footer -->
             <div class="text-center mt-6 animate-fade-in" style="animation-delay: 0.6s;">
-                <p class="text-gray-500 text-sm">
+                <p class="text-gray-500 text-sm mb-2">
                     <i class="fas fa-shield-alt mr-1"></i>
                     Secure login system with encrypted authentication
                 </p>
+                <a href="../" class="text-primary hover:text-primary-dark transition-colors text-sm">
+                    <i class="fas fa-arrow-left mr-1"></i>
+                    Back to PMS System
+                </a>
             </div>
         </div>
     </div>

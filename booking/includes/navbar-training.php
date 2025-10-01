@@ -60,7 +60,7 @@ $user_name = $_SESSION['user_name'];
                         <i class="fas fa-play mr-3"></i>
                         Start Scenario
                     </a>
-                    <a href="../modules/training/training-dashboard.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="/pms/booking/modules/training/training-dashboard.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-chart-line mr-3"></i>
                         View Progress
                     </a>
@@ -106,7 +106,7 @@ $user_name = $_SESSION['user_name'];
                         Activity Log
                     </a>
                     <hr class="my-2">
-                    <a href="logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <a href="/pms/booking/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                         <i class="fas fa-sign-out-alt mr-3"></i>
                         Logout
                     </a>

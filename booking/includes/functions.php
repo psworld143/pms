@@ -3305,4 +3305,48 @@ function getBillDetails($bill_id) {
     }
 }
 
+/**
+ * Get school logo from database or return default
+ */
+function get_school_logo($conn) {
+    try {
+        // Check if school_settings table exists
+        $stmt = $conn->query("SHOW TABLES LIKE 'school_settings'");
+        if ($stmt->rowCount() > 0) {
+            $stmt = $conn->query("SELECT logo_url FROM school_settings LIMIT 1");
+            $result = $stmt->fetch();
+            if ($result && !empty($result['logo_url'])) {
+                return $result['logo_url'];
+            }
+        }
+    } catch (PDOException $e) {
+        error_log("Error getting school logo: " . $e->getMessage());
+    }
+    
+    // Return default logo path
+    return '/assets/images/school-logo.png';
+}
+
+/**
+ * Get school abbreviation from database or return default
+ */
+function get_school_abbreviation($conn) {
+    try {
+        // Check if school_settings table exists
+        $stmt = $conn->query("SHOW TABLES LIKE 'school_settings'");
+        if ($stmt->rowCount() > 0) {
+            $stmt = $conn->query("SELECT school_abbreviation FROM school_settings LIMIT 1");
+            $result = $stmt->fetch();
+            if ($result && !empty($result['school_abbreviation'])) {
+                return $result['school_abbreviation'];
+            }
+        }
+    } catch (PDOException $e) {
+        error_log("Error getting school abbreviation: " . $e->getMessage());
+    }
+    
+    // Return default abbreviation
+    return 'HMS';
+}
+
 ?>

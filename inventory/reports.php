@@ -1,6 +1,6 @@
 <?php
 /**
- * Inventory Reports and Analytics
+ * Inventory Reports
  * Hotel PMS Training System for Students
  */
 
@@ -9,130 +9,43 @@ require_once __DIR__ . '/config/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../booking/login.php');
+    header('Location: login.php');
     exit();
 }
 
-$inventory_db = new InventoryDatabase();
+// Set page title
+$page_title = 'Inventory Reports';
 
-// Get date range parameters
-$date_from = $_GET['date_from'] ?? date('Y-m-01'); // First day of current month
-$date_to = $_GET['date_to'] ?? date('Y-m-d'); // Today
-
-// Get inventory statistics
-$stats = [
-    'total_items' => 0,
-    'total_value' => 0,
-    'low_stock_count' => 0,
-    'total_transactions' => 0,
-    'in_transactions' => 0,
-    'out_transactions' => 0
-];
-
-try {
-    // Total items
-    $stmt = $inventory_db->getConnection()->query("SELECT COUNT(*) as count FROM inventory_items WHERE status = 'active'");
-    $stats['total_items'] = $stmt->fetch()['count'];
-    
-    // Total value
-    $stmt = $inventory_db->getConnection()->query("SELECT SUM(quantity * unit_price) as total FROM inventory_items WHERE status = 'active'");
-    $result = $stmt->fetch();
-    $stats['total_value'] = $result['total'] ?? 0;
-    
-    // Low stock count
-    $stmt = $inventory_db->getConnection()->query("SELECT COUNT(*) as count FROM inventory_items WHERE quantity <= minimum_stock AND status = 'active'");
-    $stats['low_stock_count'] = $stmt->fetch()['count'];
-    
-    // Transaction statistics
-    $stmt = $inventory_db->getConnection()->prepare("
-        SELECT 
-            COUNT(*) as total,
-            SUM(CASE WHEN transaction_type = 'in' THEN 1 ELSE 0 END) as in_count,
-            SUM(CASE WHEN transaction_type = 'out' THEN 1 ELSE 0 END) as out_count
-        FROM inventory_transactions 
-        WHERE DATE(created_at) BETWEEN ? AND ?
-    ");
-    $stmt->execute([$date_from, $date_to]);
-    $transaction_stats = $stmt->fetch();
-    $stats['total_transactions'] = $transaction_stats['total'];
-    $stats['in_transactions'] = $transaction_stats['in_count'];
-    $stats['out_transactions'] = $transaction_stats['out_count'];
-    
-} catch (PDOException $e) {
-    error_log("Error getting statistics: " . $e->getMessage());
-}
-
-// Get low stock items
-$low_stock_items = $inventory_db->getLowStockItems(10);
-
-// Get recent transactions
-$recent_transactions = [];
-try {
-    $stmt = $inventory_db->getConnection()->prepare("
-        SELECT it.*, ii.name as item_name, u.name as user_name
-        FROM inventory_transactions it
-        JOIN inventory_items ii ON it.item_id = ii.id
-        JOIN users u ON it.user_id = u.id
-        WHERE DATE(it.created_at) BETWEEN ? AND ?
-        ORDER BY it.created_at DESC
-        LIMIT 20
-    ");
-    $stmt->execute([$date_from, $date_to]);
-    $recent_transactions = $stmt->fetchAll();
-} catch (PDOException $e) {
-    error_log("Error getting recent transactions: " . $e->getMessage());
-}
-
-// Get category breakdown
-$category_breakdown = [];
-try {
-    $stmt = $inventory_db->getConnection()->query("
-        SELECT c.name as category_name, 
-               COUNT(ii.id) as item_count,
-               SUM(ii.quantity * ii.unit_price) as total_value
-        FROM inventory_categories c
-        LEFT JOIN inventory_items ii ON c.id = ii.category_id AND ii.status = 'active'
-        WHERE c.active = 1
-        GROUP BY c.id, c.name
-        ORDER BY total_value DESC
-    ");
-    $category_breakdown = $stmt->fetchAll();
-} catch (PDOException $e) {
-    error_log("Error getting category breakdown: " . $e->getMessage());
-}
-
-// Get top items by value
-$top_items = [];
-try {
-    $stmt = $inventory_db->getConnection()->query("
-        SELECT name, quantity, unit_price, (quantity * unit_price) as total_value
-        FROM inventory_items 
-        WHERE status = 'active'
-        ORDER BY total_value DESC
-        LIMIT 10
-    ");
-    $top_items = $stmt->fetchAll();
-} catch (PDOException $e) {
-    error_log("Error getting top items: " . $e->getMessage());
-}
 ?>
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inventory Reports - Hotel PMS Training</title>
+    <title><?php echo $page_title; ?> - Hotel Inventory System</title>
+    <link rel="icon" type="image/png" href="../../assets/images/seait-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        #sidebar { transition: transform 0.3s ease-in-out; }
+        @media (max-width: 1023px) { #sidebar { transform: translateX(-100%); z-index: 50; } #sidebar.sidebar-open { transform: translateX(0); } }
+        @media (min-width: 1024px) { #sidebar { transform: translateX(0) !important; } }
+        #sidebar-overlay { transition: opacity 0.3s ease-in-out; z-index: 40; }
+        .main-content { margin-left: 0; padding-top: 4rem; }
+        @media (min-width: 1024px) { .main-content { margin-left: 16rem; } }
+    </style>
     <script>
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         primary: '#10B981',
-                        secondary: '#059669'
+                        secondary: '#059669',
+                        success: '#28a745',
+                        danger: '#dc3545',
+                        warning: '#ffc107',
+                        info: '#17a2b8'
                     }
                 }
             }
@@ -140,308 +53,325 @@ try {
     </script>
 </head>
 <body class="bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center py-4">
-                <div class="flex items-center">
-                    <a href="index.php" class="text-primary hover:text-secondary mr-4">
-                        <i class="fas fa-arrow-left text-xl"></i>
-                    </a>
-                    <i class="fas fa-chart-bar text-primary text-2xl mr-3"></i>
-                    <h1 class="text-2xl font-bold text-gray-900">Inventory Reports</h1>
-                </div>
+    <div class="flex min-h-screen">
+        <!-- Sidebar Overlay for Mobile -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
+        
+        <!-- Include unified inventory header and sidebar -->
+        <?php include 'includes/inventory-header.php'; ?>
+        <?php include 'includes/sidebar-inventory.php'; ?>
+
+        <!-- Main Content -->
+        <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
+                <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Inventory Reports</h2>
                 <div class="flex items-center space-x-4">
-                    <button onclick="exportReport()" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-download mr-2"></i>Export Report
+                    </button>
+                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-print mr-2"></i>Print Report
                     </button>
                 </div>
             </div>
-        </div>
-    </header>
 
-    <!-- Navigation -->
-    <nav class="bg-white shadow-sm">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex space-x-8">
-                <a href="index.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-tachometer-alt mr-2"></i>Dashboard
-                </a>
-                <a href="items.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-box mr-2"></i>Items
-                </a>
-                <a href="transactions.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-exchange-alt mr-2"></i>Transactions
-                </a>
-                <a href="requests.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-clipboard-list mr-2"></i>Requests
-                </a>
-                <a href="training.php" class="text-gray-500 hover:text-gray-700 py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-graduation-cap mr-2"></i>Training
-                </a>
-                <a href="reports.php" class="border-b-2 border-primary text-primary py-4 px-1 text-sm font-medium">
-                    <i class="fas fa-chart-bar mr-2"></i>Reports
-                </a>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        <!-- Date Range Filter -->
-        <div class="bg-white rounded-lg shadow mb-6">
-            <div class="p-6">
-                <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Date From</label>
-                        <input type="date" name="date_from" value="<?php echo $date_from; ?>" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Date To</label>
-                        <input type="date" name="date_to" value="<?php echo $date_to; ?>" 
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
-                    </div>
-                    <div class="flex items-end">
-                        <button type="submit" class="w-full bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg">
-                            <i class="fas fa-filter mr-2"></i>Apply Filter
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
-        <!-- Statistics Cards -->
+            <!-- Report Summary -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <i class="fas fa-boxes text-primary text-2xl"></i>
+                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-boxes text-white"></i>
+                            </div>
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Total Items</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['total_items']); ?></p>
-                    </div>
+                            <p class="text-2xl font-semibold text-gray-900">1,247</p>
+                        </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <i class="fas fa-dollar-sign text-green-500 text-2xl"></i>
+                            <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-dollar-sign text-white"></i>
+                            </div>
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Total Value</p>
-                        <p class="text-2xl font-semibold text-gray-900">$<?php echo number_format($stats['total_value'], 2); ?></p>
-                    </div>
+                            <p class="text-2xl font-semibold text-gray-900">$45,678</p>
+                        </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
+                            <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-exclamation-triangle text-white"></i>
+                            </div>
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Low Stock Items</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['low_stock_count']); ?></p>
-                    </div>
+                            <p class="text-2xl font-semibold text-gray-900">67</p>
+                        </div>
                 </div>
             </div>
 
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
-                        <i class="fas fa-exchange-alt text-blue-500 text-2xl"></i>
+                            <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-times-circle text-white"></i>
+                            </div>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Transactions</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['total_transactions']); ?></p>
+                            <p class="text-sm font-medium text-gray-500">Out of Stock</p>
+                            <p class="text-2xl font-semibold text-gray-900">24</p>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <!-- Charts and Analytics -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <!-- Category Breakdown Chart -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900">Inventory by Category</h3>
+            <!-- Report Filters -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Filters</h3>
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Stock Level Report</option>
+                            <option>Transaction Report</option>
+                            <option>Value Report</option>
+                            <option>Low Stock Report</option>
+                            <option>Category Report</option>
+                            <option>Supplier Report</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>All Categories</option>
+                            <option>Food & Beverage</option>
+                            <option>Amenities</option>
+                            <option>Cleaning Supplies</option>
+                            <option>Office Supplies</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option>Last 7 Days</option>
+                            <option>Last 30 Days</option>
+                            <option>Last 3 Months</option>
+                            <option>Last 6 Months</option>
+                            <option>This Year</option>
+                            <option>Custom Range</option>
+                        </select>
+        </div>
+                    <div class="flex items-end">
+                        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-chart-bar mr-2"></i>Generate
+                        </button>
                 </div>
-                <div class="p-6">
-                    <canvas id="categoryChart" width="400" height="200"></canvas>
                 </div>
             </div>
 
-            <!-- Transaction Types Chart -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900">Transaction Types</h3>
-                </div>
-                <div class="p-6">
-                    <canvas id="transactionChart" width="400" height="200"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Detailed Reports -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Low Stock Items -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900">Low Stock Alert</h3>
-                </div>
-                <div class="p-6">
-                    <?php if (empty($low_stock_items)): ?>
-                        <p class="text-gray-500 text-center py-4">No low stock items</p>
-                    <?php else: ?>
-                        <div class="space-y-3">
-                            <?php foreach ($low_stock_items as $item): ?>
-                                <div class="flex items-center justify-between p-3 bg-red-50 rounded-lg">
-                                    <div>
-                                        <p class="font-medium text-gray-900"><?php echo htmlspecialchars($item['name']); ?></p>
-                                        <p class="text-sm text-gray-500">Current: <?php echo $item['quantity']; ?> | Min: <?php echo $item['minimum_stock']; ?></p>
-                                    </div>
-                                    <span class="text-red-600 font-medium">Reorder</span>
-                                </div>
-                            <?php endforeach; ?>
+            <!-- Report Charts -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Stock Level Chart -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Stock Level Distribution</h3>
+                    <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
+                        <div class="text-center">
+                            <i class="fas fa-chart-pie text-4xl text-gray-400 mb-4"></i>
+                            <p class="text-gray-600">Stock level chart would be displayed here</p>
+                            <p class="text-sm text-gray-500">Integration with chart library needed</p>
                         </div>
-                    <?php endif; ?>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Top Items by Value -->
-            <div class="bg-white rounded-lg shadow">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-medium text-gray-900">Top Items by Value</h3>
-                </div>
-                <div class="p-6">
-                    <?php if (empty($top_items)): ?>
-                        <p class="text-gray-500 text-center py-4">No items found</p>
-                    <?php else: ?>
-                        <div class="space-y-3">
-                            <?php foreach ($top_items as $item): ?>
-                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                    <div>
-                                        <p class="font-medium text-gray-900"><?php echo htmlspecialchars($item['name']); ?></p>
-                                        <p class="text-sm text-gray-500">Qty: <?php echo $item['quantity']; ?> | Price: $<?php echo number_format($item['unit_price'], 2); ?></p>
-                                    </div>
-                                    <span class="text-primary font-medium">$<?php echo number_format($item['total_value'], 2); ?></span>
+                <!-- Category Value Chart -->
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Category Value Distribution</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-orange-500 rounded mr-3"></div>
+                                <span class="text-sm text-gray-700">Food & Beverage</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-900 mr-2">40%</span>
+                                <div class="w-20 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-orange-500 h-2 rounded-full" style="width: 40%"></div>
                                 </div>
-                            <?php endforeach; ?>
+                            </div>
                         </div>
-                    <?php endif; ?>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-purple-500 rounded mr-3"></div>
+                                <span class="text-sm text-gray-700">Amenities</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-900 mr-2">27%</span>
+                                <div class="w-20 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-purple-500 h-2 rounded-full" style="width: 27%"></div>
                 </div>
             </div>
         </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-blue-500 rounded mr-3"></div>
+                                <span class="text-sm text-gray-700">Cleaning Supplies</span>
+                            </div>
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-900 mr-2">19%</span>
+                                <div class="w-20 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: 19%"></div>
+                                </div>
+                            </div>
+                </div>
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="w-4 h-4 bg-green-500 rounded mr-3"></div>
+                                <span class="text-sm text-gray-700">Office Supplies</span>
+                                    </div>
+                            <div class="flex items-center">
+                                <span class="text-sm font-medium text-gray-900 mr-2">14%</span>
+                                <div class="w-20 bg-gray-200 rounded-full h-2">
+                                    <div class="bg-green-500 h-2 rounded-full" style="width: 14%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        <!-- Recent Transactions -->
-        <div class="bg-white rounded-lg shadow mt-8">
+            <!-- Quick Reports -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Low Stock Alert</h3>
+                        <i class="fas fa-exclamation-triangle text-yellow-600"></i>
+                    </div>
+                    <div class="text-3xl font-bold text-yellow-600 mb-2">67 Items</div>
+                    <div class="text-sm text-gray-600">Items below minimum stock level</div>
+                    <button class="mt-3 w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm">
+                        View Details
+                    </button>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">High Value Items</h3>
+                        <i class="fas fa-dollar-sign text-green-600"></i>
+                                    </div>
+                    <div class="text-3xl font-bold text-green-600 mb-2">$18,450</div>
+                    <div class="text-sm text-gray-600">Top 10% most valuable items</div>
+                    <button class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">
+                        View Details
+                    </button>
+                                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">Fast Moving</h3>
+                        <i class="fas fa-chart-line text-blue-600"></i>
+                        </div>
+                    <div class="text-3xl font-bold text-blue-600 mb-2">234 Items</div>
+                    <div class="text-sm text-gray-600">High turnover items this month</div>
+                    <button class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
+                        View Details
+                    </button>
+            </div>
+        </div>
+
+            <!-- Detailed Report Table -->
+            <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
-                <h3 class="text-lg font-medium text-gray-900">Recent Transactions</h3>
+                    <h3 class="text-lg font-semibold text-gray-800">Inventory Summary Report</h3>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min Level</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Value</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        <?php foreach ($recent_transactions as $transaction): ?>
-                            <tr class="hover:bg-gray-50">
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?php echo date('M j, Y', strtotime($transaction['created_at'])); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?php echo htmlspecialchars($transaction['item_name']); ?>
-                                </td>
+                            <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <?php
-                                    $type_colors = [
-                                        'in' => 'bg-green-100 text-green-800',
-                                        'out' => 'bg-red-100 text-red-800',
-                                        'adjustment' => 'bg-yellow-100 text-yellow-800'
-                                    ];
-                                    $color_class = $type_colors[$transaction['transaction_type']] ?? 'bg-gray-100 text-gray-800';
-                                    ?>
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium <?php echo $color_class; ?>">
-                                        <?php echo ucfirst($transaction['transaction_type']); ?>
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center">
+                                                <i class="fas fa-coffee text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">Coffee Beans</div>
+                                            <div class="text-sm text-gray-500">CB-001</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Food & Beverage</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">25</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">10</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$12.50</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$312.50</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        In Stock
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?php echo $transaction['quantity']; ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    $<?php echo number_format($transaction['total_value'], 2); ?>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?php echo htmlspecialchars($transaction['user_name']); ?>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                                    <button class="text-green-600 hover:text-green-900">Export</button>
                                 </td>
                             </tr>
-                        <?php endforeach; ?>
+                            <tr>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10">
+                                            <div class="h-10 w-10 rounded-full bg-purple-500 flex items-center justify-center">
+                                                <i class="fas fa-soap text-white"></i>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">Hand Soap</div>
+                                            <div class="text-sm text-gray-500">HS-002</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Amenities</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">5</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$3.25</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$16.25</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Low Stock
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                                    <button class="text-green-600 hover:text-green-900">Export</button>
+                                </td>
+                            </tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </main>
 
-    <script>
-        // Category Breakdown Chart
-        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
-        new Chart(categoryCtx, {
-            type: 'doughnut',
-            data: {
-                labels: [<?php echo implode(',', array_map(function($cat) { return '"' . $cat['category_name'] . '"'; }, $category_breakdown)); ?>],
-                datasets: [{
-                    data: [<?php echo implode(',', array_map(function($cat) { return $cat['total_value']; }, $category_breakdown)); ?>],
-                    backgroundColor: [
-                        '#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#6B7280'
-                    ]
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
-            }
-        });
-
-        // Transaction Types Chart
-        const transactionCtx = document.getElementById('transactionChart').getContext('2d');
-        new Chart(transactionCtx, {
-            type: 'bar',
-            data: {
-                labels: ['Stock In', 'Stock Out', 'Adjustments'],
-                datasets: [{
-                    label: 'Transactions',
-                    data: [<?php echo $stats['in_transactions']; ?>, <?php echo $stats['out_transactions']; ?>, <?php echo $stats['total_transactions'] - $stats['in_transactions'] - $stats['out_transactions']; ?>],
-                    backgroundColor: ['#10B981', '#EF4444', '#F59E0B']
-                }]
-            },
-            options: {
-                responsive: true,
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
-
-        function exportReport() {
-            // Implement export functionality
-            alert('Export functionality will be implemented');
-        }
-    </script>
+        <!-- Include footer -->
+        <?php include '../includes/pos-footer.php'; ?>
 </body>
 </html>

@@ -93,7 +93,7 @@ include 'includes/sidebar-unified.php';
                         <i class="fas fa-eye text-green-600 mr-3"></i>
                         <span class="text-green-800 font-medium">View Role Demo</span>
                     </a>
-                    <a href="test-logout.php" class="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
+                    <a href="logout.php" class="flex items-center p-3 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition-colors">
                         <i class="fas fa-sign-out-alt text-red-600 mr-3"></i>
                         <span class="text-red-800 font-medium">Test Logout</span>
                     </a>

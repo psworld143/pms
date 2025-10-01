@@ -60,15 +60,18 @@
             const chevron = document.getElementById('chevron-' + menuId);
             
             // Check if any submenu item is currently active
-            const activeSubmenuItem = submenu.querySelector('a.text-blue-600');
+            const activeSubmenuItem = submenu.querySelector('a.text-blue-600, a.border-blue-500, a.text-primary');
             
             if (submenu.classList.contains('hidden')) {
                 // Open submenu
                 submenu.classList.remove('hidden');
                 chevron.style.transform = 'rotate(180deg)';
+                // Store that this submenu is manually opened
+                submenu.setAttribute('data-manually-opened', 'true');
             } else {
-                // Only close submenu if no active item exists
-                if (!activeSubmenuItem) {
+                // Only close submenu if no active item exists AND it wasn't manually opened
+                const isManuallyOpened = submenu.getAttribute('data-manually-opened') === 'true';
+                if (!activeSubmenuItem && !isManuallyOpened) {
                     submenu.classList.add('hidden');
                     chevron.style.transform = 'rotate(0deg)';
                 }
@@ -151,10 +154,13 @@
             
             // Auto-expand submenus with active items
             document.querySelectorAll('#sidebar ul[id^="submenu-"]').forEach(submenu => {
-                const activeItem = submenu.querySelector('a.text-blue-600, a.active');
+                const activeItem = submenu.querySelector('a.text-blue-600, a.active, a.text-primary, a.border-blue-500');
                 if (activeItem) {
                     // Show the submenu
                     submenu.classList.remove('hidden');
+                    
+                    // Mark as manually opened to prevent auto-close
+                    submenu.setAttribute('data-manually-opened', 'true');
                     
                     // Rotate the chevron
                     const menuId = submenu.id.replace('submenu-', '');
