@@ -10,9 +10,9 @@
 
 // Database configuration
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'hotel_pms_clean');
-define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_NAME', 'pms_hotel');
+define('DB_USER', 'pms_hotel');
+define('DB_PASS', '020894HotelPMS');
 
 // Application configuration
 define('SITE_NAME', 'Hotel PMS Training System');
