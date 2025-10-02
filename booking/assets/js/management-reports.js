@@ -294,19 +294,39 @@ function loadInventoryReports() {
     const categoryFilter = document.getElementById('inventory-category-filter').value;
     const params = new URLSearchParams({ category: categoryFilter });
     
-    fetch(`../../api/get-inventory-reports.php?${params}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                displayInventoryReports(data);
-            } else {
-                HotelPMS.Utils.showNotification(data.message || 'Error loading inventory reports', 'error');
-            }
-        })
-        .catch(error => {
-            console.error('Error loading inventory reports:', error);
+    // Updated: Use the proper inventory module API endpoints (corrected path: ../../../inventory/api/)
+    Promise.all([
+        fetch(`../../../inventory/api/get-inventory-items.php?${params}`),
+        fetch(`../../../inventory/api/get-inventory-stats.php`),
+        fetch(`../../../inventory/api/get-enhanced-report-data.php`)
+    ])
+    .then(responses => Promise.all(responses.map(r => r.json())))
+    .then(([itemsData, statsData, reportData]) => {
+        if (itemsData.success && statsData.success && reportData.success) {
+            // Combine the data in the expected format
+            const combinedData = {
+                success: true,
+                category_filter: categoryFilter,
+                inventory_items: itemsData.inventory_items,
+                stock_summary: {
+                    total_items: statsData.statistics.total_items,
+                    low_stock_items: statsData.statistics.low_stock,
+                    medium_stock_items: statsData.statistics.low_stock, // Using low_stock as medium for now
+                    good_stock_items: statsData.statistics.in_stock,
+                    total_inventory_value: reportData.kpis.total_inventory_value || 0
+                },
+                recent_transactions: [], // This would need a separate API call
+                enhanced_data: reportData
+            };
+            displayInventoryReports(combinedData);
+        } else {
             HotelPMS.Utils.showNotification('Error loading inventory reports', 'error');
-        });
+        }
+    })
+    .catch(error => {
+        console.error('Error loading inventory reports:', error);
+        HotelPMS.Utils.showNotification('Error loading inventory reports', 'error');
+    });
 }
 
 // Display functions

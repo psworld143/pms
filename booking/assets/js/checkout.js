@@ -110,6 +110,7 @@ function searchCheckedInGuests() {
     const reservationNumber = document.getElementById('search_reservation').value;
     const guestName = document.getElementById('search_guest').value;
     const roomNumber = document.getElementById('search_room').value;
+    const status = document.getElementById('search_status') ? document.getElementById('search_status').value : '';
     
     // Show loading
     const container = document.getElementById('checked-in-guests');
@@ -120,20 +121,54 @@ function searchCheckedInGuests() {
     if (reservationNumber) params.append('reservation_number', reservationNumber);
     if (guestName) params.append('guest_name', guestName);
     if (roomNumber) params.append('room_number', roomNumber);
+    if (status) params.append('status', status);
     
-    // Fetch search results
-    fetch(`../../api/search-checked-in-guests.php?${params.toString()}`)
+    // Fetch search results - try multiple API endpoints
+    const apiEndpoints = [
+        `../../api/search-checked-in-guests.php?${params.toString()}`,
+        `../../api/get-checked-in-guests.php?${params.toString()}`,
+        `../../api/get-all-reservations.php?${params.toString()}`
+    ];
+    
+    // Try the first endpoint, fallback to others if needed
+    fetch(apiEndpoints[0])
+        .then(response => {
+            if (!response.ok) {
+                // Try fallback endpoint
+                return fetch(apiEndpoints[1]);
+            }
+            return response;
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Try final fallback endpoint
+                return fetch(apiEndpoints[2]);
+            }
+            return response;
+        })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayCheckedInGuests(data.guests);
+                displayCheckedInGuests(data.guests || data.reservations || data.data || []);
             } else {
-                container.innerHTML = '<div class="text-center py-8 text-gray-500">No guests found</div>';
+                container.innerHTML = `
+                    <div class="px-6 py-12 text-center">
+                        <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No search results found</h3>
+                        <p class="text-gray-500">Try adjusting your search criteria or filters.</p>
+                    </div>
+                `;
             }
         })
         .catch(error => {
             console.error('Error searching guests:', error);
-            container.innerHTML = '<div class="text-center py-8 text-red-500">Error searching guests</div>';
+            container.innerHTML = `
+                <div class="px-6 py-12 text-center">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Error searching guests</h3>
+                    <p class="text-gray-500">Unable to search guests. Please try again.</p>
+                </div>
+            `;
         });
 }
 
@@ -148,12 +183,12 @@ function startCheckout(reservationId) {
                 loadBillingSummary(reservationId);
                 showCheckoutForm();
             } else {
-                HotelPMS.Utils.showNotification(data.message || 'Error loading reservation details', 'error');
+                showNotification(data.message || 'Error loading reservation details', 'error');
             }
         })
         .catch(error => {
             console.error('Error loading reservation details:', error);
-            HotelPMS.Utils.showNotification('Error loading reservation details', 'error');
+            showNotification('Error loading reservation details', 'error');
         });
 }
 
@@ -189,30 +224,38 @@ function loadBillingSummary(reservationId) {
 function displayBillingSummary(billing) {
     const container = document.getElementById('billing-summary');
     
+    // Helper function to format currency
+    const formatCurrency = (amount) => {
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: 'USD'
+        }).format(amount || 0);
+    };
+    
     const html = `
         <div class="space-y-2">
             <div class="flex justify-between">
                 <span class="text-gray-600">Room Charges:</span>
-                <span class="font-medium">${HotelPMS.Utils.formatCurrency(billing.room_charges)}</span>
+                <span class="font-medium">${formatCurrency(billing.room_charges)}</span>
             </div>
             <div class="flex justify-between">
                 <span class="text-gray-600">Additional Charges:</span>
-                <span class="font-medium">${HotelPMS.Utils.formatCurrency(billing.additional_charges)}</span>
+                <span class="font-medium">${formatCurrency(billing.additional_charges)}</span>
             </div>
             <div class="flex justify-between">
                 <span class="text-gray-600">Tax:</span>
-                <span class="font-medium">${HotelPMS.Utils.formatCurrency(billing.tax_amount)}</span>
+                <span class="font-medium">${formatCurrency(billing.tax_amount)}</span>
             </div>
             <div class="border-t border-gray-300 pt-2">
                 <div class="flex justify-between">
                     <span class="text-lg font-semibold text-gray-900">Total Amount:</span>
-                    <span class="text-lg font-semibold text-primary">${HotelPMS.Utils.formatCurrency(billing.total_amount)}</span>
+                    <span class="text-lg font-semibold text-primary">${formatCurrency(billing.total_amount)}</span>
                 </div>
             </div>
             <div class="flex justify-between">
                 <span class="text-gray-600">Payment Status:</span>
                 <span class="px-2 py-1 text-xs font-medium rounded-full ${getPaymentStatusClass(billing.payment_status)}">
-                    ${billing.payment_status.toUpperCase()}
+                    ${(billing.payment_status || 'pending').toUpperCase()}
                 </span>
             </div>
         </div>
@@ -256,7 +299,7 @@ function handleCheckoutSubmit(e) {
     e.preventDefault();
     
     if (!validateCheckoutForm()) {
-        HotelPMS.Utils.showNotification('Please fill in all required fields', 'warning');
+        showNotification('Please fill in all required fields', 'warning');
         return;
     }
     
@@ -280,16 +323,16 @@ function handleCheckoutSubmit(e) {
     .then(response => response.json())
     .then(result => {
         if (result.success) {
-            HotelPMS.Utils.showNotification('Guest checked out successfully!', 'success');
+            showNotification('Guest checked out successfully!', 'success');
             hideCheckoutForm();
             loadCheckedInGuests();
         } else {
-            HotelPMS.Utils.showNotification(result.message || 'Error checking out guest', 'error');
+            showNotification(result.message || 'Error checking out guest', 'error');
         }
     })
     .catch(error => {
         console.error('Error checking out guest:', error);
-        HotelPMS.Utils.showNotification('Error checking out guest', 'error');
+        showNotification('Error checking out guest', 'error');
     })
     .finally(() => {
         // Reset button state
@@ -307,10 +350,11 @@ function validateCheckoutForm() {
     requiredFields.forEach(field => {
         const element = document.getElementById(field);
         if (!element.value) {
-            HotelPMS.FormValidator.showFieldError(element, 'This field is required');
+            // Simple field validation styling
+            element.classList.add('border-red-500');
             isValid = false;
         } else {
-            HotelPMS.FormValidator.clearFieldError(element);
+            element.classList.remove('border-red-500');
         }
     });
     
@@ -344,11 +388,58 @@ function formatDateTime(dateString) {
     });
 }
 
+// Show notification function
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+    
+    // Set colors based on type
+    const colors = {
+        success: 'bg-green-500 text-white',
+        error: 'bg-red-500 text-white',
+        warning: 'bg-yellow-500 text-white',
+        info: 'bg-blue-500 text-white'
+    };
+    
+    notification.className += ` ${colors[type] || colors.info}`;
+    
+    // Set content
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} mr-3"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
+}
+
 // Export functions for use in other modules
 window.Checkout = {
     loadCheckedInGuests,
     searchCheckedInGuests,
     startCheckout,
     handleCheckoutSubmit,
-    cancelCheckout
+    cancelCheckout,
+    showNotification
 };

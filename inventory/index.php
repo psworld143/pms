@@ -190,8 +190,8 @@ $low_stock_items = $inventory_db->getLowStockItems(10);
                             <?php foreach ($low_stock_items as $item): ?>
                                 <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
                                     <div>
-                                        <p class="font-medium text-gray-900"><?php echo htmlspecialchars($item['name']); ?></p>
-                                        <p class="text-sm text-gray-500">Current: <?php echo $item['quantity']; ?> | Min: <?php echo $item['minimum_stock']; ?></p>
+                                        <p class="font-medium text-gray-900"><?php echo htmlspecialchars($item['item_name'] ?? 'Unknown Item'); ?></p>
+                                        <p class="text-sm text-gray-500">Current: <?php echo $item['current_stock'] ?? 0; ?> | Min: <?php echo $item['minimum_stock'] ?? 0; ?></p>
                                     </div>
                                     <span class="text-yellow-600 font-medium">Reorder</span>
                                 </div>

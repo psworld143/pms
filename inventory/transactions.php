@@ -66,10 +66,10 @@ $page_title = 'Inventory Transactions';
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Inventory Transactions</h2>
                 <div class="flex items-center space-x-4">
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button id="new-transaction-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-plus mr-2"></i>New Transaction
                     </button>
-                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button id="export-report-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-download mr-2"></i>Export Report
                     </button>
                 </div>
@@ -128,7 +128,7 @@ $page_title = 'Inventory Transactions';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Total Value</p>
-                            <p class="text-2xl font-semibold text-gray-900">$45,678</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="total-transaction-value">$0</p>
                         </div>
                 </div>
             </div>
@@ -210,28 +210,28 @@ $page_title = 'Inventory Transactions';
                                 <p class="font-medium text-gray-900">Between Locations</p>
                                 <p class="text-sm text-gray-500">Inter-department transfers</p>
                             </div>
-                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">67</span>
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full" id="between-locations-count">0</span>
             </div>
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                                 <p class="font-medium text-gray-900">External</p>
                                 <p class="text-sm text-gray-500">Transfers to other properties</p>
         </div>
-                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">12</span>
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full" id="external-transfers-count">0</span>
             </div>
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                                 <p class="font-medium text-gray-900">Loan</p>
                                 <p class="text-sm text-gray-500">Temporary item loans</p>
                                     </div>
-                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">8</span>
+                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full" id="loan-transfers-count">0</span>
             </div>
         </div>
                 </div>
             </div>
                     
             <!-- New Transaction Form -->
-            <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <div id="new-transaction-form" class="bg-white rounded-lg shadow p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">New Transaction</h3>
                 <form class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -391,5 +391,79 @@ $page_title = 'Inventory Transactions';
 
         <!-- Include footer -->
         <?php include '../includes/pos-footer.php'; ?>
-</body>
+    </body>
 </html>
+
+<script>
+$(document).ready(function() {
+    loadTransactionData();
+    
+    function loadTransactionData() {
+        // Load transaction statistics
+        $.ajax({
+            url: 'api/get-transaction-stats.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    updateTransactionStats(response.stats);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading transaction stats:', error);
+            }
+        });
+    }
+    
+    function updateTransactionStats(stats) {
+        $('#total-transaction-value').text('$' + stats.total_value.toLocaleString());
+        $('#between-locations-count').text(stats.between_locations);
+        $('#external-transfers-count').text(stats.external_transfers);
+        $('#loan-transfers-count').text(stats.loan_transfers);
+    }
+    
+    // Button event handlers
+    $('#new-transaction-btn').click(function() {
+        showNewTransactionModal();
+    });
+    
+    $('#export-report-btn').click(function() {
+        exportTransactionReport();
+    });
+    
+    function showNewTransactionModal() {
+        // Show the new transaction form (it's already in the HTML)
+        $('html, body').animate({
+            scrollTop: $('#new-transaction-form').offset().top - 100
+        }, 500);
+        
+        // Focus on the first input
+        $('#new-transaction-form input:first').focus();
+    }
+    
+    function exportTransactionReport() {
+        $.ajax({
+            url: 'api/export-transaction-report.php',
+            method: 'POST',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    // Create download link
+                    const link = document.createElement('a');
+                    link.href = response.download_url;
+                    link.download = 'transaction_report_' + new Date().toISOString().split('T')[0] + '.csv';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert('Error exporting report: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error exporting report:', error);
+                alert('Error exporting report');
+            }
+        });
+    }
+});
+</script>

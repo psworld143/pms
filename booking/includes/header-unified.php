@@ -20,7 +20,7 @@ $school_abbreviation = 'Hotel PMS'; // Default abbreviation
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo isset($page_title) ? $page_title . ' - ' : ''; ?><?php echo htmlspecialchars($school_abbreviation); ?> Hotel PMS</title>
     <!-- Favicon Configuration -->
-    <link rel="icon" type="image/x-icon" href="assets/images/favicon.ico">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' fill='%234F46E5'/><text x='16' y='22' font-family='Arial' font-size='18' font-weight='bold' text-anchor='middle' fill='white'>H</text></svg>">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">

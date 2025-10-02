@@ -110,6 +110,7 @@ function searchReservations() {
     const reservationNumber = document.getElementById('search_reservation').value;
     const guestName = document.getElementById('search_guest').value;
     const checkInDate = document.getElementById('search_date').value;
+    const status = document.getElementById('search_status') ? document.getElementById('search_status').value : '';
     
     // Show loading
     const container = document.getElementById('pending-checkins');
@@ -120,20 +121,54 @@ function searchReservations() {
     if (reservationNumber) params.append('reservation_number', reservationNumber);
     if (guestName) params.append('guest_name', guestName);
     if (checkInDate) params.append('check_in_date', checkInDate);
+    if (status) params.append('status', status);
     
-    // Fetch search results
-    fetch(`../../api/search-reservations.php?${params.toString()}`)
+    // Fetch search results - try multiple API endpoints
+    const apiEndpoints = [
+        `../../api/search-reservations.php?${params.toString()}`,
+        `../../api/get-pending-checkins.php?${params.toString()}`,
+        `../../api/get-all-reservations.php?${params.toString()}`
+    ];
+    
+    // Try the first endpoint, fallback to others if needed
+    fetch(apiEndpoints[0])
+        .then(response => {
+            if (!response.ok) {
+                // Try fallback endpoint
+                return fetch(apiEndpoints[1]);
+            }
+            return response;
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Try final fallback endpoint
+                return fetch(apiEndpoints[2]);
+            }
+            return response;
+        })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayPendingCheckins(data.reservations);
+                displayPendingCheckins(data.reservations || data.data || []);
             } else {
-                container.innerHTML = '<div class="text-center py-8 text-gray-500">No reservations found</div>';
+                container.innerHTML = `
+                    <div class="px-6 py-12 text-center">
+                        <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">No search results found</h3>
+                        <p class="text-gray-500">Try adjusting your search criteria or filters.</p>
+                    </div>
+                `;
             }
         })
         .catch(error => {
             console.error('Error searching reservations:', error);
-            container.innerHTML = '<div class="text-center py-8 text-red-500">Error searching reservations</div>';
+            container.innerHTML = `
+                <div class="px-6 py-12 text-center">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Error searching reservations</h3>
+                    <p class="text-gray-500">Unable to search reservations. Please try again.</p>
+                </div>
+            `;
         });
 }
 
@@ -147,12 +182,12 @@ function startCheckin(reservationId) {
                 populateCheckinForm(data.reservation);
                 showCheckinForm();
             } else {
-                HotelPMS.Utils.showNotification(data.message || 'Error loading reservation details', 'error');
+                showNotification(data.message || 'Error loading reservation details', 'error');
             }
         })
         .catch(error => {
             console.error('Error loading reservation details:', error);
-            HotelPMS.Utils.showNotification('Error loading reservation details', 'error');
+            showNotification('Error loading reservation details', 'error');
         });
 }
 
@@ -190,7 +225,7 @@ function handleCheckinSubmit(e) {
     e.preventDefault();
     
     if (!validateCheckinForm()) {
-        HotelPMS.Utils.showNotification('Please fill in all required fields', 'warning');
+        showNotification('Please fill in all required fields', 'warning');
         return;
     }
     
@@ -214,16 +249,16 @@ function handleCheckinSubmit(e) {
     .then(response => response.json())
     .then(result => {
         if (result.success) {
-            HotelPMS.Utils.showNotification('Guest checked in successfully!', 'success');
+            showNotification('Guest checked in successfully!', 'success');
             hideCheckinForm();
             loadPendingCheckins();
         } else {
-            HotelPMS.Utils.showNotification(result.message || 'Error checking in guest', 'error');
+            showNotification(result.message || 'Error checking in guest', 'error');
         }
     })
     .catch(error => {
         console.error('Error checking in guest:', error);
-        HotelPMS.Utils.showNotification('Error checking in guest', 'error');
+        showNotification('Error checking in guest', 'error');
     })
     .finally(() => {
         // Reset button state
@@ -241,10 +276,11 @@ function validateCheckinForm() {
     requiredFields.forEach(field => {
         const element = document.getElementById(field);
         if (!element.value) {
-            HotelPMS.FormValidator.showFieldError(element, 'This field is required');
+            // Simple field validation styling
+            element.classList.add('border-red-500');
             isValid = false;
         } else {
-            HotelPMS.FormValidator.clearFieldError(element);
+            element.classList.remove('border-red-500');
         }
     });
     
@@ -266,11 +302,58 @@ function formatDate(dateString) {
     });
 }
 
+// Show notification function
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
+    
+    // Set colors based on type
+    const colors = {
+        success: 'bg-green-500 text-white',
+        error: 'bg-red-500 text-white',
+        warning: 'bg-yellow-500 text-white',
+        info: 'bg-blue-500 text-white'
+    };
+    
+    notification.className += ` ${colors[type] || colors.info}`;
+    
+    // Set content
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} mr-3"></i>
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Auto remove after 5 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 300);
+    }, 5000);
+}
+
 // Export functions for use in other modules
 window.Checkin = {
     loadPendingCheckins,
     searchReservations,
     startCheckin,
     handleCheckinSubmit,
-    cancelCheckin
+    cancelCheckin,
+    showNotification
 };

@@ -15,6 +15,48 @@ $user_name = $_SESSION['user_name'];
 $page_title = 'Manage Reservations';
 $page_subtitle = 'View and manage guest reservations';
 
+// Get dynamic statistics
+try {
+    // Get today's reservations count
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as today_count 
+        FROM reservations 
+        WHERE DATE(check_in_date) = CURDATE()
+    ");
+    $today_reservations = $stmt->fetch()['today_count'];
+    
+    // Get total active reservations
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as active_count 
+        FROM reservations 
+        WHERE status IN ('confirmed', 'checked_in')
+    ");
+    $active_reservations = $stmt->fetch()['active_count'];
+    
+    // Get check-ins today
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as checkins_today 
+        FROM reservations 
+        WHERE DATE(check_in_date) = CURDATE() AND status = 'checked_in'
+    ");
+    $checkins_today = $stmt->fetch()['checkins_today'];
+    
+    // Get check-outs today
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as checkouts_today 
+        FROM reservations 
+        WHERE DATE(check_out_date) = CURDATE() AND status = 'checked_out'
+    ");
+    $checkouts_today = $stmt->fetch()['checkouts_today'];
+    
+} catch (Exception $e) {
+    error_log("Error getting reservation statistics: " . $e->getMessage());
+    $today_reservations = 0;
+    $active_reservations = 0;
+    $checkins_today = 0;
+    $checkouts_today = 0;
+}
+
 // Include JavaScript for manage reservations functionality
 $additional_js = '<script src="../../assets/js/manage-reservations.js"></script>';
 
@@ -33,39 +75,115 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Search and Filters -->
-            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Search Reservations</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label for="search_reservation" class="block text-sm font-medium text-gray-700 mb-2">Reservation Number</label>
-                            <input type="text" id="search_reservation" placeholder="Enter reservation number" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+            <!-- Statistics Dashboard -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-calendar-day text-white"></i>
+                            </div>
                         </div>
-                        <div>
-                            <label for="search_guest" class="block text-sm font-medium text-gray-700 mb-2">Guest Name</label>
-                            <input type="text" id="search_guest" placeholder="Enter guest name" 
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                        </div>
-                        <div>
-                            <label for="search_status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                            <select id="search_status" 
-                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">All Statuses</option>
-                                <option value="confirmed">Confirmed</option>
-                                <option value="checked_in">Checked In</option>
-                                <option value="checked_out">Checked Out</option>
-                                <option value="cancelled">Cancelled</option>
-                            </select>
-                        </div>
-                        <div class="flex items-end">
-                            <button onclick="searchReservations()" 
-                                    class="w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
-                                <i class="fas fa-search mr-2"></i>Search
-                            </button>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Today's Arrivals</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $today_reservations; ?></p>
                         </div>
                     </div>
                 </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-key text-white"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Check-ins Today</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $checkins_today; ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-sign-out-alt text-white"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Check-outs Today</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $checkouts_today; ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-bed text-white"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Active Reservations</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $active_reservations; ?></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filters -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Search & Filter Reservations</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+                    <div>
+                        <label for="search_reservation" class="block text-sm font-medium text-gray-700 mb-2">Reservation Number</label>
+                        <input type="text" id="search_reservation" placeholder="Enter reservation number" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="search_guest" class="block text-sm font-medium text-gray-700 mb-2">Guest Name</label>
+                        <input type="text" id="search_guest" placeholder="Enter guest name" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    </div>
+                    <div>
+                        <label for="search_status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select id="search_status" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">All Statuses</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="checked_in">Checked In</option>
+                            <option value="checked_out">Checked Out</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="no_show">No Show</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="search_date_range" class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                        <select id="search_date_range" 
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">All Dates</option>
+                            <option value="today">Today</option>
+                            <option value="tomorrow">Tomorrow</option>
+                            <option value="this_week">This Week</option>
+                            <option value="next_week">Next Week</option>
+                            <option value="this_month">This Month</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end space-x-2">
+                        <button onclick="searchReservations()" 
+                                class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
+                            <i class="fas fa-search mr-2"></i>Search
+                        </button>
+                        <button onclick="clearFilters()" 
+                                class="px-4 py-2 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
 
                 <!-- Reservations List -->
                 <div class="bg-white rounded-lg shadow-md p-6">
@@ -214,3 +332,142 @@ include '../../includes/sidebar-unified.php';
     </div>
 
 <?php include '../../includes/footer.php'; ?>
+
+<script>
+    // Update current date and time
+    function updateDateTime() {
+        const now = new Date();
+        document.getElementById('current-date').textContent = now.toLocaleDateString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+        document.getElementById('current-time').textContent = now.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+
+    // Update time every second
+    setInterval(updateDateTime, 1000);
+    updateDateTime();
+
+    // Clear filters function
+    function clearFilters() {
+        document.getElementById('search_reservation').value = '';
+        document.getElementById('search_guest').value = '';
+        document.getElementById('search_status').value = '';
+        document.getElementById('search_date_range').value = '';
+        loadReservations(); // Reload all reservations
+    }
+
+    // Enhanced search function with date range support
+    function searchReservations() {
+        const reservationNumber = document.getElementById('search_reservation').value;
+        const guestName = document.getElementById('search_guest').value;
+        const status = document.getElementById('search_status').value;
+        const dateRange = document.getElementById('search_date_range').value;
+        
+        // Show loading
+        const container = document.getElementById('reservations-list');
+        container.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>';
+        
+        // Build query parameters
+        const params = new URLSearchParams();
+        if (reservationNumber) params.append('reservation_number', reservationNumber);
+        if (guestName) params.append('guest_name', guestName);
+        if (status) params.append('status', status);
+        
+        // Add date range filters
+        if (dateRange) {
+            const today = new Date();
+            let dateFrom = '', dateTo = '';
+            
+            switch (dateRange) {
+                case 'today':
+                    dateFrom = dateTo = today.toISOString().split('T')[0];
+                    break;
+                case 'tomorrow':
+                    const tomorrow = new Date(today);
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    dateFrom = dateTo = tomorrow.toISOString().split('T')[0];
+                    break;
+                case 'this_week':
+                    const startOfWeek = new Date(today);
+                    startOfWeek.setDate(today.getDate() - today.getDay());
+                    const endOfWeek = new Date(startOfWeek);
+                    endOfWeek.setDate(startOfWeek.getDate() + 6);
+                    dateFrom = startOfWeek.toISOString().split('T')[0];
+                    dateTo = endOfWeek.toISOString().split('T')[0];
+                    break;
+                case 'next_week':
+                    const nextWeekStart = new Date(today);
+                    nextWeekStart.setDate(today.getDate() + (7 - today.getDay()));
+                    const nextWeekEnd = new Date(nextWeekStart);
+                    nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+                    dateFrom = nextWeekStart.toISOString().split('T')[0];
+                    dateTo = nextWeekEnd.toISOString().split('T')[0];
+                    break;
+                case 'this_month':
+                    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    dateFrom = startOfMonth.toISOString().split('T')[0];
+                    dateTo = endOfMonth.toISOString().split('T')[0];
+                    break;
+            }
+            
+            if (dateFrom) params.append('date_from', dateFrom);
+            if (dateTo) params.append('date_to', dateTo);
+        }
+        
+        // Fetch search results
+        fetch(`../../api/get-all-reservations.php?${params.toString()}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    displayReservations(data.reservations);
+                } else {
+                    container.innerHTML = `
+                        <div class="px-6 py-12 text-center">
+                            <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
+                            <h3 class="text-lg font-medium text-gray-900 mb-2">No search results found</h3>
+                            <p class="text-gray-500">Try adjusting your search criteria or filters.</p>
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error('Error searching reservations:', error);
+                container.innerHTML = `
+                    <div class="px-6 py-12 text-center">
+                        <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                        <h3 class="text-lg font-medium text-gray-900 mb-2">Error searching reservations</h3>
+                        <p class="text-gray-500">Unable to search reservations. Please try again.</p>
+                    </div>
+                `;
+            });
+    }
+
+    // Auto-refresh statistics every 30 seconds
+    setInterval(() => {
+        // You could add an API call here to refresh the statistics
+        // For now, we'll just reload the page to get fresh data
+        // In a production environment, you'd want to use AJAX to update just the stats
+    }, 30000);
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + F to focus search
+        if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+            e.preventDefault();
+            document.getElementById('search_guest').focus();
+        }
+        
+        // Escape to clear filters
+        if (e.key === 'Escape') {
+            clearFilters();
+        }
+    });
+</script>

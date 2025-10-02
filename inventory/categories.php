@@ -66,10 +66,10 @@ $page_title = 'Inventory Categories';
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Inventory Categories</h2>
                 <div class="flex items-center space-x-4">
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button id="add-category-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-plus mr-2"></i>Add Category
                     </button>
-                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button id="sort-categories-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-sort mr-2"></i>Sort Categories
                     </button>
                 </div>
@@ -128,7 +128,7 @@ $page_title = 'Inventory Categories';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Value</p>
-                            <p class="text-2xl font-semibold text-gray-900">$45,678</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="total-categories-value">$0</p>
                         </div>
                     </div>
                 </div>
@@ -150,7 +150,7 @@ $page_title = 'Inventory Categories';
                                     <p class="text-sm text-gray-500">245 items</p>
                                 </div>
                             </div>
-                            <span class="text-lg font-semibold text-gray-900">$18,450</span>
+                            <span class="text-lg font-semibold text-gray-900" id="category-value-1">$0</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
@@ -162,7 +162,7 @@ $page_title = 'Inventory Categories';
                                     <p class="text-sm text-gray-500">189 items</p>
                                 </div>
                             </div>
-                            <span class="text-lg font-semibold text-gray-900">$12,340</span>
+                            <span class="text-lg font-semibold text-gray-900" id="category-value-2">$0</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
@@ -174,7 +174,7 @@ $page_title = 'Inventory Categories';
                                     <p class="text-sm text-gray-500">156 items</p>
                                 </div>
                             </div>
-                            <span class="text-lg font-semibold text-gray-900">$8,750</span>
+                            <span class="text-lg font-semibold text-gray-900" id="category-value-3">$0</span>
                         </div>
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
@@ -186,7 +186,7 @@ $page_title = 'Inventory Categories';
                                     <p class="text-sm text-gray-500">98 items</p>
                                 </div>
                             </div>
-                            <span class="text-lg font-semibold text-gray-900">$3,890</span>
+                            <span class="text-lg font-semibold text-gray-900" id="category-value-4">$0</span>
                         </div>
                     </div>
                 </div>
@@ -236,7 +236,7 @@ $page_title = 'Inventory Categories';
             </div>
 
             <!-- Add Category Form -->
-            <div class="bg-white rounded-lg shadow p-6 mb-8">
+            <div id="add-category-form" class="bg-white rounded-lg shadow p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Add New Category</h3>
                 <form class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -309,61 +309,8 @@ $page_title = 'Inventory Categories';
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                                                <i class="fas fa-utensils text-orange-600"></i>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Food & Beverage</div>
-                                            <div class="text-sm text-gray-500">Restaurant and room service items</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">FB-001</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">245</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$18,450</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                                    <button class="text-green-600 hover:text-green-900">View Items</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                                                <i class="fas fa-gift text-purple-600"></i>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Amenities</div>
-                                            <div class="text-sm text-gray-500">Guest amenities and toiletries</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">AM-002</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">189</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$12,340</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                                    <button class="text-green-600 hover:text-green-900">View Items</button>
-                                </td>
-                            </tr>
+                        <tbody id="categories-tbody" class="bg-white divide-y divide-gray-200">
+                            <!-- Categories will be loaded dynamically -->
                         </tbody>
                     </table>
                 </div>
@@ -374,3 +321,159 @@ $page_title = 'Inventory Categories';
         <?php include '../includes/pos-footer.php'; ?>
     </body>
 </html>
+
+<script>
+$(document).ready(function() {
+    loadCategories();
+    
+    function loadCategories() {
+        $.ajax({
+            url: 'api/get-inventory-categories.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    displayCategories(response.categories);
+                    updateCategoryOverview(response.categories);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading categories:', error);
+            }
+        });
+    }
+    
+    function displayCategories(categories) {
+        const tbody = $('#categories-tbody');
+        tbody.empty();
+        
+        if (categories.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                        No categories found
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        categories.forEach(function(category) {
+            // Get category statistics
+            getCategoryStats(category.id, function(stats) {
+                const statusClass = category.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+                const statusText = category.active ? 'Active' : 'Inactive';
+                
+                const row = `
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="h-10 w-10 rounded-lg flex items-center justify-center" style="background-color: ${category.color}20;">
+                                        <i class="${category.icon} text-lg" style="color: ${category.color};"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <div class="text-sm font-medium text-gray-900">${category.name}</div>
+                                    <div class="text-sm text-gray-500">${category.description || 'No description'}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${category.id.toString().padStart(3, '0')}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${stats.item_count}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${stats.total_value.toLocaleString()}</td>
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                                ${statusText}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                            <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="editCategory(${category.id})">Edit</button>
+                            <button class="text-green-600 hover:text-green-900" onclick="viewCategoryItems(${category.id})">View Items</button>
+                        </td>
+                    </tr>
+                `;
+                tbody.append(row);
+            });
+        });
+    }
+    
+    function getCategoryStats(categoryId, callback) {
+        $.ajax({
+            url: 'api/get-category-stats.php',
+            method: 'GET',
+            data: { category_id: categoryId },
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    callback(response.stats);
+                } else {
+                    callback({ item_count: 0, total_value: 0 });
+                }
+            },
+            error: function() {
+                callback({ item_count: 0, total_value: 0 });
+            }
+        });
+    }
+    
+    window.editCategory = function(categoryId) {
+        alert('Edit category functionality would open here for category ID: ' + categoryId);
+    };
+    
+    window.viewCategoryItems = function(categoryId) {
+        window.location.href = 'items.php?category=' + categoryId;
+    };
+    
+    // Button event handlers
+    $('#add-category-btn').click(function() {
+        showAddCategoryModal();
+    });
+    
+    $('#sort-categories-btn').click(function() {
+        sortCategories();
+    });
+    
+    function showAddCategoryModal() {
+        // Show the add category form (it's already in the HTML)
+        $('html, body').animate({
+            scrollTop: $('#add-category-form').offset().top - 100
+        }, 500);
+        
+        // Focus on the first input
+        $('#add-category-form input:first').focus();
+    }
+    
+    function sortCategories() {
+        // Toggle sort order
+        const currentOrder = $('#sort-categories-btn').data('order') || 'asc';
+        const newOrder = currentOrder === 'asc' ? 'desc' : 'asc';
+        
+        $('#sort-categories-btn').data('order', newOrder);
+        $('#sort-categories-btn').html(`<i class="fas fa-sort-${newOrder === 'asc' ? 'up' : 'down'} mr-2"></i>Sort Categories`);
+        
+        // Reload categories with new sort order
+        loadCategories();
+    }
+    
+    function updateCategoryOverview(categories) {
+        let totalValue = 0;
+        
+        categories.forEach(function(category, index) {
+            getCategoryStats(category.id, function(stats) {
+                totalValue += stats.total_value;
+                
+                // Update individual category values
+                if (index < 4) {
+                    $('#category-value-' + (index + 1)).text('$' + stats.total_value.toLocaleString());
+                }
+                
+                // Update total value when all categories are processed
+                if (index === categories.length - 1) {
+                    $('#total-categories-value').text('$' + totalValue.toLocaleString());
+                }
+            });
+        });
+    }
+});
+</script>

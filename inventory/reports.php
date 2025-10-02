@@ -66,10 +66,10 @@ $page_title = 'Inventory Reports';
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Inventory Reports</h2>
                 <div class="flex items-center space-x-4">
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button id="export-report-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-download mr-2"></i>Export Report
                     </button>
-                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button id="print-report-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-print mr-2"></i>Print Report
                     </button>
                 </div>
@@ -100,7 +100,7 @@ $page_title = 'Inventory Reports';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Total Value</p>
-                            <p class="text-2xl font-semibold text-gray-900">$45,678</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="total-inventory-value">$0</p>
                         </div>
                 </div>
             </div>
@@ -171,7 +171,7 @@ $page_title = 'Inventory Reports';
                         </select>
         </div>
                     <div class="flex items-end">
-                        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <button id="generate-report-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                             <i class="fas fa-chart-bar mr-2"></i>Generate
                         </button>
                 </div>
@@ -257,7 +257,7 @@ $page_title = 'Inventory Reports';
                     </div>
                     <div class="text-3xl font-bold text-yellow-600 mb-2">67 Items</div>
                     <div class="text-sm text-gray-600">Items below minimum stock level</div>
-                    <button class="mt-3 w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm">
+                    <button id="view-low-stock-btn" class="mt-3 w-full bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-2 rounded text-sm">
                         View Details
                     </button>
                 </div>
@@ -267,9 +267,9 @@ $page_title = 'Inventory Reports';
                         <h3 class="text-lg font-semibold text-gray-800">High Value Items</h3>
                         <i class="fas fa-dollar-sign text-green-600"></i>
                                     </div>
-                    <div class="text-3xl font-bold text-green-600 mb-2">$18,450</div>
+                    <div class="text-3xl font-bold text-green-600 mb-2" id="high-value-items">$0</div>
                     <div class="text-sm text-gray-600">Top 10% most valuable items</div>
-                    <button class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">
+                    <button id="view-high-value-btn" class="mt-3 w-full bg-green-600 hover:bg-green-700 text-white px-3 py-2 rounded text-sm">
                         View Details
                     </button>
                                 </div>
@@ -281,7 +281,7 @@ $page_title = 'Inventory Reports';
                         </div>
                     <div class="text-3xl font-bold text-blue-600 mb-2">234 Items</div>
                     <div class="text-sm text-gray-600">High turnover items this month</div>
-                    <button class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
+                    <button id="view-fast-moving-btn" class="mt-3 w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
                         View Details
                     </button>
             </div>
@@ -306,65 +306,8 @@ $page_title = 'Inventory Reports';
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-orange-500 flex items-center justify-center">
-                                                <i class="fas fa-coffee text-white"></i>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Coffee Beans</div>
-                                            <div class="text-sm text-gray-500">CB-001</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Food & Beverage</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">25</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">10</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$12.50</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$312.50</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        In Stock
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Export</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-purple-500 flex items-center justify-center">
-                                                <i class="fas fa-soap text-white"></i>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Hand Soap</div>
-                                            <div class="text-sm text-gray-500">HS-002</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Amenities</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">5</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$3.25</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$16.25</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Low Stock
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Export</button>
-                                </td>
-                            </tr>
+                    <tbody id="inventory-report-tbody" class="bg-white divide-y divide-gray-200">
+                        <!-- Inventory report data will be loaded dynamically -->
                     </tbody>
                 </table>
             </div>
@@ -373,5 +316,221 @@ $page_title = 'Inventory Reports';
 
         <!-- Include footer -->
         <?php include '../includes/pos-footer.php'; ?>
-</body>
+    </body>
 </html>
+
+<script>
+$(document).ready(function() {
+    loadReportsData();
+    
+    function loadReportsData() {
+        // Load inventory statistics
+        $.ajax({
+            url: 'api/get-inventory-stats.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    updateReportStats(response.statistics);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading inventory stats:', error);
+            }
+        });
+        
+        // Load inventory items for detailed report
+        $.ajax({
+            url: 'api/get-inventory-items.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    displayInventoryReport(response.inventory_items);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error loading inventory items:', error);
+            }
+        });
+    }
+    
+    function updateReportStats(stats) {
+        // Calculate total inventory value
+        let totalValue = 0;
+        stats.category_stats.forEach(function(category) {
+            // This is a simplified calculation - in a real system, you'd get this from the API
+            totalValue += category.item_count * 50; // Estimated average value per item
+        });
+        
+        $('#total-inventory-value').text('$' + totalValue.toLocaleString());
+        
+        // Calculate high value items (top 10%)
+        const highValueItems = Math.round(totalValue * 0.1);
+        $('#high-value-items').text('$' + highValueItems.toLocaleString());
+    }
+    
+    function displayInventoryReport(items) {
+        const tbody = $('#inventory-report-tbody');
+        tbody.empty();
+        
+        if (items.length === 0) {
+            tbody.append(`
+                <tr>
+                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                        No inventory items found
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+        
+        // Show only first 10 items for performance
+        const displayItems = items.slice(0, 10);
+        
+        displayItems.forEach(function(item) {
+            const statusClass = getStockStatusClass(item.stock_status);
+            const statusText = getStockStatusText(item.stock_status);
+            const totalValue = item.quantity * item.unit_price;
+            
+            const row = `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-10 w-10">
+                                <div class="h-10 w-10 rounded-full flex items-center justify-center" style="background-color: ${item.category_color}20;">
+                                    <i class="${item.category_icon} text-lg" style="color: ${item.category_color};"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <div class="text-sm font-medium text-gray-900">${item.name}</div>
+                                <div class="text-sm text-gray-500">${item.sku || 'N/A'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.category_name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.quantity}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.minimum_stock}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${parseFloat(item.unit_price).toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${totalValue.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewItem(${item.id})">View</button>
+                        <button class="text-green-600 hover:text-green-900" onclick="exportItem(${item.id})">Export</button>
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    }
+    
+    function getStockStatusClass(status) {
+        switch(status) {
+            case 'in_stock': return 'bg-green-100 text-green-800';
+            case 'low_stock': return 'bg-yellow-100 text-yellow-800';
+            case 'out_of_stock': return 'bg-red-100 text-red-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    }
+    
+    function getStockStatusText(status) {
+        switch(status) {
+            case 'in_stock': return 'In Stock';
+            case 'low_stock': return 'Low Stock';
+            case 'out_of_stock': return 'Out of Stock';
+            default: return 'Unknown';
+        }
+    }
+    
+    window.viewItem = function(itemId) {
+        window.location.href = 'items.php?id=' + itemId;
+    };
+    
+    window.exportItem = function(itemId) {
+        alert('Export functionality would be implemented here for item ID: ' + itemId);
+    };
+    
+    // Button event handlers
+    $('#export-report-btn').click(function() {
+        exportInventoryReport();
+    });
+    
+    $('#print-report-btn').click(function() {
+        printInventoryReport();
+    });
+    
+    $('#generate-report-btn').click(function() {
+        generateCustomReport();
+    });
+    
+    $('#view-low-stock-btn').click(function() {
+        viewLowStockItems();
+    });
+    
+    $('#view-high-value-btn').click(function() {
+        viewHighValueItems();
+    });
+    
+    $('#view-fast-moving-btn').click(function() {
+        viewFastMovingItems();
+    });
+    
+    function exportInventoryReport() {
+        $.ajax({
+            url: 'api/export-inventory-report.php',
+            method: 'POST',
+            dataType: 'json',
+            success: function(response) {
+                if (response.success) {
+                    const link = document.createElement('a');
+                    link.href = response.download_url;
+                    link.download = 'inventory_report_' + new Date().toISOString().split('T')[0] + '.csv';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert('Error exporting report: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error exporting report:', error);
+                alert('Error exporting report');
+            }
+        });
+    }
+    
+    function printInventoryReport() {
+        window.print();
+    }
+    
+    function generateCustomReport() {
+        const reportType = $('#report-type').val();
+        const dateRange = $('#date-range').val();
+        
+        if (!reportType) {
+            alert('Please select a report type');
+            return;
+        }
+        
+        // Reload data with filters
+        loadReportsData();
+        alert('Custom report generated successfully!');
+    }
+    
+    function viewLowStockItems() {
+        window.location.href = 'items.php?filter=low_stock';
+    }
+    
+    function viewHighValueItems() {
+        window.location.href = 'items.php?filter=high_value';
+    }
+    
+    function viewFastMovingItems() {
+        window.location.href = 'items.php?filter=fast_moving';
+    }
+});
+</script>

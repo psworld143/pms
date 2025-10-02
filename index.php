@@ -66,7 +66,7 @@ if (isset($_SESSION['user_id'])) {
         </div>
 
         <!-- Module Selection -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto">
             <!-- Booking System -->
             <div class="module-card bg-white rounded-lg shadow-lg p-8 text-center">
                 <div class="text-6xl text-blue-600 mb-4">
@@ -109,6 +109,21 @@ if (isset($_SESSION['user_id'])) {
                 <a href="inventory/login.php" class="inline-block bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 transition-colors">
                     <i class="fas fa-sign-in-alt mr-2"></i>
                     Access Inventory System
+                </a>
+            </div>
+
+            <!-- Tutorial System -->
+            <div class="module-card bg-white rounded-lg shadow-lg p-8 text-center">
+                <div class="text-6xl text-orange-600 mb-4">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <h3 class="text-2xl font-bold text-gray-800 mb-4">Interactive Tutorials</h3>
+                <p class="text-gray-600 mb-6">
+                    Learn hotel operations through guided tutorials and assessments
+                </p>
+                <a href="tutorials/index.php" class="inline-block bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 transition-colors">
+                    <i class="fas fa-play mr-2"></i>
+                    Start Tutorials
                 </a>
             </div>
         </div>

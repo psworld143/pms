@@ -44,6 +44,7 @@ function getBillingSummary($reservation_id) {
     global $pdo;
     
     try {
+        // First, try to get existing billing record
         $stmt = $pdo->prepare("
             SELECT b.*, 
                    COALESCE(b.additional_charges, 0) as additional_charges,
@@ -55,7 +56,60 @@ function getBillingSummary($reservation_id) {
             WHERE b.reservation_id = ?
         ");
         $stmt->execute([$reservation_id]);
-        return $stmt->fetch();
+        $billing = $stmt->fetch();
+        
+        if ($billing) {
+            return $billing;
+        }
+        
+        // If no billing record exists, create one based on reservation data
+        $stmt = $pdo->prepare("
+            SELECT r.*, g.id as guest_id, rm.room_type, rm.room_number
+            FROM reservations r
+            JOIN guests g ON r.guest_id = g.id
+            JOIN rooms rm ON r.room_id = rm.id
+            WHERE r.id = ?
+        ");
+        $stmt->execute([$reservation_id]);
+        $reservation = $stmt->fetch();
+        
+        if (!$reservation) {
+            return null;
+        }
+        
+        // Calculate billing information
+        $room_charges = $reservation['total_amount'];
+        $additional_charges = 0;
+        $tax_rate = 0.10; // 10% tax rate
+        $tax_amount = $room_charges * $tax_rate;
+        $total_amount = $room_charges + $additional_charges + $tax_amount;
+        
+        // Create billing record
+        $stmt = $pdo->prepare("
+            INSERT INTO billing (reservation_id, guest_id, room_charges, additional_charges, tax_amount, total_amount, payment_status)
+            VALUES (?, ?, ?, ?, ?, ?, 'pending')
+        ");
+        $stmt->execute([
+            $reservation_id,
+            $reservation['guest_id'],
+            $room_charges,
+            $additional_charges,
+            $tax_amount,
+            $total_amount
+        ]);
+        
+        // Return the created billing record
+        return [
+            'id' => $pdo->lastInsertId(),
+            'reservation_id' => $reservation_id,
+            'guest_id' => $reservation['guest_id'],
+            'room_charges' => $room_charges,
+            'additional_charges' => $additional_charges,
+            'tax_amount' => $tax_amount,
+            'total_amount' => $total_amount,
+            'payment_status' => 'pending'
+        ];
+        
     } catch (PDOException $e) {
         error_log("Error getting billing summary: " . $e->getMessage());
         return null;

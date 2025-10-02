@@ -70,6 +70,48 @@ $navigation_items = [
         'label' => 'Training',
         'roles' => ['manager', 'housekeeping', 'student'],
         'active' => strpos($current_url, 'training') !== false
+    ],
+    'room-inventory' => [
+        'url' => '/pms/inventory/room-inventory.php',
+        'icon' => 'fas fa-bed',
+        'label' => 'Room Inventory',
+        'roles' => ['manager', 'housekeeping', 'student'],
+        'active' => strpos($current_url, 'room-inventory') !== false
+    ],
+    'mobile' => [
+        'url' => '/pms/inventory/mobile.php',
+        'icon' => 'fas fa-mobile-alt',
+        'label' => 'Mobile Interface',
+        'roles' => ['manager', 'housekeeping', 'student'],
+        'active' => strpos($current_url, 'mobile') !== false
+    ],
+    'enhanced-reports' => [
+        'url' => '/pms/inventory/enhanced-reports.php',
+        'icon' => 'fas fa-chart-line',
+        'label' => 'Enhanced Reports',
+        'roles' => ['manager', 'student'],
+        'active' => strpos($current_url, 'enhanced-reports') !== false
+    ],
+    'automated-reordering' => [
+        'url' => '/pms/inventory/automated-reordering.php',
+        'icon' => 'fas fa-robot',
+        'label' => 'Auto Reordering',
+        'roles' => ['manager', 'student'],
+        'active' => strpos($current_url, 'automated-reordering') !== false
+    ],
+    'barcode-scanner' => [
+        'url' => '/pms/inventory/barcode-scanner.php',
+        'icon' => 'fas fa-barcode',
+        'label' => 'Barcode Scanner',
+        'roles' => ['manager', 'housekeeping', 'student'],
+        'active' => strpos($current_url, 'barcode-scanner') !== false
+    ],
+    'accounting-integration' => [
+        'url' => '/pms/inventory/accounting-integration.php',
+        'icon' => 'fas fa-calculator',
+        'label' => 'Accounting',
+        'roles' => ['manager', 'student'],
+        'active' => strpos($current_url, 'accounting-integration') !== false
     ]
 ];
 

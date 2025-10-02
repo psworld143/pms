@@ -11,6 +11,49 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_de
     exit();
 }
 
+// Get dynamic statistics
+try {
+    // Get pending check-ins count
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as pending_count 
+        FROM reservations 
+        WHERE status = 'confirmed' AND DATE(check_in_date) = CURDATE()
+    ");
+    $pending_checkins_count = $stmt->fetch()['pending_count'];
+    
+    // Get checked-in today count
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as checked_in_today 
+        FROM reservations 
+        WHERE status = 'checked_in' AND DATE(checked_in_at) = CURDATE()
+    ");
+    $checked_in_today = $stmt->fetch()['checked_in_today'];
+    
+    // Get early arrivals count
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as early_arrivals 
+        FROM reservations 
+        WHERE status = 'confirmed' AND DATE(check_in_date) > CURDATE()
+    ");
+    $early_arrivals = $stmt->fetch()['early_arrivals'];
+    
+    // Get VIP guests count
+    $stmt = $pdo->query("
+        SELECT COUNT(*) as vip_guests 
+        FROM reservations r
+        JOIN guests g ON r.guest_id = g.id
+        WHERE r.status = 'confirmed' AND DATE(r.check_in_date) = CURDATE() AND g.is_vip = 1
+    ");
+    $vip_guests = $stmt->fetch()['vip_guests'];
+    
+} catch (Exception $e) {
+    error_log("Error getting check-in statistics: " . $e->getMessage());
+    $pending_checkins_count = 0;
+    $checked_in_today = 0;
+    $early_arrivals = 0;
+    $vip_guests = 0;
+}
+
 // Get pending check-ins
 $pending_checkins = getPendingCheckins();
 
@@ -24,10 +67,77 @@ include '../../includes/sidebar-unified.php';
 
         <!-- Main Content -->
         <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
+            <!-- Statistics Dashboard -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-clock text-yellow-600"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Pending Check-ins</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $pending_checkins_count; ?></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-check-circle text-green-600"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Checked-in Today</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $checked_in_today; ?></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-calendar-plus text-blue-600"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Early Arrivals</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $early_arrivals; ?></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <div class="flex items-center">
+                        <div class="flex-shrink-0">
+                            <div class="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-crown text-purple-600"></i>
+                            </div>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">VIP Guests</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $vip_guests; ?></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Search Section -->
                 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Search Reservations</h2>
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold text-gray-800">Search Reservations</h2>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-sm text-gray-500" id="current-time"></span>
+                            <button onclick="refreshData()" class="text-gray-400 hover:text-gray-600 transition-colors" title="Refresh">
+                                <i class="fas fa-sync-alt"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
                         <div>
                             <label for="search_reservation" class="block text-sm font-medium text-gray-700 mb-2">Reservation Number</label>
                             <input type="text" id="search_reservation" placeholder="Enter reservation number" 
@@ -43,10 +153,24 @@ include '../../includes/sidebar-unified.php';
                             <input type="date" id="search_date" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                         </div>
-                        <div class="flex items-end">
+                        <div>
+                            <label for="search_status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                            <select id="search_status" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="">All Status</option>
+                                <option value="confirmed">Confirmed</option>
+                                <option value="checked_in">Checked In</option>
+                                <option value="early_arrival">Early Arrival</option>
+                            </select>
+                        </div>
+                        <div class="flex items-end space-x-2">
                             <button onclick="searchReservations()" 
-                                    class="w-full px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                                    class="flex-1 px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
                                 <i class="fas fa-search mr-2"></i>Search
+                            </button>
+                            <button onclick="clearFilters()" 
+                                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-times"></i>
                             </button>
                         </div>
                     </div>
@@ -142,5 +266,84 @@ include '../../includes/sidebar-unified.php';
 
     <script src="../../assets/js/main.js"></script>
     <script src="../../assets/js/checkin.js"></script>
+    
+    <script>
+        // Update current time
+        function updateDateTime() {
+            const now = new Date();
+            const timeString = now.toLocaleString('en-US', {
+                weekday: 'short',
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const timeElement = document.getElementById('current-time');
+            if (timeElement) {
+                timeElement.textContent = timeString;
+            }
+        }
+
+        // Clear filters function
+        function clearFilters() {
+            document.getElementById('search_reservation').value = '';
+            document.getElementById('search_guest').value = '';
+            document.getElementById('search_date').value = '';
+            document.getElementById('search_status').value = '';
+            loadPendingCheckins(); // Reload all pending check-ins
+        }
+
+        // Refresh data function
+        function refreshData() {
+            const refreshBtn = document.querySelector('button[onclick="refreshData()"]');
+            const icon = refreshBtn.querySelector('i');
+            
+            // Add spinning animation
+            icon.classList.add('fa-spin');
+            refreshBtn.disabled = true;
+            
+            // Reload pending check-ins
+            loadPendingCheckins();
+            
+            // Remove spinning animation after a delay
+            setTimeout(() => {
+                icon.classList.remove('fa-spin');
+                refreshBtn.disabled = false;
+            }, 1000);
+        }
+
+        // Initialize time update
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl/Cmd + F to focus on guest name search
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+                e.preventDefault();
+                document.getElementById('search_guest').focus();
+            }
+            
+            // Escape to clear filters
+            if (e.key === 'Escape') {
+                clearFilters();
+            }
+            
+            // Enter to search (when in search fields)
+            if (e.key === 'Enter' && (e.target.id.includes('search_') || e.target.id.includes('search'))) {
+                e.preventDefault();
+                searchReservations();
+            }
+        });
+
+        // Auto-refresh statistics every 30 seconds
+        setInterval(() => {
+            // This would ideally make an API call to refresh statistics
+            // For now, we'll just refresh the pending check-ins
+            loadPendingCheckins();
+        }, 30000);
+    </script>
     
     <?php include '../../includes/footer.php'; ?>

@@ -87,16 +87,59 @@ function searchReservations() {
     const reservationNumber = document.getElementById('search_reservation').value;
     const guestName = document.getElementById('search_guest').value;
     const status = document.getElementById('search_status').value;
+    const dateRange = document.getElementById('search_date_range') ? document.getElementById('search_date_range').value : '';
     
     // Show loading
     const container = document.getElementById('reservations-list');
-    container.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>';
+    container.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>';
     
     // Build query parameters
     const params = new URLSearchParams();
     if (reservationNumber) params.append('reservation_number', reservationNumber);
     if (guestName) params.append('guest_name', guestName);
     if (status) params.append('status', status);
+    
+    // Add date range filters
+    if (dateRange) {
+        const today = new Date();
+        let dateFrom = '', dateTo = '';
+        
+        switch (dateRange) {
+            case 'today':
+                dateFrom = dateTo = today.toISOString().split('T')[0];
+                break;
+            case 'tomorrow':
+                const tomorrow = new Date(today);
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                dateFrom = dateTo = tomorrow.toISOString().split('T')[0];
+                break;
+            case 'this_week':
+                const startOfWeek = new Date(today);
+                startOfWeek.setDate(today.getDate() - today.getDay());
+                const endOfWeek = new Date(startOfWeek);
+                endOfWeek.setDate(startOfWeek.getDate() + 6);
+                dateFrom = startOfWeek.toISOString().split('T')[0];
+                dateTo = endOfWeek.toISOString().split('T')[0];
+                break;
+            case 'next_week':
+                const nextWeekStart = new Date(today);
+                nextWeekStart.setDate(today.getDate() + (7 - today.getDay()));
+                const nextWeekEnd = new Date(nextWeekStart);
+                nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+                dateFrom = nextWeekStart.toISOString().split('T')[0];
+                dateTo = nextWeekEnd.toISOString().split('T')[0];
+                break;
+            case 'this_month':
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                dateFrom = startOfMonth.toISOString().split('T')[0];
+                dateTo = endOfMonth.toISOString().split('T')[0];
+                break;
+        }
+        
+        if (dateFrom) params.append('date_from', dateFrom);
+        if (dateTo) params.append('date_to', dateTo);
+    }
     
     // Fetch search results
     fetch(`../../api/get-all-reservations.php?${params.toString()}`)

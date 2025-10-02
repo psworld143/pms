@@ -23,7 +23,13 @@ date_default_timezone_set(TIMEZONE);
 
 // Database connection
 try {
-    $pdo = new PDO("mysql:host=" . DB_HOST . ";port=3306;dbname=" . DB_NAME, DB_USER, DB_PASS);
+    // Try socket connection first (for XAMPP), fallback to TCP
+    $socket_path = '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock';
+    if (file_exists($socket_path)) {
+        $pdo = new PDO("mysql:unix_socket=$socket_path;dbname=" . DB_NAME, DB_USER, DB_PASS);
+    } else {
+        $pdo = new PDO("mysql:host=" . DB_HOST . ";port=3306;dbname=" . DB_NAME, DB_USER, DB_PASS);
+    }
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
     

@@ -372,6 +372,6 @@ include '../../includes/sidebar-unified.php';
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../../assets/js/main.js"></script>
-    <script src="../../assets/js/management-reports.js"></script>
+    <script src="../../assets/js/management-reports.js?v=<?php echo time() + 1; ?>"></script>
     
     <?php include '../../includes/footer.php'; ?>
