@@ -40,8 +40,8 @@ if (isset($_SESSION['user_id'])) {
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
-        .gradient-bg {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        body {
+            background-color: #ffffff !important;
         }
         .module-card {
             transition: all 0.3s ease;
@@ -52,15 +52,15 @@ if (isset($_SESSION['user_id'])) {
         }
     </style>
 </head>
-<body class="gradient-bg min-h-screen">
+<body class="min-h-screen">
     <div class="container mx-auto px-4 py-8">
         <!-- Header -->
         <div class="text-center mb-12">
-            <h1 class="text-4xl md:text-6xl font-bold text-white mb-4">
-                <i class="fas fa-hotel mr-4"></i>
+            <h1 class="text-4xl md:text-6xl font-bold text-gray-800 mb-4">
+                <i class="fas fa-hotel mr-4 text-blue-600"></i>
                 Hotel PMS Training System
             </h1>
-            <p class="text-xl text-white opacity-90">
+            <p class="text-xl text-gray-600">
                 Comprehensive Property Management System for Hotel Operations
             </p>
         </div>
@@ -130,34 +130,34 @@ if (isset($_SESSION['user_id'])) {
 
         <!-- Features Section -->
         <div class="mt-16 text-center">
-            <h2 class="text-3xl font-bold text-white mb-8">System Features</h2>
+            <h2 class="text-3xl font-bold text-gray-800 mb-8">System Features</h2>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-4xl mx-auto">
-                <div class="bg-white bg-opacity-10 rounded-lg p-6">
-                    <i class="fas fa-users text-3xl text-white mb-3"></i>
-                    <h4 class="text-white font-semibold mb-2">Multi-Role Access</h4>
-                    <p class="text-white opacity-80 text-sm">Manager, Front Desk, Housekeeping roles</p>
+                <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <i class="fas fa-users text-3xl text-blue-600 mb-3"></i>
+                    <h4 class="text-gray-800 font-semibold mb-2">Multi-Role Access</h4>
+                    <p class="text-gray-600 text-sm">Manager, Front Desk, Housekeeping roles</p>
                 </div>
-                <div class="bg-white bg-opacity-10 rounded-lg p-6">
-                    <i class="fas fa-chart-line text-3xl text-white mb-3"></i>
-                    <h4 class="text-white font-semibold mb-2">Real-time Reports</h4>
-                    <p class="text-white opacity-80 text-sm">Live dashboard and analytics</p>
+                <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <i class="fas fa-chart-line text-3xl text-green-600 mb-3"></i>
+                    <h4 class="text-gray-800 font-semibold mb-2">Real-time Reports</h4>
+                    <p class="text-gray-600 text-sm">Live dashboard and analytics</p>
                 </div>
-                <div class="bg-white bg-opacity-10 rounded-lg p-6">
-                    <i class="fas fa-graduation-cap text-3xl text-white mb-3"></i>
-                    <h4 class="text-white font-semibold mb-2">Training Mode</h4>
-                    <p class="text-white opacity-80 text-sm">Interactive learning scenarios</p>
+                <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <i class="fas fa-graduation-cap text-3xl text-orange-600 mb-3"></i>
+                    <h4 class="text-gray-800 font-semibold mb-2">Training Mode</h4>
+                    <p class="text-gray-600 text-sm">Interactive learning scenarios</p>
                 </div>
-                <div class="bg-white bg-opacity-10 rounded-lg p-6">
-                    <i class="fas fa-mobile-alt text-3xl text-white mb-3"></i>
-                    <h4 class="text-white font-semibold mb-2">Responsive Design</h4>
-                    <p class="text-white opacity-80 text-sm">Works on all devices</p>
+                <div class="bg-gray-50 rounded-lg p-6 border border-gray-200">
+                    <i class="fas fa-mobile-alt text-3xl text-purple-600 mb-3"></i>
+                    <h4 class="text-gray-800 font-semibold mb-2">Responsive Design</h4>
+                    <p class="text-gray-600 text-sm">Works on all devices</p>
                 </div>
             </div>
         </div>
 
         <!-- Footer -->
-        <div class="mt-16 text-center text-white opacity-75">
-            <p>&copy; 2024 Hotel PMS Training System. All rights reserved.</p>
+        <div class="mt-16 text-center text-gray-600">
+            <p>&copy; <?php echo date('Y'); ?> Hotel PMS Training System. All rights reserved.</p>
         </div>
     </div>
 </body>
