@@ -12,6 +12,37 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
 // Get school logo and abbreviation from database
 $school_logo = null; // Will be set later if needed
 $school_abbreviation = 'Hotel PMS'; // Default abbreviation
+
+// Dynamic base URL for the Booking module
+// Computes the absolute path to the "/booking/" folder based on the current script
+if (!function_exists('booking_base')) {
+    function booking_base() {
+        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
+        $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
+        $pos = strpos($path, '/booking/');
+        if ($pos !== false) {
+            return rtrim(substr($path, 0, $pos + strlen('/booking/')), '/') . '/';
+        }
+        // Fallback: walk up directories until we reach "booking"
+        $dir = str_replace('\\','/', dirname($path));
+        $guard = 0;
+        while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'booking' && $guard < 10) {
+            $dir = dirname($dir);
+            $guard++;
+        }
+        if (basename($dir) === 'booking') {
+            return rtrim($dir, '/') . '/';
+        }
+        return '/booking/';
+    }
+    function booking_url($relative = '') {
+        $base = booking_base();
+        return rtrim($base, '/') . '/' . ltrim($relative, '/');
+    }
+    function booking_asset($relative = '') {
+        return booking_url('assets/' . ltrim($relative, '/'));
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">

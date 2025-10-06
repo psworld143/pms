@@ -1,5 +1,5 @@
 <?php
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
 
 /**
  * Get dashboard statistics
@@ -37,6 +37,818 @@ function getDashboardStats() {
             'occupancy_rate' => 0,
             'today_revenue' => 0
         ];
+    }
+
+/**
+ * Generate a unique bill number
+ */
+function generateBillNumber() {
+    global $pdo;
+
+    do {
+        $bill_number = 'BILL-' . date('Ymd') . '-' . str_pad((string)mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM bills WHERE bill_number = ?");
+        $stmt->execute([$bill_number]);
+    } while ((int)$stmt->fetchColumn() > 0);
+
+    return $bill_number;
+}
+
+/**
+ * Generate a unique payment number
+ */
+function generatePaymentNumber() {
+    global $pdo;
+
+    do {
+        $payment_number = 'PAY-' . date('Ymd') . '-' . str_pad((string)mt_rand(1, 99999), 5, '0', STR_PAD_LEFT);
+        $stmt = $pdo->prepare("SELECT COUNT(*) FROM payments WHERE payment_number = ?");
+        $stmt->execute([$payment_number]);
+    } while ((int)$stmt->fetchColumn() > 0);
+
+    return $payment_number;
+}
+
+/**
+ * Create a new bill together with bill items
+ */
+function createBill(array $data) {
+    global $pdo;
+
+    $required_fields = ['reservation_id'];
+    foreach ($required_fields as $field) {
+        if (empty($data[$field])) {
+            return [
+                'success' => false,
+                'message' => 'Missing required field: ' . $field
+            ];
+        }
+    }
+
+    $items = $data['items'] ?? [];
+    if (empty($items) || !is_array($items)) {
+        return [
+            'success' => false,
+            'message' => 'Bill items are required'
+        ];
+    }
+
+    $reservation_id = (int)$data['reservation_id'];
+    $bill_date = !empty($data['bill_date']) ? $data['bill_date'] : date('Y-m-d');
+    $due_date = !empty($data['due_date']) ? $data['due_date'] : date('Y-m-d', strtotime('+7 days'));
+    $tax_rate = isset($data['tax_rate']) ? (float)$data['tax_rate'] : 0.10;
+    $manual_discount = isset($data['discount_amount']) ? (float)$data['discount_amount'] : 0.0;
+    $notes = $data['notes'] ?? null;
+    $user_id = $_SESSION['user_id'] ?? null;
+
+    try {
+        $pdo->beginTransaction();
+
+        // Validate reservation
+        $stmt = $pdo->prepare("SELECT id, guest_id FROM reservations WHERE id = ?");
+        $stmt->execute([$reservation_id]);
+        $reservation = $stmt->fetch();
+        if (!$reservation) {
+            $pdo->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Reservation not found'
+            ];
+        }
+
+        // Compute totals
+        $subtotal = 0;
+        $bill_items = [];
+        foreach ($items as $item) {
+            if (empty($item['description'])) {
+                continue;
+            }
+
+            $quantity = isset($item['quantity']) ? (float)$item['quantity'] : 1;
+            $unit_price = isset($item['unit_price']) ? (float)$item['unit_price'] : 0;
+            $total_amount = $quantity * $unit_price;
+
+            $bill_items[] = [
+                'description' => $item['description'],
+                'quantity' => $quantity,
+                'unit_price' => $unit_price,
+                'total_amount' => $total_amount
+            ];
+
+            $subtotal += $total_amount;
+        }
+
+        if (empty($bill_items)) {
+            $pdo->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Unable to create bill without valid items'
+            ];
+        }
+
+        $tax_amount = max(0, $subtotal * $tax_rate);
+        $discount_amount = max(0, min($manual_discount, $subtotal + $tax_amount));
+        $total_amount = round($subtotal + $tax_amount - $discount_amount, 2);
+
+        // Insert bill
+        $bill_number = generateBillNumber();
+        $stmt = $pdo->prepare("INSERT INTO bills (
+                bill_number, reservation_id, bill_date, due_date, subtotal,
+                tax_amount, discount_amount, total_amount, status, notes, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)");
+        $stmt->execute([
+            $bill_number,
+            $reservation_id,
+            $bill_date,
+            $due_date,
+            $subtotal,
+            $tax_amount,
+            $discount_amount,
+            $total_amount,
+            $notes,
+            $user_id
+        ]);
+
+        $bill_id = (int)$pdo->lastInsertId();
+
+        // Insert bill items
+        $stmt = $pdo->prepare("INSERT INTO bill_items (bill_id, description, quantity, unit_price, total_amount) VALUES (?, ?, ?, ?, ?)");
+        foreach ($bill_items as $bill_item) {
+            $stmt->execute([
+                $bill_id,
+                $bill_item['description'],
+                $bill_item['quantity'],
+                $bill_item['unit_price'],
+                $bill_item['total_amount']
+            ]);
+        }
+
+        // Ensure billing summary exists
+        $stmt = $pdo->prepare("SELECT id FROM billing WHERE reservation_id = ?");
+        $stmt->execute([$reservation_id]);
+        if (!$stmt->fetch()) {
+            $pdo->prepare("INSERT INTO billing (
+                    reservation_id, guest_id, room_charges, additional_charges, tax_amount, total_amount, payment_status
+                ) VALUES (?, ?, ?, 0, ?, ?, 'pending')")
+                ->execute([
+                    $reservation_id,
+                    $reservation['guest_id'],
+                    $subtotal,
+                    $tax_amount,
+                    $total_amount
+                ]);
+        }
+
+        logActivity($user_id, 'bill_created', "Created bill {$bill_number} for reservation {$reservation_id}");
+
+        $pdo->commit();
+
+        return [
+            'success' => true,
+            'bill_id' => $bill_id,
+            'bill_number' => $bill_number,
+            'total_amount' => $total_amount
+        ];
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log('Error creating bill: ' . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Failed to create bill'
+        ];
+    }
+}
+
+/**
+ * Fetch a bill and its items
+ */
+function getBillDetails($bill_id) {
+    global $pdo;
+
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM bills WHERE id = ?");
+        $stmt->execute([(int)$bill_id]);
+        $bill = $stmt->fetch();
+        if (!$bill) {
+            return null;
+        }
+
+        $stmt = $pdo->prepare("SELECT * FROM bill_items WHERE bill_id = ? ORDER BY id ASC");
+        $stmt->execute([(int)$bill_id]);
+        $bill['items'] = $stmt->fetchAll();
+
+        return $bill;
+    } catch (PDOException $e) {
+        error_log('Error fetching bill details: ' . $e->getMessage());
+        return null;
+    }
+}
+
+/**
+ * Record a payment against a bill
+ */
+function recordPayment(array $data) {
+    global $pdo;
+
+    $required_fields = ['bill_id', 'payment_method', 'amount'];
+    foreach ($required_fields as $field) {
+        if (empty($data[$field])) {
+            return [
+                'success' => false,
+                'message' => 'Missing required field: ' . $field
+            ];
+        }
+    }
+
+    $bill_id = (int)$data['bill_id'];
+    $amount = (float)$data['amount'];
+    if ($amount <= 0) {
+        return [
+            'success' => false,
+            'message' => 'Payment amount must be greater than zero'
+        ];
+    }
+
+    $payment_method = $data['payment_method'];
+    $reference_number = $data['reference_number'] ?? null;
+    $notes = $data['notes'] ?? null;
+    $user_id = $_SESSION['user_id'] ?? null;
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("SELECT total_amount, status FROM bills WHERE id = ?");
+        $stmt->execute([$bill_id]);
+        $bill = $stmt->fetch();
+        if (!$bill) {
+            $pdo->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Bill not found'
+            ];
+        }
+
+        $payment_number = generatePaymentNumber();
+        $stmt = $pdo->prepare("INSERT INTO payments (
+                payment_number, bill_id, payment_method, amount, reference_number, notes, processed_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $payment_number,
+            $bill_id,
+            $payment_method,
+            $amount,
+            $reference_number,
+            $notes,
+            $user_id
+        ]);
+
+        updateBillPaymentStatus($bill_id);
+
+        logActivity($user_id, 'payment_recorded', "Recorded payment {$payment_number} for bill {$bill_id}");
+
+        $pdo->commit();
+
+        return [
+            'success' => true,
+            'payment_number' => $payment_number
+        ];
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log('Error recording payment: ' . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Failed to record payment'
+        ];
+    }
+}
+
+/**
+ * Update bill status based on payments made
+ */
+function updateBillPaymentStatus($bill_id) {
+    global $pdo;
+
+    try {
+        $stmt = $pdo->prepare("SELECT total_amount FROM bills WHERE id = ?");
+        $stmt->execute([(int)$bill_id]);
+        $bill = $stmt->fetch();
+        if (!$bill) {
+            return;
+        }
+
+        $stmt = $pdo->prepare("SELECT COALESCE(SUM(amount), 0) FROM payments WHERE bill_id = ?");
+        $stmt->execute([(int)$bill_id]);
+        $paid_amount = (float)$stmt->fetchColumn();
+
+        $status = 'pending';
+        if ($paid_amount >= (float)$bill['total_amount']) {
+            $status = 'paid';
+        } elseif ($paid_amount > 0) {
+            $status = 'overdue';
+        }
+
+        $stmt = $pdo->prepare("UPDATE bills SET status = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([$status, (int)$bill_id]);
+
+        // Update billing summary table
+        $stmt = $pdo->prepare("UPDATE billing SET payment_status = ? WHERE reservation_id = (
+            SELECT reservation_id FROM bills WHERE id = ?
+        )");
+        $billing_status = $status === 'paid' ? 'paid' : ($status === 'pending' ? 'pending' : 'partial');
+        $stmt->execute([$billing_status, (int)$bill_id]);
+    } catch (PDOException $e) {
+        error_log('Error updating bill payment status: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Apply a discount to a bill
+ */
+function applyDiscountToBill(array $data) {
+    global $pdo;
+
+    $required_fields = ['bill_id', 'discount_type', 'discount_value'];
+    foreach ($required_fields as $field) {
+        if (!isset($data[$field]) || $data[$field] === '') {
+            return [
+                'success' => false,
+                'message' => 'Missing required field: ' . $field
+            ];
+        }
+    }
+
+    $bill_id = (int)$data['bill_id'];
+    $discount_type = $data['discount_type'];
+    $discount_value = (float)$data['discount_value'];
+    $reason = $data['discount_reason'] ?? null;
+    $description = $data['discount_description'] ?? null;
+    $user_id = $_SESSION['user_id'] ?? null;
+
+    try {
+        $pdo->beginTransaction();
+
+        $stmt = $pdo->prepare("SELECT subtotal, tax_amount, discount_amount, total_amount FROM bills WHERE id = ? FOR UPDATE");
+        $stmt->execute([$bill_id]);
+        $bill = $stmt->fetch();
+        if (!$bill) {
+            $pdo->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Bill not found'
+            ];
+        }
+
+        $current_discount = (float)$bill['discount_amount'];
+        $new_discount_amount = 0;
+
+        switch ($discount_type) {
+            case 'percentage':
+                $new_discount_amount = round(($bill['subtotal'] + $bill['tax_amount']) * ($discount_value / 100), 2);
+                break;
+            case 'fixed':
+            case 'loyalty':
+            case 'promotional':
+                $new_discount_amount = round($discount_value, 2);
+                break;
+            default:
+                $pdo->rollBack();
+                return [
+                    'success' => false,
+                    'message' => 'Invalid discount type'
+                ];
+        }
+
+        $new_discount_amount = max(0, min($bill['subtotal'] + $bill['tax_amount'], $new_discount_amount));
+        $total_discount = $current_discount + $new_discount_amount;
+        $new_total_amount = round($bill['subtotal'] + $bill['tax_amount'] - $total_discount, 2);
+
+        $stmt = $pdo->prepare("INSERT INTO discounts (
+                bill_id, discount_type, discount_value, discount_amount, reason, description, applied_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $bill_id,
+            $discount_type,
+            $discount_value,
+            $new_discount_amount,
+            $reason,
+            $description,
+            $user_id
+        ]);
+
+        $stmt = $pdo->prepare("UPDATE bills SET discount_amount = ?, total_amount = ?, updated_at = NOW() WHERE id = ?");
+        $stmt->execute([
+            $total_discount,
+            $new_total_amount,
+            $bill_id
+        ]);
+
+        logActivity($user_id, 'discount_applied', "Applied {$discount_type} discount to bill {$bill_id}");
+
+        $pdo->commit();
+
+        updateBillPaymentStatus($bill_id);
+
+        return [
+            'success' => true,
+            'discount_amount' => $new_discount_amount,
+            'new_total' => $new_total_amount
+        ];
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log('Error applying discount: ' . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Failed to apply discount'
+        ];
+    }
+}
+
+/**
+ * Create a voucher
+ */
+function createVoucher(array $data) {
+    global $pdo;
+
+    $required_fields = ['voucher_code', 'voucher_type', 'voucher_value', 'valid_from', 'valid_until'];
+    foreach ($required_fields as $field) {
+        if (empty($data[$field])) {
+            return [
+                'success' => false,
+                'message' => 'Missing required field: ' . $field
+            ];
+        }
+    }
+
+    $usage_limit = isset($data['usage_limit']) ? (int)$data['usage_limit'] : 1;
+    $description = $data['description'] ?? null;
+    $user_id = $_SESSION['user_id'] ?? null;
+
+    try {
+        $stmt = $pdo->prepare("INSERT INTO vouchers (
+                voucher_code, voucher_type, voucher_value, usage_limit,
+                valid_from, valid_until, description, created_by
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            strtoupper(trim($data['voucher_code'])),
+            $data['voucher_type'],
+            (float)$data['voucher_value'],
+            max(1, $usage_limit),
+            $data['valid_from'],
+            $data['valid_until'],
+            $description,
+            $user_id
+        ]);
+
+        logActivity($user_id, 'voucher_created', "Created voucher {$data['voucher_code']}");
+
+        return [
+            'success' => true,
+            'voucher_id' => (int)$pdo->lastInsertId()
+        ];
+    } catch (PDOException $e) {
+        error_log('Error creating voucher: ' . $e->getMessage());
+        if ($e->getCode() === '23000') {
+            return [
+                'success' => false,
+                'message' => 'Voucher code already exists'
+            ];
+        }
+        return [
+            'success' => false,
+            'message' => 'Failed to create voucher'
+        ];
+    }
+}
+
+/**
+ * Process loyalty points adjustments
+ */
+function processLoyaltyPoints(array $data) {
+    global $pdo;
+
+    $required_fields = ['guest_id', 'action', 'points'];
+    foreach ($required_fields as $field) {
+        if (!isset($data[$field]) || $data[$field] === '') {
+            return [
+                'success' => false,
+                'message' => 'Missing required field: ' . $field
+            ];
+        }
+    }
+
+    $guest_id = (int)$data['guest_id'];
+    $action = $data['action'];
+    $points = (int)$data['points'];
+    $reason = $data['reason'] ?? null;
+    $description = $data['description'] ?? null;
+    $user_id = $_SESSION['user_id'] ?? null;
+
+    if (!in_array($action, ['earn', 'redeem', 'adjust'], true)) {
+        return [
+            'success' => false,
+            'message' => 'Invalid loyalty action'
+        ];
+    }
+
+    if ($points <= 0) {
+        return [
+            'success' => false,
+            'message' => 'Points must be greater than zero'
+        ];
+    }
+
+    if ($action === 'redeem') {
+        $points = -$points;
+    }
+
+    try {
+        $stmt = $pdo->prepare("INSERT INTO loyalty_points (
+                guest_id, action, points, reason, description, processed_by
+            ) VALUES (?, ?, ?, ?, ?, ?)");
+        $stmt->execute([
+            $guest_id,
+            $action,
+            $points,
+            $reason,
+            $description,
+            $user_id
+        ]);
+
+        logActivity($user_id, 'loyalty_updated', "Processed loyalty points for guest {$guest_id}");
+
+        return [
+            'success' => true
+        ];
+    } catch (PDOException $e) {
+        error_log('Error processing loyalty points: ' . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Failed to process loyalty points'
+        ];
+    }
+}
+}
+
+/**
+ * Invoice metrics summary
+ */
+function getInvoiceMetrics() {
+    global $pdo;
+
+    $metrics = [
+        'total_invoices' => 0,
+        'paid_count' => 0,
+        'pending_count' => 0,
+        'overdue_count' => 0,
+        'cancelled_count' => 0,
+        'total_revenue' => 0,
+        'outstanding_amount' => 0,
+        'average_invoice' => 0,
+        'total_amount' => 0
+    ];
+
+    try {
+        $stmt = $pdo->query("SELECT status, COUNT(*) AS cnt, COALESCE(SUM(total_amount),0) AS total FROM bills GROUP BY status");
+        while ($row = $stmt->fetch()) {
+            $metrics['total_invoices'] += (int)$row['cnt'];
+            $metrics['total_amount'] += (float)$row['total'];
+            switch ($row['status']) {
+                case 'paid':
+                    $metrics['paid_count'] = (int)$row['cnt'];
+                    $metrics['total_revenue'] += (float)$row['total'];
+                    break;
+                case 'pending':
+                    $metrics['pending_count'] = (int)$row['cnt'];
+                    $metrics['outstanding_amount'] += (float)$row['total'];
+                    break;
+                case 'overdue':
+                    $metrics['overdue_count'] = (int)$row['cnt'];
+                    $metrics['outstanding_amount'] += (float)$row['total'];
+                    break;
+                case 'cancelled':
+                    $metrics['cancelled_count'] = (int)$row['cnt'];
+                    break;
+                default:
+                    // Treat any other status as outstanding
+                    $metrics['outstanding_amount'] += (float)$row['total'];
+            }
+        }
+
+        if ($metrics['total_invoices'] > 0) {
+            $metrics['average_invoice'] = $metrics['total_amount'] / $metrics['total_invoices'];
+        }
+
+    } catch (PDOException $e) {
+        error_log('Error getting invoice metrics: ' . $e->getMessage());
+    }
+
+    return $metrics;
+}
+
+/**
+ * Recent bills helper
+ */
+function getRecentBills($limit = 10) {
+    global $pdo;
+    $limit = max(1, (int)$limit);
+
+    try {
+        $query = "
+            SELECT b.bill_number,
+                   b.total_amount,
+                   b.status,
+                   b.bill_date,
+                   b.due_date,
+                   CONCAT(g.first_name, ' ', g.last_name) AS guest_name,
+                   r.room_number
+            FROM bills b
+            JOIN reservations res ON b.reservation_id = res.id
+            JOIN guests g ON res.guest_id = g.id
+            JOIN rooms r ON res.room_id = r.id
+            ORDER BY b.bill_date DESC
+            LIMIT {$limit}
+        ";
+        return $pdo->query($query)->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Error getting recent bills: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Payment metrics summary
+ */
+function getPaymentMetrics() {
+    global $pdo;
+    $metrics = [
+        'total_amount' => 0,
+        'today_amount' => 0,
+        'transaction_count' => 0,
+        'today_count' => 0,
+        'methods' => []
+    ];
+
+    try {
+        $metrics['total_amount'] = (float)$pdo->query("SELECT COALESCE(SUM(amount),0) FROM payments")->fetchColumn();
+        $metrics['transaction_count'] = (int)$pdo->query("SELECT COUNT(*) FROM payments")->fetchColumn();
+
+        $stmt = $pdo->query("SELECT COALESCE(SUM(amount),0) AS amt, COUNT(*) AS cnt FROM payments WHERE DATE(payment_date) = CURDATE()");
+        if ($row = $stmt->fetch()) {
+            $metrics['today_amount'] = (float)$row['amt'];
+            $metrics['today_count'] = (int)$row['cnt'];
+        }
+
+        $stmt = $pdo->query("SELECT payment_method, COUNT(*) AS cnt, COALESCE(SUM(amount),0) AS total FROM payments GROUP BY payment_method");
+        while ($row = $stmt->fetch()) {
+            $metrics['methods'][] = [
+                'method' => $row['payment_method'],
+                'count' => (int)$row['cnt'],
+                'total' => (float)$row['total']
+            ];
+        }
+
+    } catch (PDOException $e) {
+        error_log('Error getting payment metrics: ' . $e->getMessage());
+    }
+
+    return $metrics;
+}
+
+/**
+ * Recent payments helper
+ */
+function getRecentPaymentsList($limit = 10) {
+    global $pdo;
+    $limit = max(1, (int)$limit);
+
+    try {
+        $query = "
+            SELECT p.payment_number,
+                   p.payment_method,
+                   p.amount,
+                   p.payment_date,
+                   p.reference_number,
+                   CONCAT(g.first_name, ' ', g.last_name) AS guest_name,
+                   b.bill_number
+            FROM payments p
+            JOIN bills b ON p.bill_id = b.id
+            JOIN reservations res ON b.reservation_id = res.id
+            JOIN guests g ON res.guest_id = g.id
+            ORDER BY p.payment_date DESC
+            LIMIT {$limit}
+        ";
+        return $pdo->query($query)->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Error getting recent payments: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Discount metrics summary
+ */
+function getDiscountMetrics() {
+    global $pdo;
+    $metrics = [
+        'total_discounts' => 0,
+        'total_amount' => 0,
+        'average_amount' => 0,
+        'type_counts' => []
+    ];
+
+    try {
+        $row = $pdo->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(discount_amount),0) AS total FROM discounts")->fetch();
+        $metrics['total_discounts'] = (int)$row['cnt'];
+        $metrics['total_amount'] = (float)$row['total'];
+        if ($metrics['total_discounts'] > 0) {
+            $metrics['average_amount'] = $metrics['total_amount'] / $metrics['total_discounts'];
+        }
+
+        $stmt = $pdo->query("SELECT discount_type, COUNT(*) AS cnt FROM discounts GROUP BY discount_type");
+        while ($row = $stmt->fetch()) {
+            $metrics['type_counts'][$row['discount_type']] = (int)$row['cnt'];
+        }
+
+    } catch (PDOException $e) {
+        error_log('Error getting discount metrics: ' . $e->getMessage());
+    }
+
+    return $metrics;
+}
+
+/**
+ * Voucher metrics summary
+ */
+function getVoucherMetrics() {
+    global $pdo;
+    $metrics = [
+        'total_vouchers' => 0,
+        'active_vouchers' => 0,
+        'used_vouchers' => 0,
+        'expired_vouchers' => 0,
+        'total_value' => 0
+    ];
+
+    try {
+        $stmt = $pdo->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(voucher_value),0) AS total FROM vouchers");
+        $row = $stmt->fetch();
+        $metrics['total_vouchers'] = (int)$row['cnt'];
+        $metrics['total_value'] = (float)$row['total'];
+
+        $stmt = $pdo->query("SELECT status, COUNT(*) AS cnt FROM vouchers GROUP BY status");
+        while ($row = $stmt->fetch()) {
+            switch ($row['status']) {
+                case 'active':
+                    $metrics['active_vouchers'] = (int)$row['cnt'];
+                    break;
+                case 'used':
+                    $metrics['used_vouchers'] = (int)$row['cnt'];
+                    break;
+                case 'expired':
+                    $metrics['expired_vouchers'] = (int)$row['cnt'];
+                    break;
+            }
+        }
+
+    } catch (PDOException $e) {
+        error_log('Error getting voucher metrics: ' . $e->getMessage());
+    }
+
+    return $metrics;
+}
+
+/**
+ * Revenue trends for reports (returns array of ['date' => Y-m-d, 'total' => amount])
+ */
+function getRevenueTrend($days = 30) {
+    global $pdo;
+    $days = max(1, (int)$days);
+    try {
+        $query = "
+            SELECT DATE(bill_date) AS revenue_date, COALESCE(SUM(total_amount), 0) AS total
+            FROM bills
+            WHERE bill_date >= DATE_SUB(CURDATE(), INTERVAL {$days} DAY)
+            GROUP BY DATE(bill_date)
+            ORDER BY revenue_date ASC
+        ";
+        return $pdo->query($query)->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Error getting revenue trend: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Payment method distribution for reports
+ */
+function getPaymentMethodDistribution() {
+    global $pdo;
+    try {
+        $stmt = $pdo->query("SELECT payment_method, COUNT(*) AS cnt, COALESCE(SUM(amount),0) AS total FROM payments GROUP BY payment_method");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Error getting payment method distribution: ' . $e->getMessage());
+        return [];
     }
 }
 
@@ -1916,7 +2728,7 @@ function getBillingStatistics() {
 /**
  * Get bills with filters
  */
-function getBills($status_filter = '', $date_filter = '') {
+function getBills($status_filter = '', $date_filter = '', $limit = null) {
     global $pdo;
     
     try {
@@ -1949,6 +2761,11 @@ function getBills($status_filter = '', $date_filter = '') {
             ORDER BY b.bill_date DESC
         ";
         
+        if ($limit !== null) {
+            $limit = max(1, (int)$limit);
+            $query .= " LIMIT {$limit}";
+        }
+
         $stmt = $pdo->prepare($query);
         $stmt->execute($params);
         
@@ -1963,7 +2780,7 @@ function getBills($status_filter = '', $date_filter = '') {
 /**
  * Get payments with filters
  */
-function getPayments($method_filter = '', $date_filter = '') {
+function getPayments($method_filter = '', $date_filter = '', $limit = null) {
     global $pdo;
     
     try {
@@ -1986,7 +2803,8 @@ function getPayments($method_filter = '', $date_filter = '') {
             SELECT p.*, 
                    CONCAT(g.first_name, ' ', g.last_name) as guest_name,
                    r.room_number,
-                   b.bill_number
+                   b.bill_number,
+                   b.status as bill_status
             FROM payments p
             JOIN bills b ON p.bill_id = b.id
             JOIN reservations res ON b.reservation_id = res.id
@@ -1995,6 +2813,11 @@ function getPayments($method_filter = '', $date_filter = '') {
             WHERE {$where_clause}
             ORDER BY p.payment_date DESC
         ";
+        
+        if ($limit !== null) {
+            $limit = max(1, (int)$limit);
+            $query .= " LIMIT {$limit}";
+        }
         
         $stmt = $pdo->prepare($query);
         $stmt->execute($params);
@@ -2010,7 +2833,7 @@ function getPayments($method_filter = '', $date_filter = '') {
 /**
  * Get discounts with filters
  */
-function getDiscounts($type_filter = '') {
+function getDiscounts($type_filter = '', $limit = null) {
     global $pdo;
     
     try {
@@ -2038,6 +2861,11 @@ function getDiscounts($type_filter = '') {
             ORDER BY d.created_at DESC
         ";
         
+        if ($limit !== null) {
+            $limit = max(1, (int)$limit);
+            $query .= " LIMIT {$limit}";
+        }
+        
         $stmt = $pdo->prepare($query);
         $stmt->execute($params);
         
@@ -2052,7 +2880,7 @@ function getDiscounts($type_filter = '') {
 /**
  * Get vouchers with filters
  */
-function getVouchers($status_filter = '') {
+function getVouchers($status_filter = '', $limit = null) {
     global $pdo;
     
     try {
@@ -2078,6 +2906,11 @@ function getVouchers($status_filter = '') {
             WHERE {$where_clause}
             ORDER BY v.created_at DESC
         ";
+        
+        if ($limit !== null) {
+            $limit = max(1, (int)$limit);
+            $query .= " LIMIT {$limit}";
+        }
         
         $stmt = $pdo->prepare($query);
         $stmt->execute($params);

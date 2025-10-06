@@ -7,31 +7,35 @@ echo "<h2>Hotel PMS Database Configuration Check</h2>";
 // Check configuration file
 echo "<h3>Configuration File Analysis:</h3>";
 $configFile = '../../includes/database.php';
+$localConfig = '../../includes/database.local.php';
 
 if (file_exists($configFile)) {
     echo "<p>✅ Configuration file found: <code>$configFile</code></p>";
-    
-    // Read and parse the config file
-    $configContent = file_get_contents($configFile);
-    
-    // Extract database configuration
-    preg_match("/define\('DB_HOST',\s*'([^']+)'\);/", $configContent, $hostMatch);
-    preg_match("/define\('DB_NAME',\s*'([^']+)'\);/", $configContent, $nameMatch);
-    preg_match("/define\('DB_USER',\s*'([^']+)'\);/", $configContent, $userMatch);
-    preg_match("/define\('DB_PASS',\s*'([^']+)'\);/", $configContent, $passMatch);
-    
-    $dbHost = $hostMatch[1] ?? 'Not found';
-    $dbName = $nameMatch[1] ?? 'Not found';
-    $dbUser = $userMatch[1] ?? 'Not found';
-    $dbPass = $passMatch[1] ?? 'Not found';
-    
-    echo "<table border='1' style='border-collapse: collapse; margin: 10px 0;'>";
-    echo "<tr><th>Setting</th><th>Value</th></tr>";
-    echo "<tr><td>DB_HOST</td><td>$dbHost</td></tr>";
-    echo "<tr><td>DB_NAME</td><td><strong>$dbName</strong></td></tr>";
-    echo "<tr><td>DB_USER</td><td>$dbUser</td></tr>";
-    echo "<tr><td>DB_PASS</td><td>" . (empty($dbPass) ? '(empty)' : '***') . "</td></tr>";
-    echo "</table>";
+    // Prefer local override for explicit values
+    if (file_exists($localConfig)) {
+        echo "<p>ℹ️ Local override file detected: <code>$localConfig</code></p>";
+        $localContent = file_get_contents($localConfig);
+        $vals = [];
+        foreach (['DB_HOST','DB_NAME','DB_USER','DB_PASS','DB_PORT'] as $k) {
+            $pattern = "/define\\('".$k."',\\s*'([^']*)'\\);"/;
+            if (preg_match($pattern, $localContent, $m)) { $vals[$k] = $m[1]; }
+        }
+        echo "<table border='1' style='border-collapse: collapse; margin: 10px 0;'>";
+        echo "<tr><th>Setting</th><th>Value</th></tr>";
+        echo "<tr><td>DB_HOST</td><td>" . htmlspecialchars($vals['DB_HOST'] ?? '(not set)') . "</td></tr>";
+        echo "<tr><td>DB_PORT</td><td>" . htmlspecialchars($vals['DB_PORT'] ?? '(default)') . "</td></tr>";
+        echo "<tr><td>DB_NAME</td><td><strong>" . htmlspecialchars($vals['DB_NAME'] ?? '(not set)') . "</strong></td></tr>";
+        echo "<tr><td>DB_USER</td><td>" . htmlspecialchars($vals['DB_USER'] ?? '(not set)') . "</td></tr>";
+        $passShown = isset($vals['DB_PASS']) ? (strlen($vals['DB_PASS']) ? '***' : '(empty)') : '(not set)';
+        echo "<tr><td>DB_PASS</td><td>$passShown</td></tr>";
+        echo "</table>";
+    } else {
+        echo "<p>⚠️ database.local.php not found. Configuration is dynamic (env vars with safe defaults). Use a local override to force exact host/port/user/password.</p>";
+        echo "<ul>";
+        echo "<li>Create <code>public_html/includes/database.local.php</code> with DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS.</li>";
+        echo "<li>Or set env vars PMS_DB_HOST, PMS_DB_PORT, PMS_DB_NAME, PMS_DB_USER, PMS_DB_PASS.</li>";
+        echo "</ul>";
+    }
     
 } else {
     echo "<p>❌ Configuration file not found: <code>$configFile</code></p>";
@@ -67,8 +71,8 @@ if (file_exists($schemaFile)) {
 echo "<h3>Database Connection Test:</h3>";
 
 try {
-    // Include the config file to get the connection
-    require_once '../../../config/database.php';
+    // Include the unified DB configuration
+    require_once '../../includes/database.php';
     echo "<p>✅ Database connection successful!</p>";
     
     // Get current database name

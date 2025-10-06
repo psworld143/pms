@@ -9,6 +9,30 @@ $user_role = $_SESSION['user_role'];
 $user_name = $_SESSION['user_name'];
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 
+if (!function_exists('booking_url')) {
+    function booking_base() {
+        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
+        $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
+        $pos = strpos($path, '/booking/');
+        if ($pos !== false) {
+            return rtrim(substr($path, 0, $pos + strlen('/booking/')), '/') . '/';
+        }
+        $dir = str_replace('\\','/', dirname($path));
+        $guard = 0;
+        while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'booking' && $guard < 10) {
+            $dir = dirname($dir);
+            $guard++;
+        }
+        if (basename($dir) === 'booking') {
+            return rtrim($dir, '/') . '/';
+        }
+        return '/booking/';
+    }
+    function booking_url($relative = '') {
+        return rtrim(booking_base(), '/') . '/' . ltrim($relative, '/');
+    }
+}
+
 // Get school logo and abbreviation from database
 require_once '../../../config/database.php';
 require_once '../includes/functions.php';
@@ -93,16 +117,16 @@ $school_abbreviation = get_school_abbreviation($conn);
                             <div class="text-sm text-gray-500"><?php echo ucfirst(str_replace('_', ' ', $user_role)); ?></div>
                         </div>
                         <div class="py-2">
-                            <a href="../../profile.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <a href="<?php echo booking_url('profile.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-user-circle mr-3"></i>
                                 Profile
                             </a>
-                            <a href="../settings.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <a href="<?php echo booking_url('settings.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-cog mr-3"></i>
                                 Settings
                             </a>
                             <hr class="my-2">
-                            <a href="/pms/booking/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                            <a href="<?php echo booking_url('logout.php'); ?>" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                 <i class="fas fa-sign-out-alt mr-3"></i>
                                 Logout
                             </a>

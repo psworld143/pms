@@ -251,7 +251,7 @@ include '../../includes/sidebar-unified.php';
                                         </div>
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900">All-Purpose Cleaner</div>
-                                            <div class="text-sm text-gray-500">$8.50 per bottle</div>
+                                            <div class="text-sm text-gray-500">₱8.50 per bottle</div>
                                         </div>
                                     </div>
                                 </td>
@@ -278,7 +278,7 @@ include '../../includes/sidebar-unified.php';
                                         </div>
                                         <div class="ml-4">
                                             <div class="text-sm font-medium text-gray-900">Bed Sheets</div>
-                                            <div class="text-sm text-gray-500">$15.00 per set</div>
+                                            <div class="text-sm text-gray-500">₱15.00 per set</div>
                                         </div>
                                     </div>
                                 </td>

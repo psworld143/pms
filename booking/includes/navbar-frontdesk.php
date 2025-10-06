@@ -60,19 +60,19 @@ $school_abbreviation = 'Hotel PMS'; // Default abbreviation
                     <h3 class="text-lg font-semibold text-gray-800">Quick Actions</h3>
                 </div>
                 <div class="py-2">
-                    <a href="../modules/front-desk/new-reservation.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/front-desk/new-reservation.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-plus mr-3"></i>
                         New Reservation
                     </a>
-                    <a href="../modules/front-desk/check-in.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/front-desk/check-in.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-sign-in-alt mr-3"></i>
                         Check In
                     </a>
-                    <a href="../modules/front-desk/check-out.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/front-desk/check-out.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-sign-out-alt mr-3"></i>
                         Check Out
                     </a>
-                    <a href="../modules/front-desk/walk-ins.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/front-desk/walk-ins.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-user-plus mr-3"></i>
                         Walk-in Guest
                     </a>
@@ -110,7 +110,7 @@ $school_abbreviation = 'Hotel PMS'; // Default abbreviation
                         Activity Log
                     </a>
                     <hr class="my-2">
-                    <a href="/pms/booking/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <a href="<?php echo booking_url('logout.php'); ?>" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                         <i class="fas fa-sign-out-alt mr-3"></i>
                         Logout
                     </a>
