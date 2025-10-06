@@ -1,4 +1,6 @@
 <?php
+
+//Sample Edit
 /**
  * Hotel PMS Training System - Main Entry Point
  * Redirects to the appropriate module based on user session or shows module selection
