@@ -2,7 +2,7 @@
 // Database Seeding Execution Script
 // This script will populate the database with sample data
 
-require_once '../../../config/database.php';
+require_once '../../../../includes/database.php';
 echo "<h2>Hotel PMS Database Seeding</h2>";
 echo "<p>Starting database seeding process...</p>";
 
