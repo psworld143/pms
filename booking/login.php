@@ -5,12 +5,6 @@ require_once '../vps_session_fix.php';
 require_once '../includes/database.php';
 require_once 'includes/functions.php';
 
-// Redirect if already logged in
-if (isset($_SESSION['user_id'])) {
-    header('Location: index.php');
-    exit();
-}
-
 $error = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -29,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             logActivity($user['id'], 'login', 'User logged in successfully');
             
-            header('Location: index.php');
+            header('Location: ' . booking_dashboard_url($user['role']));
             exit();
         } else {
             $error = 'Invalid username or password';

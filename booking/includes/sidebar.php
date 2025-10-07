@@ -25,7 +25,7 @@ if (!function_exists('booking_url')) {
         if (basename($dir) === 'booking') {
             return rtrim($dir, '/') . '/';
         }
-        return '/booking/';
+        return '/pms/booking/';
     }
     function booking_url($relative = '') {
         return rtrim(booking_base(), '/') . '/' . ltrim($relative, '/');
@@ -185,7 +185,7 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h3>
         <div class="space-y-2">
             <?php if (in_array($user_role, ['manager', 'front_desk'])): ?>
-                <a href="../modules/front-desk/new-reservation.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
+                <a href="<?php echo booking_url('modules/front-desk/new-reservation.php'); ?>" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-primary hover:bg-gray-50 rounded transition-colors">
                     <i class="fas fa-plus text-xs mr-2"></i>
                     New Reservation
                 </a>

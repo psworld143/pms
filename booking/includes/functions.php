@@ -1,48 +1,124 @@
 <?php
+require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/booking-paths.php';
 
-/**
- * Get dashboard statistics
- */
-function getDashboardStats() {
+if (!function_exists('booking_dashboard_path')) {
+    function booking_dashboard_path(?string $role = null): string
+    {
+        if ($role === null && isset($_SESSION['user_role'])) {
+            $role = $_SESSION['user_role'];
+        }
+
+        $normalized = null;
+        if ($role !== null) {
+            $normalized = strtolower(trim($role));
+            $normalized = str_replace(['-', ' '], '_', $normalized);
+        }
+
+        switch ($normalized) {
+            case 'manager':
+                return 'modules/manager/index.php';
+            case 'front_desk':
+            case 'frontdesk':
+                return 'modules/front-desk/index.php';
+            case 'housekeeping':
+            case 'house_keeping':
+                return 'modules/housekeeping/index.php';
+            default:
+                return 'index.php';
+        }
+    }
+
+    function booking_dashboard_url(?string $role = null): string
+    {
+        return booking_url(booking_dashboard_path($role));
+    }
+}
+
+function getManagementStats(): array
+{
     global $pdo;
-    
+
     try {
-        // Total rooms
-        $stmt = $pdo->query("SELECT COUNT(*) as total FROM rooms");
-        $total_rooms = $stmt->fetch()['total'];
-        
-        // Occupied rooms
-        $stmt = $pdo->query("SELECT COUNT(*) as occupied FROM rooms WHERE status = 'occupied'");
-        $occupied_rooms = $stmt->fetch()['occupied'];
-        
-        // Occupancy rate
+        $stmt = $pdo->query("SELECT COUNT(*) AS total FROM rooms");
+        $total_rooms = (int)$stmt->fetch()['total'];
+
+        $stmt = $pdo->query("SELECT COUNT(*) AS occupied FROM rooms WHERE status = 'occupied'");
+        $occupied_rooms = (int)$stmt->fetch()['occupied'];
+
         $occupancy_rate = $total_rooms > 0 ? round(($occupied_rooms / $total_rooms) * 100, 1) : 0;
-        
-        // Today's revenue
-        $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount), 0) as revenue FROM billing WHERE DATE(created_at) = CURDATE()");
-        $today_revenue = $stmt->fetch()['revenue'];
-        
+
+        $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount), 0) AS revenue FROM billing WHERE DATE(created_at) = CURDATE()");
+        $today_revenue = (float)$stmt->fetch()['revenue'];
+
+        $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount), 0) AS revenue FROM billing WHERE YEAR(created_at) = YEAR(CURDATE()) AND MONTH(created_at) = MONTH(CURDATE())");
+        $month_revenue = (float)$stmt->fetch()['revenue'];
+
+        $stmt = $pdo->query("SELECT COUNT(*) AS count FROM reservations WHERE DATE(check_in_date) = CURDATE() AND status IN ('confirmed', 'checked_in')");
+        $pending_checkins = (int)$stmt->fetch()['count'];
+
+        $stmt = $pdo->query("SELECT COUNT(*) AS count FROM reservations WHERE DATE(check_out_date) = CURDATE() AND status = 'checked_out'");
+        $today_checkouts = (int)$stmt->fetch()['count'];
+
         return [
             'total_rooms' => $total_rooms,
             'occupied_rooms' => $occupied_rooms,
             'occupancy_rate' => $occupancy_rate,
-            'today_revenue' => $today_revenue
+            'today_revenue' => $today_revenue,
+            'month_revenue' => $month_revenue,
+            'pending_checkins' => $pending_checkins,
+            'today_checkouts' => $today_checkouts,
         ];
     } catch (PDOException $e) {
-        error_log("Error getting dashboard stats: " . $e->getMessage());
+        error_log('Error getting management stats: ' . $e->getMessage());
         return [
             'total_rooms' => 0,
             'occupied_rooms' => 0,
             'occupancy_rate' => 0,
-            'today_revenue' => 0
+            'today_revenue' => 0,
+            'month_revenue' => 0,
+            'pending_checkins' => 0,
+            'today_checkouts' => 0,
         ];
     }
+}
 
-/**
- * Generate a unique bill number
- */
-function generateBillNumber() {
+function getDashboardStats(): array
+{
+    global $pdo;
+
+    try {
+        $stmt = $pdo->query("SELECT COUNT(*) AS total FROM rooms");
+        $total_rooms = $stmt->fetch()['total'];
+
+        $stmt = $pdo->query("SELECT COUNT(*) AS occupied FROM rooms WHERE status = 'occupied'");
+        $occupied_rooms = $stmt->fetch()['occupied'];
+
+        $occupancy_rate = $total_rooms > 0 ? round(($occupied_rooms / $total_rooms) * 100, 1) : 0;
+
+        $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount), 0) AS revenue FROM billing WHERE DATE(created_at) = CURDATE()");
+        $today_revenue = $stmt->fetch()['revenue'];
+
+        return [
+            'total_rooms' => $total_rooms,
+            'occupied_rooms' => $occupied_rooms,
+            'occupancy_rate' => $occupancy_rate,
+            'today_revenue' => $today_revenue,
+        ];
+    } catch (PDOException $e) {
+        error_log('Error getting dashboard stats: ' . $e->getMessage());
+        return [
+            'total_rooms' => 0,
+            'occupied_rooms' => 0,
+            'occupancy_rate' => 0,
+            'today_revenue' => 0,
+        ];
+    }
+}
+
+function generateBillNumber(): string
+{
     global $pdo;
 
     do {
@@ -586,7 +662,6 @@ function processLoyaltyPoints(array $data) {
             'message' => 'Failed to process loyalty points'
         ];
     }
-}
 }
 
 /**
@@ -3923,217 +3998,6 @@ function getRoomDetails($room_id) {
         
     } catch (PDOException $e) {
         error_log("Error getting room details: " . $e->getMessage());
-        return null;
-    }
-}
-
-/**
- * Get billing details for a reservation
- */
-function getBillingDetails($reservation_id) {
-    global $pdo;
-    
-    try {
-        // Get services total from service_charges table
-        $stmt = $pdo->prepare("
-            SELECT COALESCE(SUM(total_price), 0) as services_total
-            FROM service_charges 
-            WHERE reservation_id = ?
-        ");
-        $stmt->execute([$reservation_id]);
-        $services_total = $stmt->fetchColumn();
-        
-        // Get billing information from billing table
-        $stmt = $pdo->prepare("
-            SELECT room_charges, additional_charges, tax_amount, total_amount
-            FROM billing 
-            WHERE reservation_id = ?
-        ");
-        $stmt->execute([$reservation_id]);
-        $billing = $stmt->fetch();
-        
-        if ($billing) {
-            return [
-                'services_total' => $services_total,
-                'taxes' => $billing['tax_amount'],
-                'room_charges' => $billing['room_charges'],
-                'additional_charges' => $billing['additional_charges'],
-                'total_amount' => $billing['total_amount']
-            ];
-        }
-        
-        return [
-            'services_total' => $services_total,
-            'taxes' => 0,
-            'room_charges' => 0,
-            'additional_charges' => 0,
-            'total_amount' => 0
-        ];
-        
-    } catch (PDOException $e) {
-        error_log("Error getting billing details: " . $e->getMessage());
-        return [
-            'services_total' => 0,
-            'taxes' => 0,
-            'room_charges' => 0,
-            'additional_charges' => 0,
-            'total_amount' => 0
-        ];
-    }
-}
-
-/**
- * Get check-in details for a reservation
- */
-function getCheckInDetails($reservation_id) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("
-            SELECT 
-                ci.checked_in_at,
-                ci.checked_out_at,
-                ci.checked_in_by,
-                ci.checked_out_by,
-                u1.name as checked_in_by_name,
-                u2.name as checked_out_by_name
-            FROM check_ins ci
-            LEFT JOIN users u1 ON ci.checked_in_by = u1.id
-            LEFT JOIN users u2 ON ci.checked_out_by = u2.id
-            WHERE ci.reservation_id = ?
-        ");
-        $stmt->execute([$reservation_id]);
-        $result = $stmt->fetch();
-        
-        if ($result) {
-            return [
-                'checked_in_at' => $result['checked_in_at'],
-                'checked_out_at' => $result['checked_out_at'],
-                'checked_in_by' => $result['checked_in_by_name'] ?? $result['checked_in_by'],
-                'checked_out_by' => $result['checked_out_by_name'] ?? $result['checked_out_by']
-            ];
-        }
-        
-        return null;
-        
-    } catch (PDOException $e) {
-        error_log("Error getting check-in details: " . $e->getMessage());
-        return null;
-    }
-}
-
-/**
- * Get additional services for a reservation
- */
-function getAdditionalServicesForReservation($reservation_id) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("
-            SELECT 
-                sc.quantity,
-                sc.unit_price,
-                sc.total_price,
-                sc.notes,
-                sc.created_at
-            FROM service_charges sc
-            WHERE sc.reservation_id = ?
-            ORDER BY sc.created_at DESC
-        ");
-        $stmt->execute([$reservation_id]);
-        return $stmt->fetchAll();
-        
-    } catch (PDOException $e) {
-        error_log("Error getting additional services: " . $e->getMessage());
-        return [];
-    }
-}
-
-/**
- * Get current guest for a room
- */
-function getCurrentGuest($room_id) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("
-            SELECT CONCAT(g.first_name, ' ', g.last_name) as guest_name
-            FROM reservations r
-            JOIN guests g ON r.guest_id = g.id
-            WHERE r.room_id = ? AND r.status = 'checked_in'
-            LIMIT 1
-        ");
-        $stmt->execute([$room_id]);
-        $result = $stmt->fetch();
-        return $result ? $result['guest_name'] : '-';
-    } catch (PDOException $e) {
-        return '-';
-    }
-}
-
-/**
- * Get check-in date for a room
- */
-function getCheckInDate($room_id) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("
-            SELECT check_in_date
-            FROM reservations
-            WHERE room_id = ? AND status = 'checked_in'
-            LIMIT 1
-        ");
-        $stmt->execute([$room_id]);
-        $result = $stmt->fetch();
-        return $result ? date('M d, Y', strtotime($result['check_in_date'])) : '-';
-    } catch (PDOException $e) {
-        return '-';
-    }
-}
-
-/**
- * Get check-out date for a room
- */
-function getCheckOutDate($room_id) {
-    global $pdo;
-    try {
-        $stmt = $pdo->prepare("
-            SELECT check_out_date
-            FROM reservations
-            WHERE room_id = ? AND status = 'checked_in'
-            LIMIT 1
-        ");
-        $stmt->execute([$room_id]);
-        $result = $stmt->fetch();
-        return $result ? date('M d, Y', strtotime($result['check_out_date'])) : '-';
-    } catch (PDOException $e) {
-        return '-';
-    }
-}
-
-/**
- * Get bill details by ID
- */
-function getBillDetails($bill_id) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("
-            SELECT b.*, 
-                   CONCAT(g.first_name, ' ', g.last_name) as guest_name,
-                   r.room_number,
-                   COALESCE(d.discount_amount, 0) as discount_amount
-            FROM bills b
-            JOIN reservations res ON b.reservation_id = res.id
-            JOIN guests g ON res.guest_id = g.id
-            JOIN rooms r ON res.room_id = r.id
-            LEFT JOIN discounts d ON b.id = d.bill_id
-            WHERE b.id = ?
-        ");
-        $stmt->execute([$bill_id]);
-        return $stmt->fetch();
-        
-    } catch (PDOException $e) {
-        error_log("Error getting bill details: " . $e->getMessage());
         return null;
     }
 }

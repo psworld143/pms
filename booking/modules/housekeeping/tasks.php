@@ -4,22 +4,55 @@
  * Hotel PMS Training System for Students
  */
 
-session_start();
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['housekeeping', 'manager'])) {
     header('Location: ../../login.php');
     exit();
 }
 
-// Set page title
 $page_title = 'Housekeeping Tasks';
 
-// Include header
+// Fetch task metrics
+$taskStats = [
+    'total' => 0,
+    'completed' => 0,
+    'in_progress' => 0,
+    'overdue' => 0
+];
+
+$taskCategories = [
+    'cleaning' => [],
+    'maintenance' => [],
+    'inspection' => []
+];
+
+try {
+    $stmt = $pdo->query("SELECT 
+            COUNT(*) AS total,
+            SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) AS completed,
+            SUM(CASE WHEN status = 'in_progress' THEN 1 ELSE 0 END) AS in_progress,
+            SUM(CASE WHEN status = 'overdue' THEN 1 ELSE 0 END) AS overdue
+        FROM housekeeping_tasks");
+    $taskStats = array_map('intval', $stmt->fetch() ?: $taskStats);
+
+    $stmt = $pdo->query("SELECT id, room_number, task_title, task_type, status, due_time
+        FROM housekeeping_tasks
+        ORDER BY due_time ASC");
+
+    foreach ($stmt->fetchAll() as $task) {
+        $key = strtolower($task['task_type']);
+        if (isset($taskCategories[$key])) {
+            $taskCategories[$key][] = $task;
+        }
+    }
+} catch (PDOException $e) {
+    error_log('Error loading housekeeping tasks: ' . $e->getMessage());
+}
+
 include '../../includes/header-unified.php';
-// Include sidebar
 include '../../includes/sidebar-unified.php';
 ?>
 
@@ -45,7 +78,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Tasks</p>
-                            <p class="text-2xl font-semibold text-gray-900">24</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $taskStats['total']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -59,7 +92,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Completed</p>
-                            <p class="text-2xl font-semibold text-gray-900">18</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $taskStats['completed']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -73,7 +106,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">In Progress</p>
-                            <p class="text-2xl font-semibold text-gray-900">4</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $taskStats['in_progress']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -87,7 +120,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Overdue</p>
-                            <p class="text-2xl font-semibold text-gray-900">2</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $taskStats['overdue']; ?></p>
                         </div>
                     </div>
                 </div>

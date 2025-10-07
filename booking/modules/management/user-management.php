@@ -12,11 +12,16 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
 // Set page title
 $page_title = 'User Management';
 
+// Get available roles dynamically
+$available_roles = getUserRoles();
+
+// Get user statistics
+$user_stats = getUserStats();
+
 // Include unified header and sidebar
 include '../../includes/header-unified.php';
 include '../../includes/sidebar-unified.php';
 ?>
-
 <!-- Main Content -->
 <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
@@ -28,6 +33,57 @@ include '../../includes/sidebar-unified.php';
         </div>
     </div>
 
+    <!-- User Statistics Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-users text-blue-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Total Users</p>
+                    <p class="text-2xl font-semibold text-gray-900"><?php echo $user_stats['total_users']; ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-user-check text-green-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Active Users</p>
+                    <p class="text-2xl font-semibold text-gray-900"><?php echo $user_stats['active_users']; ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-user-times text-red-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Inactive Users</p>
+                    <p class="text-2xl font-semibold text-gray-900"><?php echo $user_stats['inactive_users']; ?></p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <i class="fas fa-chart-pie text-purple-600 text-2xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Roles</p>
+                    <p class="text-2xl font-semibold text-gray-900"><?php echo count($available_roles); ?></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Filters -->
     <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -35,9 +91,9 @@ include '../../includes/sidebar-unified.php';
                 <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
                 <select id="role-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                     <option value="">All Roles</option>
-                    <option value="manager">Manager</option>
-                    <option value="front_desk">Front Desk</option>
-                    <option value="housekeeping">Housekeeping</option>
+                    <?php foreach ($available_roles as $role_key => $role_name): ?>
+                        <option value="<?php echo $role_key; ?>"><?php echo $role_name; ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
             <div>
@@ -50,7 +106,7 @@ include '../../includes/sidebar-unified.php';
             </div>
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
-                <input type="text" id="search-filter" placeholder="Search users..." 
+                <input type="text" id="search-filter" placeholder="Search users..."
                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
             </div>
             <div class="flex items-end">
@@ -95,24 +151,28 @@ include '../../includes/sidebar-unified.php';
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Username *</label>
-                    <input type="text" name="username" id="username" required 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    <input type="text" name="username" id="username" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                           onblur="checkUsernameAvailability()">
+                    <div id="username-feedback" class="text-sm mt-1 hidden"></div>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Email *</label>
-                    <input type="email" name="email" id="email" required 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    <input type="email" name="email" id="email" required
+                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                           onblur="checkEmailAvailability()">
+                    <div id="email-feedback" class="text-sm mt-1 hidden"></div>
                 </div>
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Role *</label>
-                    <select name="role" id="role" required 
+                    <select name="role" id="role" required
                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         <option value="">Select Role</option>
-                        <option value="manager">Manager</option>
-                        <option value="front_desk">Front Desk</option>
-                        <option value="housekeeping">Housekeeping</option>
+                        <?php foreach ($available_roles as $role_key => $role_name): ?>
+                            <option value="<?php echo $role_key; ?>"><?php echo $role_name; ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
                 

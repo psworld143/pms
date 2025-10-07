@@ -1,10 +1,14 @@
 <?php
-session_start();
-require_once '../../config/database.php';;
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/booking-paths.php';
+
+booking_initialize_paths();
+
 // Check if user is logged in and has manager access
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
-    header('Location: ../../login.php');
+    header('Location: ' . booking_base() . 'login.php');
     exit();
 }
 
@@ -42,7 +46,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mr-4">
@@ -54,7 +58,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-gradient-to-r from-purple-400 to-purple-600 rounded-full flex items-center justify-center mr-4">
@@ -66,7 +70,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center mr-4">
@@ -99,7 +103,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="bg-white rounded-lg p-6 shadow-md">
                     <h3 class="text-xl font-semibold text-gray-800 mb-4">Room Status</h3>
                     <div class="space-y-4">
@@ -123,19 +127,19 @@ include '../../includes/sidebar-unified.php';
             <div class="bg-white rounded-lg p-6 shadow-md mb-8">
                 <h3 class="text-xl font-semibold text-gray-800 mb-6">Quick Actions</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <a href="../front-desk/manage-reservations.php" class="flex items-center p-4 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-300">
+                    <a href="<?php echo booking_url('modules/front-desk/manage-reservations.php'); ?>" class="flex items-center p-4 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-300">
                         <i class="fas fa-calendar-alt text-blue-600 text-xl mr-3"></i>
                         <span class="font-medium text-blue-800">Manage Reservations</span>
                     </a>
-                    <a href="../housekeeping/index.php" class="flex items-center p-4 bg-green-50 border-2 border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-all duration-300">
+                    <a href="<?php echo booking_url('modules/housekeeping/index.php'); ?>" class="flex items-center p-4 bg-green-50 border-2 border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-all duration-300">
                         <i class="fas fa-broom text-green-600 text-xl mr-3"></i>
                         <span class="font-medium text-green-800">Housekeeping</span>
                     </a>
-                    <a href="../management/reports-dashboard.php" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
+                    <a href="<?php echo booking_url('modules/management/reports-dashboard.php'); ?>" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
                         <i class="fas fa-chart-bar text-purple-600 text-xl mr-3"></i>
                         <span class="font-medium text-purple-800">View Reports</span>
                     </a>
-                    <a href="../management/staff.php" class="flex items-center p-4 bg-orange-50 border-2 border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 transition-all duration-300">
+                    <a href="<?php echo booking_url('modules/management/staff.php'); ?>" class="flex items-center p-4 bg-orange-50 border-2 border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 transition-all duration-300">
                         <i class="fas fa-users text-orange-600 text-xl mr-3"></i>
                         <span class="font-medium text-orange-800">Staff Management</span>
                     </a>
@@ -146,15 +150,17 @@ include '../../includes/sidebar-unified.php';
             <div class="bg-white rounded-lg p-6 shadow-md">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-semibold text-gray-800">Recent Activity</h3>
-                    <a href="../management/audit-log.php" class="text-primary hover:text-primary-dark">View All</a>
+                    <a href="<?php echo booking_url('modules/management/audit-log.php'); ?>" class="text-primary hover:text-primary-dark">View All</a>
                 </div>
                 <div id="recent-activity" class="overflow-x-auto">
                     <!-- Recent activity will be loaded here -->
                 </div>
             </div>
-        </main>
+    </div>
 
-    <script src="../../assets/js/main.js"></script>
-    <script src="../../assets/js/manager-dashboard.js"></script>
-    
+    <script src="<?php echo booking_url('assets/js/main.js'); ?>"></script>
+    <script src="<?php echo booking_url('assets/js/manager-dashboard.js'); ?>"></script>
+
     <?php include '../../includes/footer.php'; ?>
+</body>
+</html>

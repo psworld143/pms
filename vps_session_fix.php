@@ -12,34 +12,45 @@ $sessionPaths = [
     sys_get_temp_dir() . '/pms_sessions'
 ];
 
+$existingSessionId = null;
+$existingSessionData = null;
+if (session_status() === PHP_SESSION_ACTIVE) {
+    $existingSessionId = session_id();
+    $existingSessionData = $_SESSION;
+    session_write_close();
+}
+
 $workingSessionPath = null;
 foreach ($sessionPaths as $path) {
-    if (mkdir($path, 0755, true) || is_dir($path)) {
-        if (is_writable($path)) {
-            $workingSessionPath = $path;
-            break;
-        }
+    if (!is_dir($path)) {
+        @mkdir($path, 0755, true);
+    }
+
+    if (is_dir($path) && is_writable($path)) {
+        $workingSessionPath = $path;
+        break;
     }
 }
 
 if ($workingSessionPath) {
     ini_set('session.save_path', $workingSessionPath);
-    session_start();
+}
 
-    // Test if session works
-    $_SESSION['pms_test'] = 'session_working';
-    $sessionWorking = isset($_SESSION['pms_test']);
+if ($existingSessionId !== null && $existingSessionId !== '') {
+    session_id($existingSessionId);
+}
 
-    if ($sessionWorking) {
-        echo "<p>✅ Session configured successfully</p>";
-        echo "<p>📍 Session path: $workingSessionPath</p>";
-        echo "<p>🔑 Session ID: " . session_id() . "</p>";
+session_start();
+
+if ($existingSessionData !== null) {
+    if (empty($_SESSION)) {
+        $_SESSION = $existingSessionData;
     } else {
-        echo "<p>❌ Session configuration failed</p>";
+        $_SESSION = array_replace($existingSessionData, $_SESSION);
     }
-} else {
-    echo "<p>❌ Could not find/create writable session directory</p>";
-    // Fallback to default session handling
-    session_start();
+}
+
+if (!isset($_SESSION['pms_test'])) {
+    $_SESSION['pms_test'] = 'session_working';
 }
 ?>

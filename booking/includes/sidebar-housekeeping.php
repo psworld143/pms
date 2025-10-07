@@ -25,7 +25,8 @@ if (!function_exists('booking_url')) {
         return ($dir === '/' || $dir === '.' ? '/booking/' : rtrim($dir, '/') . '/');
     }
     function booking_url($relative = '') {
-        return booking_base() . ltrim($relative, '/');
+        $base_path = dirname(dirname($_SERVER['PHP_SELF']));
+        return rtrim($base_path, '/') . '/' . ltrim($relative, '/');
     }
 }
 

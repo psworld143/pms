@@ -11,7 +11,14 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Get dashboard statistics
+// Redirect users to their role-specific dashboard when available
+$targetDashboard = booking_dashboard_path();
+if ($targetDashboard !== 'index.php') {
+    header('Location: ' . booking_url($targetDashboard));
+    exit();
+}
+
+// Get dashboard statistics (fallback dashboard)
 $stats = getDashboardStats();
 
 // Set page title

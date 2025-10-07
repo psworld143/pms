@@ -1,5 +1,5 @@
 <?php
-session_start();
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
 require_once "../../config/database.php";
 require_once '../../includes/functions.php';
 // Check if user is logged in and has front desk access
@@ -20,7 +20,7 @@ include '../../includes/sidebar-unified.php';
 ?>
 
         <!-- Main Content -->
-        <main class="ml-64 mt-16 p-6 flex-1">
+        <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-semibold text-gray-800">Front Desk Dashboard</h2>
                 <div class="text-right">
