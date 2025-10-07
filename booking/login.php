@@ -1,22 +1,7 @@
 <?php
-// Fix session issues for VPS
-$sessionPath = $_SERVER['DOCUMENT_ROOT'] . '/../tmp_sessions';
-if (!is_dir($sessionPath)) {
-    mkdir($sessionPath, 0755, true);
-}
-ini_set('session.save_path', $sessionPath);
+// VPS Session Fix - Robust session configuration
+require_once '../vps_session_fix.php';
 
-// Configure session cookie parameters for better compatibility
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => '',
-    'secure' => false,
-    'httponly' => false,
-    'samesite' => 'Lax'
-]);
-
-session_start();
 require_once '../includes/database.php';
 require_once 'includes/functions.php';
 
