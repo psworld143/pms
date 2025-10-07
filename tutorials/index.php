@@ -1,10 +1,7 @@
 <?php
-/**
- * Tutorial Dashboard
- * Hotel PMS Training System - Interactive Tutorials
- */
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../vps_session_fix.php';
 
-session_start();
 require_once '../includes/database.php';
 require_once 'includes/progress-tracker.php';
 require_once 'includes/dynamic-training-manager.php';

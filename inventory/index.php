@@ -1,10 +1,7 @@
 <?php
-/**
- * Inventory Management System - Main Dashboard
- * Hotel PMS Training System for Students
- */
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../vps_session_fix.php';
 
-session_start();
 require_once __DIR__ . '/config/database.php';
 
 // Check if user is logged in

@@ -1,8 +1,7 @@
 <?php
-session_start();
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../vps_session_fix.php';
+
 require_once __DIR__ . '/../includes/database.php';
 require_once 'includes/functions.php';
 
