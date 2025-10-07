@@ -1,9 +1,16 @@
 <?php
-// Local DB overrides for Windows XAMPP
-// Adjust values below if your MySQL credentials differ
+// Local XAMPP Database Configuration
+// Database credentials for local development
 
-define('DB_HOST', '127.0.0.1');
-define('DB_NAME', 'hotel_pms_clean'); // Matches schema.sql
-define('DB_USER', 'root');
-define('DB_PASS', ''); // Set your root password here if you have one
-define('DB_PORT', 3306); // Set to your XAMPP MySQL port (check in XAMPP control panel)
+define('DB_HOST', 'localhost'); // Localhost for XAMPP
+define('DB_NAME', 'pms_pms_hotel'); // User's existing database name
+define('DB_USER', 'root'); // Default XAMPP MySQL user
+define('DB_PASS', ''); // Default XAMPP MySQL password (empty)
+define('DB_PORT', 3306); // Standard MySQL port for XAMPP
+
+// Optional: If your database uses a different port, uncomment and modify:
+// define('DB_PORT', 3306);
+
+// Optional: If you need to use a socket connection, uncomment and modify:
+// define('DB_SOCKET', '/var/lib/mysql/mysql.sock');
+?>

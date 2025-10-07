@@ -2,7 +2,7 @@
 // Database Seeding Execution Script
 // This script will populate the database with sample data
 
-require_once '../../../../includes/database.php';
+require_once '../../includes/database.php';
 echo "<h2>Hotel PMS Database Seeding</h2>";
 echo "<p>Starting database seeding process...</p>";
 
@@ -126,13 +126,14 @@ try {
     echo "<ul>";
     echo "<li>Username: manager1, Password: password</li>";
     echo "<li>Username: manager2, Password: password</li>";
+    echo "<li>Username: sarah.johnson, Password: password</li>";
     echo "</ul>";
     
     if ($errorCount === 0) {
         echo "<h2 style='color: green;'>✅ Database seeding completed successfully!</h2>";
         echo "<p>The database has been populated with comprehensive sample data including:</p>";
         echo "<ul>";
-        echo "<li>6 users (front desk, housekeeping, management)</li>";
+        echo "<li>7 users (front desk, housekeeping, management)</li>";
         echo "<li>10 rooms (standard, deluxe, suite, presidential)</li>";
         echo "<li>10 guests (including VIP guests)</li>";
         echo "<li>10 reservations (various statuses)</li>";

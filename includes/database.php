@@ -1,3 +1,4 @@
+
 <?php
 /**
  * Unified Database Configuration for PMS System
@@ -11,13 +12,20 @@
 // Local override (optional): create includes/database.local.php to define DB_* constants
 if (file_exists(__DIR__ . '/database.local.php')) {
     include __DIR__ . '/database.local.php';
+    // Debug: Check if constants are defined after include
+    error_log("database.local.php included. DB_USER defined: " . (defined('DB_USER') ? 'YES' : 'NO'));
+    if (defined('DB_USER')) {
+        error_log("DB_USER value: '" . DB_USER . "'");
+    }
+} else {
+    error_log("database.local.php not found at: " . __DIR__ . '/database.local.php');
 }
 
 // Database configuration (supports env overrides & conditional defines)
-if (!defined('DB_HOST')) { define('DB_HOST', getenv('PMS_DB_HOST') ?: '127.0.0.1'); }
+if (!defined('DB_HOST')) { define('DB_HOST', getenv('PMS_DB_HOST') ?: 'localhost'); }
 if (!defined('DB_NAME')) { define('DB_NAME', getenv('PMS_DB_NAME') ?: 'pms_hotel'); }
-if (!defined('DB_USER')) { define('DB_USER', getenv('PMS_DB_USER') ?: 'root'); }
-if (!defined('DB_PASS')) { define('DB_PASS', getenv('PMS_DB_PASS') ?: ''); }
+if (!defined('DB_USER')) { define('DB_USER', getenv('PMS_DB_USER') ?: 'pms_hotel'); }
+if (!defined('DB_PASS')) { define('DB_PASS', getenv('PMS_DB_PASS') ?: '020894HotelPMS'); }
 // Optional overrides
 if (!defined('DB_PORT')) { $envPort = getenv('PMS_DB_PORT'); define('DB_PORT', $envPort !== false && $envPort !== '' ? (int)$envPort : 3306); }
 if (!defined('DB_SOCKET')) { define('DB_SOCKET', getenv('PMS_DB_SOCKET') ?: ''); }
@@ -29,7 +37,7 @@ define('TIMEZONE', 'Asia/Manila');
 // Set timezone
 date_default_timezone_set(TIMEZONE);
 
-// Database connection (robust + fast)
+// Database connection (simplified for VPS hosting)
 try {
     // Preflight: ensure PDO MySQL driver is available
     if (!class_exists('PDO') || !in_array('mysql', PDO::getAvailableDrivers(), true)) {
@@ -38,79 +46,90 @@ try {
     }
 
     $pdo = null;
-    $CONNECT_TIMEOUT = 3; // seconds (prevents long page hangs)
-    $pdoOptions = [ PDO::ATTR_TIMEOUT => $CONNECT_TIMEOUT ];
-    $defaultPort = DB_PORT ?: 3306;
+    $CONNECT_TIMEOUT = 5; // seconds (slightly longer for VPS)
+    $pdoOptions = [
+        PDO::ATTR_TIMEOUT => $CONNECT_TIMEOUT,
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ];
 
-    // Candidate db names (override + canonical names)
-    $dbNames = array_values(array_unique([DB_NAME, 'hotel_pms_clean', 'pms_hotel']));
+    // Use local.php configuration if available, otherwise fall back to environment variables
+    $dbHost = DB_HOST ?: 'localhost';
+    $dbPort = DB_PORT ?: 3306;
+    $dbUser = DB_USER ?: 'root';
+    $dbPass = DB_PASS ?: '';
+    $dbName = DB_NAME ?: 'pms_hotel';
 
-    // Optional socket (macOS XAMPP or user-defined)
-    $socket_path = DB_SOCKET ?: '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock';
-    if ($pdo === null && $socket_path && file_exists($socket_path)) {
-        foreach ($dbNames as $db) {
-            try {
-                $pdo = new PDO("mysql:unix_socket=$socket_path;dbname={$db};charset=utf8mb4", DB_USER, DB_PASS, $pdoOptions);
-                break;
-            } catch (PDOException $ignored) { /* try next */ }
-        }
-    }
+    // Debug: Log actual values being used
+    error_log("Database connection attempt - Host: $dbHost, User: $dbUser, DB: $dbName, Pass: " . (empty($dbPass) ? 'EMPTY' : 'SET'));
 
-    // TCP attempts
-    if ($pdo === null) {
-        // If user provided explicit overrides (local.php/env), keep attempts minimal
-        $hasOverride = file_exists(__DIR__ . '/database.local.php') || getenv('PMS_DB_HOST') || getenv('PMS_DB_PORT') || getenv('PMS_DB_SOCKET');
-        $hosts = $hasOverride ? [DB_HOST ?: '127.0.0.1'] : ['127.0.0.1', DB_HOST, 'localhost', '::1'];
-        $ports = $hasOverride ? [$defaultPort] : array_values(array_unique([$defaultPort, 3307, 33060]));
-        $creds = [[DB_USER, DB_PASS]];
-        foreach ($hosts as $host) {
-            foreach ($ports as $port) {
-                foreach ($creds as $cred) {
-                    foreach ($dbNames as $db) {
-                        try {
-                            $pdo = new PDO("mysql:host={$host};port={$port};dbname={$db};charset=utf8mb4", $cred[0], $cred[1], $pdoOptions);
-                            break 4;
-                        } catch (PDOException $ignored) { /* try next */ }
-                    }
-                }
+    try {
+        // Primary connection attempt with configured credentials
+        $pdo = new PDO(
+            "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4",
+            $dbUser,
+            $dbPass,
+            $pdoOptions
+        );
+
+        // Set additional connection attributes
+        $pdo->exec("SET NAMES utf8mb4");
+        $pdo->exec("SET time_zone = '" . date('P') . "'");
+
+    } catch(PDOException $e) {
+        // If primary connection fails, try connecting without database name first
+        try {
+            $serverPdo = new PDO(
+                "mysql:host={$dbHost};port={$dbPort};charset=utf8mb4",
+                $dbUser,
+                $dbPass,
+                [PDO::ATTR_TIMEOUT => $CONNECT_TIMEOUT, PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
+            );
+
+            // Check if database exists
+            $databases = $serverPdo->query("SHOW DATABASES")->fetchAll(PDO::FETCH_COLUMN);
+
+            if (in_array($dbName, $databases)) {
+                // Database exists, connect to it
+                $pdo = new PDO(
+                    "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4",
+                    $dbUser,
+                    $dbPass,
+                    $pdoOptions
+                );
+                $pdo->exec("SET NAMES utf8mb4");
+                $pdo->exec("SET time_zone = '" . date('P') . "'");
+            } else {
+                // Create database if it doesn't exist
+                $serverPdo->exec("CREATE DATABASE IF NOT EXISTS `{$dbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
+                $pdo = new PDO(
+                    "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4",
+                    $dbUser,
+                    $dbPass,
+                    $pdoOptions
+                );
             }
+
+            $serverPdo = null; // Close temporary connection
+
+        } catch(PDOException $e2) {
+            error_log("Database connection failed: " . $e2->getMessage());
+            $errorMsg = "Database connection failed.\n\n";
+            $errorMsg .= "Debug Information:\n";
+            $errorMsg .= "- Host: " . $dbHost . "\n";
+            $errorMsg .= "- Port: " . $dbPort . "\n";
+            $errorMsg .= "- Database: " . $dbName . "\n";
+            $errorMsg .= "- User: " . $dbUser . "\n";
+            $errorMsg .= "- PDO Error: " . $e2->getMessage() . "\n\n";
+            $errorMsg .= "Troubleshooting:\n";
+            $errorMsg .= "1. Check your database credentials in includes/database.local.php\n";
+            $errorMsg .= "2. Verify MySQL server is running on your VPS\n";
+            $errorMsg .= "3. Ensure database user exists and has correct permissions\n";
+            $errorMsg .= "4. Check VPS firewall settings\n";
+            $errorMsg .= "5. Test connection: <a href='/test_db.php' target='_blank'>Run Database Test</a>\n";
+            die($errorMsg);
         }
     }
-
-    // As a last resort: connect without DB and detect/create
-    if ($pdo === null) {
-        $hosts = isset($hosts) ? $hosts : ['127.0.0.1', 'localhost'];
-        $ports = isset($ports) ? $ports : [$defaultPort];
-        foreach ($hosts as $host) {
-            foreach ($ports as $port) {
-                try {
-                    $serverPdo = new PDO("mysql:host={$host};port={$port}", DB_USER, DB_PASS, $pdoOptions);
-                    $serverPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-                    // Detect candidate db
-                    $schemas = $serverPdo->query("SHOW DATABASES")->fetchAll(PDO::FETCH_COLUMN);
-                    $chosen = null;
-                    foreach ($dbNames as $cand) {
-                        if (in_array($cand, $schemas, true)) { $chosen = $cand; break; }
-                    }
-                    if ($chosen === null) {
-                        // Create default DB_NAME if none exist
-                        $serverPdo->exec("CREATE DATABASE IF NOT EXISTS `" . DB_NAME . "` CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
-                        $chosen = DB_NAME;
-                    }
-                    // Connect to chosen
-                    $pdo = new PDO("mysql:host={$host};port={$port};dbname={$chosen};charset=utf8mb4", DB_USER, DB_PASS, $pdoOptions);
-                    break 2;
-                } catch (PDOException $ignored) { /* try next host */ }
-            }
-        }
-        if ($pdo === null) {
-            throw new PDOException('All connection attempts failed');
-        }
-    }
-
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-    $pdo->exec("SET NAMES utf8mb4");
 
 } catch(PDOException $e) {
     error_log("Database connection failed: " . $e->getMessage());

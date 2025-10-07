@@ -1,7 +1,7 @@
 -- Hotel PMS Database Seeding Script
 -- Comprehensive sample data with proper foreign key relationships
 
-USE hotel_pms_clean;
+USE pms_pms_hotel;
 
 -- Clear existing data (in reverse order of dependencies)
 SET FOREIGN_KEY_CHECKS = 0;
@@ -45,7 +45,8 @@ INSERT INTO users (name, username, password, email, role, is_active) VALUES
 ('David Johnson', 'manager1', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'david@hotel.com', 'manager', 1),
 ('Sarah Wilson', 'frontdesk2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'sarah@hotel.com', 'front_desk', 1),
 ('Carlos Rodriguez', 'housekeeping2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'carlos@hotel.com', 'housekeeping', 1),
-('Emily Chen', 'manager2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'emily@hotel.com', 'manager', 1);
+('Emily Chen', 'manager2', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'emily@hotel.com', 'manager', 1),
+('Sarah Johnson', 'sarah.johnson', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'sarah.johnson@hotel.com', 'manager', 1);
 
 -- 2. ROOMS (Base table - no dependencies)
 INSERT INTO rooms (room_number, room_type, floor, capacity, rate, status, housekeeping_status, amenities) VALUES
