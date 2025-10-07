@@ -88,7 +88,12 @@ try {
 
     // Test 4: Session configuration
     echo "<h2>Test 4: Session Configuration</h2>";
-    session_start();
+    // Fix session issues before starting
+$sessionPath = __DIR__ . '/tmp_sessions';
+if (!is_dir($sessionPath)) {
+    mkdir($sessionPath, 0755, true);
+}
+ini_set('session.save_path', $sessionPath);
     $_SESSION['test_session'] = 'working';
 
     if (isset($_SESSION['test_session'])) {
