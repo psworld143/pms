@@ -4,352 +4,260 @@
  * Hotel PMS Training System for Students
  */
 
-session_start();
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/booking-paths.php';
 
-// Check if user is logged in and has manager role
+booking_initialize_paths();
+
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
-    header('Location: ../../login.php');
+    header('Location: ' . booking_base() . 'login.php');
     exit();
 }
 
 // Set page title
 $page_title = 'Business Analytics';
 
-// Get analytics data
-try {
-    // Get dashboard statistics
-    $dashboard_stats = getDashboardStats();
-    
-    // Get revenue growth (compare current month vs previous month)
-    $current_month = date('Y-m');
-    $previous_month = date('Y-m', strtotime('-1 month'));
-    
-    $stmt = $pdo->prepare("
-        SELECT 
-            SUM(CASE WHEN DATE_FORMAT(created_at, '%Y-%m') = ? THEN total_amount ELSE 0 END) as current_revenue,
-            SUM(CASE WHEN DATE_FORMAT(created_at, '%Y-%m') = ? THEN total_amount ELSE 0 END) as previous_revenue
-        FROM billing 
-        WHERE payment_status = 'paid'
-    ");
-    $stmt->execute([$current_month, $previous_month]);
-    $revenue_data = $stmt->fetch();
-    
-    $current_revenue = $revenue_data['current_revenue'] ?? 0;
-    $previous_revenue = $revenue_data['previous_revenue'] ?? 0;
-    $revenue_growth = $previous_revenue > 0 ? round((($current_revenue - $previous_revenue) / $previous_revenue) * 100, 1) : 0;
-    
-    // Get average room rate
-    $stmt = $pdo->query("
-        SELECT AVG(total_amount) as avg_room_rate 
-        FROM billing 
-        WHERE payment_status = 'paid' 
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-    ");
-    $avg_room_rate = $stmt->fetch()['avg_room_rate'] ?? 0;
-    
-    // Get guest satisfaction (simulated - would come from feedback system)
-    $stmt = $pdo->query("
-        SELECT COUNT(*) as total_guests 
-        FROM reservations 
-        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-    ");
-    $total_guests = $stmt->fetch()['total_guests'] ?? 0;
-    $guest_satisfaction = 4.2 + (min($total_guests / 100, 1) * 0.8); // Simulated rating based on guest volume
-    
-} catch (Exception $e) {
-    error_log("Error getting analytics data: " . $e->getMessage());
-    $dashboard_stats = ['occupancy_rate' => 0, 'today_revenue' => 0];
-    $revenue_growth = 0;
-    $avg_room_rate = 0;
-    $guest_satisfaction = 4.0;
-}
+$analytics_kpis = getAnalyticsKpis();
+$revenue_breakdown = getRevenueBreakdown(30);
+$guest_sentiment = getGuestSentimentMetrics(90);
 
-// Include header
+$asset_version = time();
+$additional_js = '
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>window.analyticsBootstrap = ' . json_encode([
+        'kpis' => $analytics_kpis,
+        'revenueBreakdown' => $revenue_breakdown,
+        'guestSentiment' => $guest_sentiment
+    ]) . ';</script>
+    <script src="' . booking_url('assets/js/main.js?v=' . $asset_version) . '"></script>
+    <script src="' . booking_url('assets/js/analytics.js?v=' . $asset_version) . '"></script>
+';
+
 include '../../includes/header-unified.php';
-// Include sidebar
 include '../../includes/sidebar-unified.php';
 ?>
 
-        <!-- Main Content -->
-        <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
-                <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Business Analytics</h2>
-                <div class="flex items-center space-x-4">
-                    <button onclick="refreshAnalytics()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
-                        <i class="fas fa-sync-alt"></i>
-                        <span>Refresh</span>
-                    </button>
-                    <div class="text-sm text-gray-600">
-                        <i class="fas fa-calendar-alt mr-2"></i>
-                        <span id="current-date"></span>
+<main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
+        <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Business Analytics</h2>
+        <div class="flex items-center space-x-4">
+            <button id="analytics-refresh" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 transition-colors">
+                <i class="fas fa-sync-alt"></i>
+                <span>Refresh</span>
+            </button>
+            <div class="text-sm text-gray-600">
+                <i class="fas fa-calendar-alt mr-2"></i>
+                <span id="analytics-current-date"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Revenue Breakdown</h3>
+                <select id="revenueBreakdownRange" class="border-gray-300 rounded-md text-sm">
+                    <option value="30">Last 30 days</option>
+                    <option value="90">Last 90 days</option>
+                    <option value="180">Last 6 months</option>
+                </select>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-gray-500 border-b">
+                            <th class="py-2">Segment</th>
+                            <th class="py-2">Occupancy</th>
+                            <th class="py-2">ADR</th>
+                            <th class="py-2">RevPAR</th>
+                            <th class="py-2">Contribution</th>
+                        </tr>
+                    </thead>
+                    <tbody id="revenueBreakdownBody">
+                        <tr class="border-b">
+                            <td colspan="5" class="py-4 text-center text-gray-400">Loading segments...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-semibold text-gray-800">Guest Sentiment</h3>
+                <span class="text-xs px-2 py-1 rounded-full bg-amber-50 text-amber-600">Insights</span>
+            </div>
+            <div class="space-y-4">
+                <div>
+                    <div class="flex justify-between items-center text-sm text-gray-600 mb-1">
+                        <span>Positive Feedback</span>
+                        <span id="guestSentimentPositiveValue">—</span>
                     </div>
+                    <div class="w-full h-2 rounded-full bg-gray-100">
+                        <div id="guestSentimentPositiveBar" class="h-2 rounded-full bg-green-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center text-sm text-gray-600 mb-1">
+                        <span>Average Response Time</span>
+                        <span id="guestSentimentResponseValue">—</span>
+                    </div>
+                    <div class="w-full h-2 rounded-full bg-gray-100">
+                        <div id="guestSentimentResponseBar" class="h-2 rounded-full bg-blue-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex justify-between items-center text-sm text-gray-600 mb-1">
+                        <span>Resolved Escalations</span>
+                        <span id="guestSentimentResolvedValue">—</span>
+                    </div>
+                    <div class="w-full h-2 rounded-full bg-gray-100">
+                        <div id="guestSentimentResolvedBar" class="h-2 rounded-full bg-purple-500" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3 text-xs text-gray-500">
+                    <div>Sample size: <span id="guestSentimentSample">—</span></div>
+                    <div>Avg rating: <span id="guestSentimentRating">—</span></div>
+                </div>
+                <div class="bg-gray-50 rounded-lg p-4">
+                    <h4 class="text-sm font-semibold text-gray-700 mb-2">Top Improvement Drivers</h4>
+                    <ul id="guestSentimentDrivers" class="text-xs text-gray-600 space-y-1">
+                        <li class="text-gray-400">Loading drivers...</li>
+                    </ul>
                 </div>
             </div>
+        </div>
+    </div>
 
-            <!-- Analytics Overview Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-chart-line text-white"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Revenue Growth</p>
-                            <p class="text-2xl font-semibold <?php echo $revenue_growth >= 0 ? 'text-green-600' : 'text-red-600'; ?>">
-                                <?php echo $revenue_growth >= 0 ? '+' : ''; ?><?php echo number_format($revenue_growth, 1); ?>%
-                            </p>
-                        </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                        <i class="fas fa-chart-line text-white"></i>
                     </div>
                 </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-users text-white"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Occupancy Rate</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($dashboard_stats['occupancy_rate'], 1); ?>%</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-star text-white"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Guest Satisfaction</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($guest_satisfaction, 1); ?>/5</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-chart-pie text-white"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Average Room Rate</p>
-                            <p class="text-2xl font-semibold text-gray-900">$<?php echo number_format($avg_room_rate, 0); ?></p>
-                        </div>
-                    </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Revenue Growth</p>
+                    <p id="analytics-revenue-growth" class="text-2xl font-semibold text-gray-900">Loading...</p>
                 </div>
             </div>
+        </div>
 
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <!-- Revenue Chart -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Revenue Trends (Last 30 Days)</h3>
-                    <div class="h-64 relative">
-                        <div id="revenueChartLoading" class="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-lg">
-                            <div class="text-center">
-                                <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-2"></i>
-                                <p class="text-gray-500">Loading revenue data...</p>
-                            </div>
-                        </div>
-                        <canvas id="revenueChart" class="hidden"></canvas>
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
+                        <i class="fas fa-users text-white"></i>
                     </div>
                 </div>
-
-                <!-- Occupancy Chart -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Occupancy Analysis (Last 30 Days)</h3>
-                    <div class="h-64 relative">
-                        <div id="occupancyChartLoading" class="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-lg">
-                            <div class="text-center">
-                                <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-2"></i>
-                                <p class="text-gray-500">Loading occupancy data...</p>
-                            </div>
-                        </div>
-                        <canvas id="occupancyChart" class="hidden"></canvas>
-                    </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Occupancy Rate</p>
+                    <p id="analytics-occupancy" class="text-2xl font-semibold text-gray-900">Loading...</p>
                 </div>
             </div>
+        </div>
 
-            <!-- Performance Metrics -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Performance Metrics</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
+                        <i class="fas fa-star text-white"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Guest Satisfaction</p>
+                    <p id="analytics-satisfaction" class="text-2xl font-semibold text-gray-900">Loading...</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow p-6">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                        <i class="fas fa-chart-pie text-white"></i>
+                    </div>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-500">Average Room Rate</p>
+                    <p id="analytics-room-rate" class="text-2xl font-semibold text-gray-900">Loading...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Revenue trends (Last 30 Days)</h3>
+            <div class="h-64 relative">
+                <div id="analytics-revenue-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-lg">
                     <div class="text-center">
-                        <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-bed text-blue-600 text-xl"></i>
-                        </div>
-                        <h4 class="font-semibold text-gray-800">Room Utilization</h4>
-                        <p class="text-2xl font-bold text-blue-600"><?php echo number_format($dashboard_stats['occupancy_rate'], 1); ?>%</p>
-                    </div>
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-clock text-green-600 text-xl"></i>
-                        </div>
-                        <h4 class="font-semibold text-gray-800">Today's Revenue</h4>
-                        <p class="text-2xl font-bold text-green-600">$<?php echo number_format($dashboard_stats['today_revenue'], 0); ?></p>
-                    </div>
-                    <div class="text-center">
-                        <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <i class="fas fa-utensils text-purple-600 text-xl"></i>
-                        </div>
-                        <h4 class="font-semibold text-gray-800">Total Rooms</h4>
-                        <p class="text-2xl font-bold text-purple-600"><?php echo $dashboard_stats['total_rooms']; ?></p>
+                        <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500">Loading revenue data...</p>
                     </div>
                 </div>
+                <canvas id="analytics-revenue-chart" class="hidden"></canvas>
             </div>
-        </main>
+        </div>
 
-        <!-- Include footer -->
-        <?php include '../../includes/footer.php'; ?>
+        <div class="bg-white rounded-lg shadow p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Occupancy Analysis (Last 30 Days)</h3>
+            <div class="h-64 relative">
+                <div id="analytics-occupancy-loading" class="absolute inset-0 flex items-center justify-center bg-gray-50 rounded-lg">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin text-2xl text-gray-400 mb-2"></i>
+                        <p class="text-gray-500">Loading occupancy data...</p>
+                    </div>
+                </div>
+                <canvas id="analytics-occupancy-chart" class="hidden"></canvas>
+            </div>
+        </div>
+    </div>
 
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script>
-            // Update current date
-            document.getElementById('current-date').textContent = new Date().toLocaleDateString();
+    <div class="bg-white rounded-lg shadow p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Performance Metrics</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="text-center">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-bed text-blue-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800">Room Utilization</h4>
+                <p id="analytics-room-utilization" class="text-2xl font-bold text-blue-600">Loading...</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-clock text-green-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800">Today's Revenue</h4>
+                <p id="analytics-today-revenue" class="text-2xl font-bold text-green-600">Loading...</p>
+            </div>
+            <div class="text-center">
+                <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-user-friends text-yellow-600 text-xl"></i>
+                </div>
+                <h4 class="font-semibold text-gray-800">Returning Guests</h4>
+                <p id="analytics-returning-guests" class="text-2xl font-bold text-yellow-600">Loading...</p>
+            </div>
+        </div>
+    </div>
 
-            // Initialize charts when page loads
-            document.addEventListener('DOMContentLoaded', function() {
-                loadRevenueChart();
-                loadOccupancyChart();
-            });
+    <div class="bg-white rounded-lg shadow p-6 mt-8">
+        <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">Recent Activity</h3>
+            <button id="analytics-activity-refresh" class="text-sm text-primary hover:text-secondary">
+                <i class="fas fa-sync-alt mr-2"></i>Refresh
+            </button>
+        </div>
+        <div id="analytics-recent-activity" class="space-y-4">
+            <div class="bg-gray-50 rounded-lg p-4 text-center text-gray-500">
+                <i class="fas fa-spinner fa-spin mr-2"></i>
+                Loading recent activity...
+            </div>
+        </div>
+    </div>
+</main>
 
-            // Refresh analytics data
-            function refreshAnalytics() {
-                // Show loading state
-                const refreshBtn = document.querySelector('button[onclick="refreshAnalytics()"]');
-                const originalText = refreshBtn.innerHTML;
-                refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i><span>Refreshing...</span>';
-                refreshBtn.disabled = true;
-
-                // Reload the page to get fresh data
-                setTimeout(() => {
-                    window.location.reload();
-                }, 1000);
-            }
-
-            // Load Revenue Chart
-            async function loadRevenueChart() {
-                try {
-                    const response = await fetch('../../api/get-revenue-data.php');
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        // Hide loading and show chart
-                        document.getElementById('revenueChartLoading').classList.add('hidden');
-                        document.getElementById('revenueChart').classList.remove('hidden');
-                        
-                        const ctx = document.getElementById('revenueChart').getContext('2d');
-                        new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: data.data.map(item => new Date(item.date).toLocaleDateString()),
-                                datasets: [{
-                                    label: 'Daily Revenue',
-                                    data: data.data.map(item => item.revenue),
-                                    borderColor: 'rgb(59, 130, 246)',
-                                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                                    tension: 0.4,
-                                    fill: true
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    }
-                                },
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        ticks: {
-                                            callback: function(value) {
-                                                return '$' + value.toLocaleString();
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    } else {
-                        // Show error message
-                        document.getElementById('revenueChartLoading').innerHTML = 
-                            '<div class="text-center"><i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-2"></i><p class="text-red-500">Error loading revenue data</p></div>';
-                    }
-                } catch (error) {
-                    console.error('Error loading revenue chart:', error);
-                    document.getElementById('revenueChartLoading').innerHTML = 
-                        '<div class="text-center"><i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-2"></i><p class="text-red-500">Error loading revenue data</p></div>';
-                }
-            }
-
-            // Load Occupancy Chart
-            async function loadOccupancyChart() {
-                try {
-                    const response = await fetch('../../api/get-occupancy-data.php');
-                    const data = await response.json();
-                    
-                    if (data.success) {
-                        // Hide loading and show chart
-                        document.getElementById('occupancyChartLoading').classList.add('hidden');
-                        document.getElementById('occupancyChart').classList.remove('hidden');
-                        
-                        const ctx = document.getElementById('occupancyChart').getContext('2d');
-                        new Chart(ctx, {
-                            type: 'bar',
-                            data: {
-                                labels: data.data.map(item => new Date(item.date).toLocaleDateString()),
-                                datasets: [{
-                                    label: 'Occupancy Rate (%)',
-                                    data: data.data.map(item => item.occupancy_rate),
-                                    backgroundColor: 'rgba(34, 197, 94, 0.8)',
-                                    borderColor: 'rgb(34, 197, 94)',
-                                    borderWidth: 1
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: {
-                                    legend: {
-                                        display: false
-                                    }
-                                },
-                                scales: {
-                                    y: {
-                                        beginAtZero: true,
-                                        max: 100,
-                                        ticks: {
-                                            callback: function(value) {
-                                                return value + '%';
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        });
-                    } else {
-                        // Show error message
-                        document.getElementById('occupancyChartLoading').innerHTML = 
-                            '<div class="text-center"><i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-2"></i><p class="text-red-500">Error loading occupancy data</p></div>';
-                    }
-                } catch (error) {
-                    console.error('Error loading occupancy chart:', error);
-                    document.getElementById('occupancyChartLoading').innerHTML = 
-                        '<div class="text-center"><i class="fas fa-exclamation-triangle text-2xl text-red-400 mb-2"></i><p class="text-red-500">Error loading occupancy data</p></div>';
-                }
-            }
-        </script>
-    </body>
-</html>
+<?php include '../../includes/footer.php'; ?>

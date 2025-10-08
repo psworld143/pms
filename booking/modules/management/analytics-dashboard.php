@@ -1,10 +1,13 @@
 <?php
-session_start();
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+require_once '../../includes/booking-paths.php';
+
+booking_initialize_paths();
 
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
-    header('Location: ../../login.php');
+    header('Location: ' . booking_base() . 'login.php');
     exit();
 }
 
@@ -12,6 +15,41 @@ $page_title = 'Analytics Dashboard';
 
 $stats = getDashboardStats();
 $recentActivities = getRecentActivities(10);
+$breakdown = getRevenueBreakdown(30);
+$sentiment = getGuestSentimentMetrics(90);
+
+$automationCards = [
+    [
+        'title' => 'Notification Rules',
+        'description' => 'Real-time alerts for overbooking, VIP arrivals, and payment delays.',
+        'status' => 'Active'
+    ],
+    [
+        'title' => 'Revenue Targets',
+        'description' => 'Compare actual revenue vs. forecast with automated nudges.',
+        'status' => 'Monitoring'
+    ],
+    [
+        'title' => 'Housekeeping SLA',
+        'description' => 'Track cleaning turnaround thresholds with workforce alerts.',
+        'status' => 'Stable'
+    ],
+    [
+        'title' => 'Guest Feedback Loop',
+        'description' => 'Aggregate feedback and assign follow-up tasks automatically.',
+        'status' => 'Review'
+    ],
+];
+
+$asset_version = time();
+$additional_js = '<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>' . "\n";
+$additional_js .= '<script>window.analyticsDashboardBootstrap = ' . json_encode([
+    'revenueBreakdown' => $breakdown,
+    'guestSentiment' => $sentiment,
+    'automation' => $automationCards,
+]) . ';</script>' . "\n";
+$additional_js .= '<script src="' . booking_url('assets/js/main.js?v=' . $asset_version) . '"></script>' . "\n";
+$additional_js .= '<script src="' . booking_url('assets/js/analytics-dashboard.js?v=' . $asset_version) . '"></script>';
 
 include '../../includes/header-unified.php';
 include '../../includes/sidebar-unified.php';
@@ -131,27 +169,21 @@ include '../../includes/sidebar-unified.php';
                                 </tr>
                             </thead>
                             <tbody id="revenueBreakdownBody">
-                                <tr class="border-b">
-                                    <td class="py-2">Group Bookings</td>
-                                    <td>68%</td>
-                                    <td>₱6,200</td>
-                                    <td>₱4,216</td>
-                                    <td>35%</td>
-                                </tr>
-                                <tr class="border-b">
-                                    <td class="py-2">Corporate</td>
-                                    <td>72%</td>
-                                    <td>₱5,800</td>
-                                    <td>₱4,176</td>
-                                    <td>28%</td>
-                                </tr>
-                                <tr>
-                                    <td class="py-2">Leisure</td>
-                                    <td>64%</td>
-                                    <td>₱4,950</td>
-                                    <td>₱3,168</td>
-                                    <td>37%</td>
-                                </tr>
+                                <?php if (empty($breakdown)): ?>
+                                    <tr class="border-b">
+                                        <td colspan="5" class="py-4 text-center text-gray-400">No revenue segments available.</td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($breakdown as $segment): ?>
+                                        <tr class="border-b last:border-b-0">
+                                            <td class="py-2 font-medium text-gray-800"><?php echo htmlspecialchars($segment['segment']); ?></td>
+                                            <td class="py-2 text-gray-600"><?php echo number_format($segment['occupancy_pct'], 1); ?>%</td>
+                                            <td class="py-2 text-gray-600">₱<?php echo number_format($segment['adr'], 2); ?></td>
+                                            <td class="py-2 text-gray-600">₱<?php echo number_format($segment['revpar'], 2); ?></td>
+                                            <td class="py-2 text-gray-600"><?php echo number_format($segment['contribution_pct'], 1); ?>%</td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -166,36 +198,44 @@ include '../../includes/sidebar-unified.php';
                         <div>
                             <div class="flex justify-between items-center text-sm text-gray-600 mb-1">
                                 <span>Positive Feedback</span>
-                                <span>78%</span>
+                                <span id="dashboardSentimentPositive"><?php echo number_format($sentiment['positive_pct'], 1); ?>%</span>
                             </div>
                             <div class="w-full h-2 rounded-full bg-gray-100">
-                                <div class="h-2 rounded-full bg-green-500" style="width: 78%"></div>
+                                <div id="dashboardSentimentPositiveBar" class="h-2 rounded-full bg-green-500" style="width: <?php echo max(0, min(100, $sentiment['positive_pct'])); ?>%"></div>
                             </div>
                         </div>
                         <div>
                             <div class="flex justify-between items-center text-sm text-gray-600 mb-1">
                                 <span>Response Time</span>
-                                <span>2.5 hrs</span>
+                                <span id="dashboardSentimentResponse"><?php echo $sentiment['average_response_hours'] !== null ? number_format($sentiment['average_response_hours'], 1) . ' hrs' : '—'; ?></span>
                             </div>
                             <div class="w-full h-2 rounded-full bg-gray-100">
-                                <div class="h-2 rounded-full bg-blue-500" style="width: 65%"></div>
+                                <div id="dashboardSentimentResponseBar" class="h-2 rounded-full bg-blue-500" style="width: <?php echo $sentiment['average_response_hours'] !== null ? max(0, min(100, ($sentiment['average_response_hours'] / 12) * 100)) : 0; ?>%"></div>
                             </div>
                         </div>
                         <div>
                             <div class="flex justify-between items-center text-sm text-gray-600 mb-1">
                                 <span>Resolved Escalations</span>
-                                <span>92%</span>
+                                <span id="dashboardSentimentResolved"><?php echo number_format($sentiment['resolved_pct'], 1); ?>%</span>
                             </div>
                             <div class="w-full h-2 rounded-full bg-gray-100">
-                                <div class="h-2 rounded-full bg-purple-500" style="width: 92%"></div>
+                                <div id="dashboardSentimentResolvedBar" class="h-2 rounded-full bg-purple-500" style="width: <?php echo max(0, min(100, $sentiment['resolved_pct'])); ?>%"></div>
                             </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 text-xs text-gray-500">
+                            <div>Sample size: <span id="dashboardSentimentSample"><?php echo number_format($sentiment['sample_size']); ?></span></div>
+                            <div>Avg rating: <span id="dashboardSentimentRating"><?php echo $sentiment['average_rating'] !== null ? number_format($sentiment['average_rating'], 1) . '/5' : '—'; ?></span></div>
                         </div>
                         <div class="bg-gray-50 rounded-lg p-4">
                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Top Improvement Drivers</h4>
-                            <ul class="text-xs text-gray-600 space-y-1">
-                                <li>• Housekeeping response time</li>
-                                <li>• Breakfast menu variety</li>
-                                <li>• Mobile check-in feedback</li>
+                            <ul id="dashboardSentimentDrivers" class="text-xs text-gray-600 space-y-1">
+                                <?php if (empty($sentiment['top_drivers'])): ?>
+                                    <li class="text-gray-400">No key drivers identified.</li>
+                                <?php else: ?>
+                                    <?php foreach ($sentiment['top_drivers'] as $driver): ?>
+                                        <li>• <?php echo htmlspecialchars($driver['category']); ?> (<?php echo (int)$driver['count']; ?>)</li>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
                             </ul>
                         </div>
                     </div>
@@ -234,108 +274,21 @@ include '../../includes/sidebar-unified.php';
                         <a href="settings.php" class="text-sm text-primary hover:underline">Configure</a>
                     </div>
                     <div class="space-y-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-gray-700">Notification Rules</p>
-                                <p class="text-xs text-gray-500">Real-time alerts for overbooking, VIP arrivals, and payment delays.</p>
-                            </div>
-                            <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-600">Active</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-gray-700">Revenue Targets</p>
-                                <p class="text-xs text-gray-500">Compares actual revenue vs. forecast with automated nudges.</p>
-                            </div>
-                            <span class="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-600">Monitoring</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-gray-700">Housekeeping SLA</p>
-                                <p class="text-xs text-gray-500">Tracks cleaning turnaround thresholds with workforce alerts.</p>
-                            </div>
-                            <span class="px-2 py-1 text-xs rounded-full bg-purple-100 text-purple-600">Stable</span>
-                        </div>
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="text-sm font-medium text-gray-700">Guest Feedback Loop</p>
-                                <p class="text-xs text-gray-500">Aggregates feedback and assigns follow-up tasks automatically.</p>
-                            </div>
-                            <span class="px-2 py-1 text-xs rounded-full bg-amber-100 text-amber-600">Review</span>
+                        <div id="automationSummary">
+                            <?php foreach ($automationCards as $card): ?>
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-700"><?php echo htmlspecialchars($card['title']); ?></p>
+                                        <p class="text-xs text-gray-500"><?php echo htmlspecialchars($card['description']); ?></p>
+                                    </div>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 automation-status" data-status="<?php echo strtolower($card['status']); ?>"><?php echo htmlspecialchars($card['status']); ?></span>
+                                </div>
+                            <?php endforeach; ?>
                         </div>
                     </div>
                 </div>
             </div>
 
         </main>
-
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const loaders = document.querySelectorAll('.chart-loading');
-            const revenueCanvas = document.getElementById('analyticsRevenueChart');
-            const occupancyCanvas = document.getElementById('analyticsOccupancyChart');
-
-            function showChart(canvas, loader) {
-                if (loader) loader.classList.add('hidden');
-                if (canvas) canvas.classList.remove('hidden');
-            }
-
-            function loadChart(canvasId, loaderEl, endpoint, label, color) {
-                if (!canvasId) return;
-                fetch(endpoint)
-                    .then(res => res.json())
-                    .then(data => {
-                        if (!data.success || !data.data) {
-                            throw new Error('Failed to load data');
-                        }
-                        showChart(canvasId, loaderEl);
-                        const ctx = canvasId.getContext('2d');
-                        new Chart(ctx, {
-                            type: 'line',
-                            data: {
-                                labels: data.data.map(item => new Date(item.date).toLocaleDateString()),
-                                datasets: [{
-                                    label,
-                                    data: data.data.map(item => item.value ?? item.occupancy_rate ?? item.revenue),
-                                    borderColor: color,
-                                    backgroundColor: color.replace('1)', '0.1)'),
-                                    fill: true,
-                                    tension: 0.3
-                                }]
-                            },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } }
-                            }
-                        });
-                    })
-                    .catch(() => {
-                        if (loaderEl) {
-                            loaderEl.innerHTML = '<div class="text-center text-sm text-red-500">Unable to load chart data</div>';
-                        }
-                    });
-            }
-
-            const [revenueLoader, occupancyLoader] = loaders;
-            loadChart(revenueCanvas, revenueLoader, '../../api/get-revenue-data.php', 'Revenue', 'rgba(59,130,246,1)');
-            loadChart(occupancyCanvas, occupancyLoader, '../../api/get-occupancy-data.php', 'Occupancy Rate', 'rgba(16,185,129,1)');
-
-            document.querySelectorAll('.refresh-chart').forEach(btn => {
-                btn.addEventListener('click', () => {
-                    const chartType = btn.getAttribute('data-chart');
-                    if (chartType === 'revenue') {
-                        revenueLoader.classList.remove('hidden');
-                        revenueCanvas.classList.add('hidden');
-                        loadChart(revenueCanvas, revenueLoader, '../../api/get-revenue-data.php', 'Revenue', 'rgba(59,130,246,1)');
-                    } else if (chartType === 'occupancy') {
-                        occupancyLoader.classList.remove('hidden');
-                        occupancyCanvas.classList.add('hidden');
-                        loadChart(occupancyCanvas, occupancyLoader, '../../api/get-occupancy-data.php', 'Occupancy Rate', 'rgba(16,185,129,1)');
-                    }
-                });
-            });
-        });
-        </script>
 
 <?php include '../../includes/footer.php'; ?>

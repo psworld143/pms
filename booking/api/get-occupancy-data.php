@@ -1,12 +1,18 @@
 <?php
-session_start();
+require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
 require_once '../../includes/database.php';
 require_once '../includes/functions.php';
+require_once '../includes/booking-paths.php';
 
-// Check if user is logged in and has manager access
+booking_initialize_paths();
+
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
     http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Unauthorized access',
+        'redirect' => booking_base() . 'login.php'
+    ]);
     exit();
 }
 
@@ -45,10 +51,19 @@ try {
         ];
     }
     
+    $current_day = end($processed_data);
+    $summary = [
+        'today_rate' => $current_day['occupancy_rate'] ?? 0,
+        'average_rate' => !empty($processed_data)
+            ? round(array_sum(array_column($processed_data, 'occupancy_rate')) / count($processed_data), 1)
+            : 0,
+        'total_rooms' => (int)$total_rooms
+    ];
+
     echo json_encode([
         'success' => true,
         'data' => $processed_data,
-        'total_rooms' => (int)$total_rooms
+        'summary' => $summary
     ]);
     
 } catch (Exception $e) {

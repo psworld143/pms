@@ -1,0 +1,50 @@
+<?php
+
+declare(strict_types=1);
+
+require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+require_once '../config/database.php';
+require_once '../includes/booking-paths.php';
+require_once '../includes/guest-feedback-helpers.php';
+
+booking_initialize_paths();
+
+$allowedRoles = ['manager', 'front_desk'];
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'] ?? null, $allowedRoles, true)) {
+    http_response_code(401);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Unauthorized access',
+        'redirect' => booking_base() . 'login.php',
+    ]);
+    exit();
+}
+
+header('Content-Type: application/json');
+
+try {
+    global $pdo;
+    if (!$pdo instanceof PDO) {
+        throw new RuntimeException('Database connection unavailable');
+    }
+
+    $summary = getGuestFeedbackSummary($pdo);
+    $distribution = getGuestFeedbackRatingDistribution($pdo);
+    $categories = getGuestFeedbackCategoryBreakdown($pdo);
+    $recent = getRecentGuestFeedback($pdo, 5);
+
+    echo json_encode([
+        'success' => true,
+        'summary' => $summary,
+        'distribution' => $distribution,
+        'categories' => $categories,
+        'recent' => $recent,
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+} catch (Throwable $e) {
+    error_log('Guest feedback stats API error: ' . $e->getMessage());
+    http_response_code(500);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Unable to load guest feedback statistics.',
+    ]);
+}

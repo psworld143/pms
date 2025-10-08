@@ -84,6 +84,318 @@ function getManagementStats(): array
     }
 }
 
+function getAnalyticsKpis(int $windowDays = 30): array
+{
+    global $pdo;
+
+    $windowDays = max(1, $windowDays);
+
+    $defaults = [
+        'window_days' => $windowDays,
+        'total_rooms' => 0,
+        'today_revenue' => 0.0,
+        'yesterday_revenue' => 0.0,
+        'revenue_growth_pct' => 0.0,
+        'today_occupancy_pct' => 0.0,
+        'average_occupancy_pct' => 0.0,
+        'average_room_rate' => 0.0,
+        'returning_guests_pct' => 0.0,
+        'guest_satisfaction_score' => null,
+        'positive_feedback_pct' => 0.0,
+        'resolved_feedback_pct' => 0.0,
+        'average_response_hours' => null,
+        'room_nights' => 0,
+        'reservation_revenue' => 0.0,
+        'feedback_sample' => 0
+    ];
+
+    try {
+        $today = new DateTimeImmutable('today');
+        $endDate = $today->modify('+1 day');
+        $startDate = $today->modify('-' . ($windowDays - 1) . ' days');
+        $yesterday = $today->modify('-1 day');
+
+        $startDateString = $startDate->format('Y-m-d');
+        $endDateString = $endDate->format('Y-m-d');
+        $startDateTime = $startDate->format('Y-m-d 00:00:00');
+        $endDateTime = $endDate->format('Y-m-d 00:00:00');
+
+        $totalRooms = (int)($pdo->query("SELECT COUNT(*) FROM rooms")->fetchColumn() ?: 0);
+        $occupiedRooms = (int)($pdo->query("SELECT COUNT(*) FROM rooms WHERE status = 'occupied'")->fetchColumn() ?: 0);
+        $todayOccupancy = $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 1) : 0.0;
+
+        $occupancyStmt = $pdo->prepare("
+            SELECT
+                SUM(
+                    GREATEST(
+                        0,
+                        TIMESTAMPDIFF(
+                            DAY,
+                            GREATEST(check_in_date, :startDate),
+                            LEAST(check_out_date, :endDate)
+                        )
+                    )
+                ) AS room_nights,
+                SUM(total_amount) AS revenue
+            FROM reservations
+            WHERE status IN ('confirmed','checked_in','checked_out')
+              AND check_in_date < :endDate
+              AND check_out_date > :startDate
+        ");
+        $occupancyStmt->execute([
+            ':startDate' => $startDateString,
+            ':endDate' => $endDateString
+        ]);
+        $occupancyRow = $occupancyStmt->fetch() ?: [];
+        $roomNights = (int)($occupancyRow['room_nights'] ?? 0);
+        $reservationRevenue = (float)($occupancyRow['revenue'] ?? 0.0);
+
+        $totalInventoryNights = $totalRooms * $windowDays;
+        $averageOccupancy = $totalInventoryNights > 0 ? round(($roomNights / $totalInventoryNights) * 100, 1) : 0.0;
+        $averageRoomRate = $roomNights > 0 ? round($reservationRevenue / $roomNights, 2) : 0.0;
+
+        $todayRevenue = (float)$pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM billing WHERE DATE(created_at) = CURDATE() AND payment_status = 'paid'")->fetchColumn();
+
+        $yesterdayStmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) FROM billing WHERE DATE(created_at) = ? AND payment_status = 'paid'");
+        $yesterdayStmt->execute([$yesterday->format('Y-m-d')]);
+        $yesterdayRevenue = (float)$yesterdayStmt->fetchColumn();
+
+        if ($yesterdayRevenue > 0) {
+            $revenueGrowth = (($todayRevenue - $yesterdayRevenue) / $yesterdayRevenue) * 100;
+        } elseif ($todayRevenue > 0) {
+            $revenueGrowth = 100.0;
+        } else {
+            $revenueGrowth = 0.0;
+        }
+        $revenueGrowth = round($revenueGrowth, 1);
+
+        $returningStmt = $pdo->prepare("
+            SELECT
+                SUM(CASE WHEN prev.id IS NOT NULL THEN 1 ELSE 0 END) AS returning_reservations,
+                COUNT(*) AS total_reservations
+            FROM reservations res
+            LEFT JOIN reservations prev
+                ON prev.guest_id = res.guest_id
+               AND prev.created_at < res.created_at
+            WHERE res.created_at >= :startDateTime
+              AND res.created_at < :endDateTime
+              AND res.status IN ('confirmed','checked_in','checked_out')
+        ");
+        $returningStmt->execute([
+            ':startDateTime' => $startDateTime,
+            ':endDateTime' => $endDateTime
+        ]);
+        $returningRow = $returningStmt->fetch() ?: [];
+        $returningReservations = (int)($returningRow['returning_reservations'] ?? 0);
+        $totalReservations = (int)($returningRow['total_reservations'] ?? 0);
+        $returningGuestsPct = $totalReservations > 0 ? round(($returningReservations / $totalReservations) * 100, 1) : 0.0;
+
+        $feedbackWindow = $today->modify('-90 days')->format('Y-m-d 00:00:00');
+        $feedbackStmt = $pdo->prepare("
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN feedback_type = 'compliment' OR rating >= 4 THEN 1 ELSE 0 END) AS positive,
+                SUM(CASE WHEN is_resolved = 1 THEN 1 ELSE 0 END) AS resolved,
+                AVG(CASE WHEN is_resolved = 1 THEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) END) AS avg_response_minutes,
+                AVG(rating) AS avg_rating
+            FROM guest_feedback
+            WHERE created_at >= :windowStart
+        ");
+        $feedbackStmt->execute([':windowStart' => $feedbackWindow]);
+        $feedbackRow = $feedbackStmt->fetch() ?: [];
+        $feedbackTotal = (int)($feedbackRow['total'] ?? 0);
+        $positiveFeedback = (int)($feedbackRow['positive'] ?? 0);
+        $resolvedFeedback = (int)($feedbackRow['resolved'] ?? 0);
+        $avgResponseMinutes = $feedbackRow['avg_response_minutes'] !== null ? (float)$feedbackRow['avg_response_minutes'] : null;
+        $avgRating = $feedbackRow['avg_rating'] !== null ? round((float)$feedbackRow['avg_rating'], 1) : null;
+
+        $positiveFeedbackPct = $feedbackTotal > 0 ? round(($positiveFeedback / $feedbackTotal) * 100, 1) : 0.0;
+        $resolvedFeedbackPct = $feedbackTotal > 0 ? round(($resolvedFeedback / $feedbackTotal) * 100, 1) : 0.0;
+        $averageResponseHours = $avgResponseMinutes !== null ? round($avgResponseMinutes / 60, 1) : null;
+
+        return [
+            'window_days' => $windowDays,
+            'total_rooms' => $totalRooms,
+            'today_revenue' => round($todayRevenue, 2),
+            'yesterday_revenue' => round($yesterdayRevenue, 2),
+            'revenue_growth_pct' => $revenueGrowth,
+            'today_occupancy_pct' => $todayOccupancy,
+            'average_occupancy_pct' => $averageOccupancy,
+            'average_room_rate' => $averageRoomRate,
+            'returning_guests_pct' => $returningGuestsPct,
+            'guest_satisfaction_score' => $avgRating,
+            'positive_feedback_pct' => $positiveFeedbackPct,
+            'resolved_feedback_pct' => $resolvedFeedbackPct,
+            'average_response_hours' => $averageResponseHours,
+            'room_nights' => $roomNights,
+            'reservation_revenue' => round($reservationRevenue, 2),
+            'feedback_sample' => $feedbackTotal
+        ];
+    } catch (Throwable $e) {
+        error_log('Analytics KPI error: ' . $e->getMessage());
+        return $defaults;
+    }
+}
+
+function getRevenueBreakdown(int $days = 30): array
+{
+    global $pdo;
+
+    $days = max(1, $days);
+    $endDate = new DateTimeImmutable('tomorrow');
+    $startDate = $endDate->modify('-' . $days . ' days');
+
+    $start = $startDate->format('Y-m-d');
+    $end = $endDate->format('Y-m-d');
+
+    $roomCountsStmt = $pdo->query("SELECT room_type, COUNT(*) AS room_count FROM rooms GROUP BY room_type");
+    $roomCounts = [];
+    foreach ($roomCountsStmt->fetchAll() as $row) {
+        $roomCounts[$row['room_type']] = (int)$row['room_count'];
+    }
+
+    $stmt = $pdo->prepare("
+        SELECT
+            rm.room_type,
+            COUNT(res.id) AS reservations,
+            SUM(
+                GREATEST(
+                    0,
+                    TIMESTAMPDIFF(
+                        DAY,
+                        GREATEST(res.check_in_date, :startDate),
+                        LEAST(res.check_out_date, :endDate)
+                    )
+                )
+            ) AS room_nights,
+            SUM(res.total_amount) AS revenue
+        FROM reservations res
+        JOIN rooms rm ON rm.id = res.room_id
+        WHERE res.status IN ('confirmed','checked_in','checked_out')
+          AND res.check_in_date < :endDate
+          AND res.check_out_date > :startDate
+        GROUP BY rm.room_type
+    ");
+    $stmt->execute([
+        ':startDate' => $start,
+        ':endDate' => $end
+    ]);
+
+    $rows = $stmt->fetchAll();
+    $totalRevenue = 0.0;
+    foreach ($rows as $row) {
+        $totalRevenue += (float)($row['revenue'] ?? 0.0);
+    }
+
+    $breakdown = [];
+    foreach ($rows as $row) {
+        $roomType = $row['room_type'] ?? 'unknown';
+        $reservations = (int)($row['reservations'] ?? 0);
+        $roomNights = (int)($row['room_nights'] ?? 0);
+        $revenue = (float)($row['revenue'] ?? 0.0);
+        $roomCount = $roomCounts[$roomType] ?? 0;
+
+        $occupancy = ($roomCount * $days) > 0 ? round(($roomNights / ($roomCount * $days)) * 100, 1) : 0.0;
+        $adr = $roomNights > 0 ? round($revenue / $roomNights, 2) : 0.0;
+        $revpar = ($roomCount * $days) > 0 ? round($revenue / ($roomCount * $days), 2) : 0.0;
+        $contribution = $totalRevenue > 0 ? round(($revenue / $totalRevenue) * 100, 1) : 0.0;
+
+        $breakdown[] = [
+            'segment' => ucfirst(str_replace('_', ' ', $roomType)),
+            'reservations' => $reservations,
+            'room_nights' => $roomNights,
+            'room_count' => $roomCount,
+            'revenue' => round($revenue, 2),
+            'occupancy_pct' => $occupancy,
+            'adr' => $adr,
+            'revpar' => $revpar,
+            'contribution_pct' => $contribution
+        ];
+    }
+
+    usort($breakdown, static function ($a, $b) {
+        return $b['revenue'] <=> $a['revenue'];
+    });
+
+    return $breakdown;
+}
+
+function getGuestSentimentMetrics(int $days = 90): array
+{
+    global $pdo;
+
+    $days = max(1, $days);
+    $defaults = [
+        'sample_size' => 0,
+        'complaints' => 0,
+        'positive_pct' => 0.0,
+        'resolved_pct' => 0.0,
+        'average_response_hours' => null,
+        'average_rating' => null,
+        'top_drivers' => []
+    ];
+
+    try {
+        $startDate = (new DateTimeImmutable('now'))->modify('-' . $days . ' days')->format('Y-m-d 00:00:00');
+
+        $stmt = $pdo->prepare("
+            SELECT
+                COUNT(*) AS total,
+                SUM(CASE WHEN feedback_type = 'complaint' THEN 1 ELSE 0 END) AS complaints,
+                SUM(CASE WHEN feedback_type = 'compliment' OR rating >= 4 THEN 1 ELSE 0 END) AS positive,
+                SUM(CASE WHEN is_resolved = 1 THEN 1 ELSE 0 END) AS resolved,
+                AVG(CASE WHEN is_resolved = 1 THEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) END) AS avg_response_minutes,
+                AVG(rating) AS avg_rating
+            FROM guest_feedback
+            WHERE created_at >= :startDate
+        ");
+        $stmt->execute([':startDate' => $startDate]);
+        $row = $stmt->fetch() ?: [];
+
+        $total = (int)($row['total'] ?? 0);
+        $complaints = (int)($row['complaints'] ?? 0);
+        $positive = (int)($row['positive'] ?? 0);
+        $resolved = (int)($row['resolved'] ?? 0);
+        $avgResponseMinutes = $row['avg_response_minutes'] !== null ? (float)$row['avg_response_minutes'] : null;
+        $avgRating = $row['avg_rating'] !== null ? round((float)$row['avg_rating'], 1) : null;
+
+        $positivePct = $total > 0 ? round(($positive / $total) * 100, 1) : 0.0;
+        $resolvedPct = $total > 0 ? round(($resolved / $total) * 100, 1) : 0.0;
+        $avgResponseHours = $avgResponseMinutes !== null ? round($avgResponseMinutes / 60, 1) : null;
+
+        $driversStmt = $pdo->prepare("
+            SELECT category, COUNT(*) AS cnt
+            FROM guest_feedback
+            WHERE created_at >= :startDate
+              AND feedback_type IN ('complaint','suggestion')
+            GROUP BY category
+            ORDER BY cnt DESC
+            LIMIT 3
+        ");
+        $driversStmt->execute([':startDate' => $startDate]);
+        $topDrivers = [];
+        foreach ($driversStmt->fetchAll() as $driverRow) {
+            $topDrivers[] = [
+                'category' => ucfirst(str_replace('_', ' ', $driverRow['category'] ?? 'unknown')),
+                'count' => (int)($driverRow['cnt'] ?? 0)
+            ];
+        }
+
+        return [
+            'sample_size' => $total,
+            'complaints' => $complaints,
+            'positive_pct' => $positivePct,
+            'resolved_pct' => $resolvedPct,
+            'average_response_hours' => $avgResponseHours,
+            'average_rating' => $avgRating,
+            'top_drivers' => $topDrivers
+        ];
+    } catch (Throwable $e) {
+        error_log('Guest sentiment error: ' . $e->getMessage());
+        return $defaults;
+    }
+}
+
 function getDashboardStats(): array
 {
     global $pdo;
@@ -1981,15 +2293,14 @@ function cancelReservation($reservation_id, $reason = '') {
  */
 function addServiceCharge($reservation_id, $service_type, $description, $amount) {
     global $pdo;
-    
+
     try {
         $pdo->beginTransaction();
-        
-        // Add service charge
-        $stmt = $pdo->prepare("
-            INSERT INTO service_charges (reservation_id, service_type, description, amount, added_by)
-            VALUES (?, ?, ?, ?, ?)
-        ");
+
+        $stmt = $pdo->prepare(
+            "INSERT INTO service_charges (reservation_id, service_type, description, amount, added_by)
+             VALUES (?, ?, ?, ?, ?)"
+        );
         $stmt->execute([
             $reservation_id,
             $service_type,
@@ -1997,29 +2308,31 @@ function addServiceCharge($reservation_id, $service_type, $description, $amount)
             $amount,
             $_SESSION['user_id']
         ]);
-        
-        // Update billing total
-        $stmt = $pdo->prepare("
-            UPDATE billing 
-            SET additional_charges = COALESCE(additional_charges, 0) + ?,
-                total_amount = COALESCE(room_charges, 0) + COALESCE(additional_charges, 0) + ? + COALESCE(tax_amount, 0)
-            WHERE reservation_id = ?
-        ");
+
+        $stmt = $pdo->prepare(
+            "UPDATE billing
+             SET additional_charges = COALESCE(additional_charges, 0) + ?,
+                 total_amount = COALESCE(room_charges, 0) + COALESCE(additional_charges, 0) + ? + COALESCE(tax_amount, 0)
+             WHERE reservation_id = ?"
+        );
         $stmt->execute([$amount, $amount, $reservation_id]);
-        
-        // Log activity
-        logActivity($_SESSION['user_id'], 'service_charge_added', "Added {$service_type} charge of ${$amount} to reservation {$reservation_id}");
-        
+
+        $formattedAmount = number_format((float)$amount, 2);
+        logActivity(
+            $_SESSION['user_id'],
+            'service_charge_added',
+            'Added ' . $service_type . ' charge of $' . $formattedAmount . " to reservation {$reservation_id}"
+        );
+
         $pdo->commit();
-        
+
         return [
             'success' => true,
             'message' => 'Service charge added successfully'
         ];
-        
     } catch (Exception $e) {
         $pdo->rollBack();
-        error_log("Error adding service charge: " . $e->getMessage());
+        error_log('Error adding service charge: ' . $e->getMessage());
         return [
             'success' => false,
             'message' => $e->getMessage()
@@ -2032,57 +2345,33 @@ function addServiceCharge($reservation_id, $service_type, $description, $amount)
  */
 function getManagementStatistics() {
     global $pdo;
-    
+
     try {
-        // Occupancy rate
-        $stmt = $pdo->query("
-            SELECT 
-                ROUND((COUNT(CASE WHEN status IN ('reserved', 'checked_in') THEN 1 END) * 100.0 / COUNT(*)), 1) as occupancy_rate
-            FROM rooms
-        ");
+        $stmt = $pdo->query("SELECT ROUND((COUNT(CASE WHEN status IN ('reserved', 'checked_in') THEN 1 END) * 100.0 / COUNT(*)), 1) AS occupancy_rate FROM rooms");
         $occupancy_rate = $stmt->fetch()['occupancy_rate'] ?? 0;
-        
-        // Monthly revenue
-        $stmt = $pdo->query("
-            SELECT COALESCE(SUM(total_amount), 0) as total 
-            FROM bills 
-            WHERE MONTH(bill_date) = MONTH(CURDATE()) 
-            AND YEAR(bill_date) = YEAR(CURDATE()) 
-            AND status = 'paid'
-        ");
-        $monthly_revenue = $stmt->fetch()['total'];
-        
-        // Total guests
-        $stmt = $pdo->query("
-            SELECT COUNT(DISTINCT guest_id) as total 
-            FROM reservations 
-            WHERE check_in_date <= CURDATE() 
-            AND check_out_date >= CURDATE()
-        ");
-        $total_guests = $stmt->fetch()['total'];
-        
-        // Low stock items
-        $stmt = $pdo->query("
-            SELECT COUNT(*) as total 
-            FROM inventory_items 
-            WHERE current_stock <= minimum_stock
-        ");
-        $low_stock_items = $stmt->fetch()['total'];
-        
+
+        $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount), 0) AS total FROM bills WHERE MONTH(bill_date) = MONTH(CURDATE()) AND YEAR(bill_date) = YEAR(CURDATE()) AND status = 'paid'");
+        $monthly_revenue = $stmt->fetch()['total'] ?? 0;
+
+        $stmt = $pdo->query("SELECT COUNT(DISTINCT guest_id) AS total FROM reservations WHERE check_in_date <= CURDATE() AND check_out_date >= CURDATE()");
+        $total_guests = $stmt->fetch()['total'] ?? 0;
+
+        $stmt = $pdo->query("SELECT COUNT(*) AS total FROM inventory_items WHERE current_stock <= minimum_stock");
+        $low_stock_items = $stmt->fetch()['total'] ?? 0;
+
         return [
             'occupancy_rate' => $occupancy_rate,
             'monthly_revenue' => $monthly_revenue,
             'total_guests' => $total_guests,
-            'low_stock_items' => $low_stock_items
+            'low_stock_items' => $low_stock_items,
         ];
-        
     } catch (PDOException $e) {
-        error_log("Error getting management statistics: " . $e->getMessage());
+        error_log('Error getting management statistics: ' . $e->getMessage());
         return [
             'occupancy_rate' => 0,
             'monthly_revenue' => 0,
             'total_guests' => 0,
-            'low_stock_items' => 0
+            'low_stock_items' => 0,
         ];
     }
 }
@@ -2194,14 +2483,13 @@ function getDailyReports($date_filter = '') {
             FROM reservations r
             LEFT JOIN bills b ON r.id = b.reservation_id
             WHERE {$where_condition}
-            GROUP BY DATE(r.check_in_date)
-            ORDER BY date DESC
+            ORDER BY DATE(r.check_in_date) DESC
             LIMIT 30
         ";
         
         $stmt = $pdo->prepare($query);
         $stmt->execute($params);
-        
+
         return $stmt->fetchAll();
         
     } catch (PDOException $e) {
@@ -2215,39 +2503,37 @@ function getDailyReports($date_filter = '') {
  */
 function getWeeklyReports($week_filter = '') {
     global $pdo;
-    
+
     try {
         $where_condition = "1=1";
         $params = [];
-        
+
         if (!empty($week_filter)) {
-            $where_condition = "YEARWEEK(r.check_in_date) = ?";
+            $where_condition = "YEARWEEK(r.check_in_date, 1) = ?";
             $params[] = $week_filter;
         }
-        
+
         $query = "
             SELECT 
-                CONCAT(YEAR(r.check_in_date), '-W', WEEK(r.check_in_date)) as week,
-                ROUND(AVG(
-                    (COUNT(CASE WHEN r.status IN ('reserved', 'checked_in') THEN 1 END) * 100.0 / COUNT(*))
-                ), 1) as avg_occupancy,
+                CONCAT(YEAR(r.check_in_date), '-W', LPAD(WEEK(r.check_in_date, 1), 2, '0')) as week,
+                ROUND((COUNT(CASE WHEN r.status IN ('reserved', 'checked_in') THEN 1 END) * 100.0 / COUNT(*)), 1) as avg_occupancy,
                 COALESCE(SUM(b.total_amount), 0) as total_revenue,
                 COUNT(DISTINCT r.guest_id) as total_guests,
                 COALESCE(AVG(b.total_amount), 0) as avg_room_rate,
-                COALESCE(SUM(b.total_amount) / COUNT(*), 0) as revpar
+                COALESCE(SUM(b.total_amount) / NULLIF(COUNT(*), 0), 0) as revpar
             FROM reservations r
             LEFT JOIN bills b ON r.id = b.reservation_id
             WHERE {$where_condition}
-            GROUP BY YEARWEEK(r.check_in_date)
+            GROUP BY YEARWEEK(r.check_in_date, 1)
             ORDER BY week DESC
             LIMIT 12
         ";
-        
+
         $stmt = $pdo->prepare($query);
         $stmt->execute($params);
-        
+
         return $stmt->fetchAll();
-        
+
     } catch (PDOException $e) {
         error_log("Error getting weekly reports: " . $e->getMessage());
         return [];
@@ -3722,61 +4008,60 @@ function calculateTotalPoints($user_id) {
  */
 function getGuestStatistics() {
     global $pdo;
-    
+
     try {
         // Total guests
-        $stmt = $pdo->query("SELECT COUNT(*) as total FROM guests");
-        $total_guests = $stmt->fetch()['total'];
-        
+        $stmt = $pdo->query('SELECT COUNT(*) AS total FROM guests');
+        $total_guests = (int)($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
         // VIP guests
-        $stmt = $pdo->query("SELECT COUNT(*) as total FROM guests WHERE is_vip = 1");
-        $vip_guests = $stmt->fetch()['total'];
-        
+        $stmt = $pdo->query('SELECT COUNT(*) AS total FROM guests WHERE is_vip = 1');
+        $vip_guests = (int)($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
         // Active guests (currently checked in)
-        $stmt = $pdo->query("
-            SELECT COUNT(DISTINCT g.id) as total 
-            FROM guests g 
-            JOIN reservations r ON g.id = r.guest_id 
-            WHERE r.status = 'checked_in'
-        ");
-        $active_guests = $stmt->fetch()['total'];
-        
+        $stmt = $pdo->query('
+            SELECT COUNT(DISTINCT g.id) AS total
+            FROM guests g
+            INNER JOIN reservations r ON g.id = r.guest_id
+            WHERE r.status = "checked_in"
+        ');
+        $active_guests = (int)($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
         // New guests this month
-        $stmt = $pdo->query("
-            SELECT COUNT(*) as total 
-            FROM guests 
-            WHERE MONTH(created_at) = MONTH(CURRENT_DATE()) 
-            AND YEAR(created_at) = YEAR(CURRENT_DATE())
-        ");
-        $new_guests = $stmt->fetch()['total'];
-        
-        // Pending feedback (if feedback table exists)
+        $stmt = $pdo->query('
+            SELECT COUNT(*) AS total
+            FROM guests
+            WHERE MONTH(created_at) = MONTH(CURRENT_DATE())
+              AND YEAR(created_at) = YEAR(CURRENT_DATE())
+        ');
+        $new_guests = (int)($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+
+        // Pending feedback from guest_feedback table (unresolved)
         $pending_feedback = 0;
         try {
-            $stmt = $pdo->query("SELECT COUNT(*) as total FROM feedback WHERE status = 'pending'");
-            $result = $stmt->fetch();
-            $pending_feedback = $result ? $result['total'] : 0;
-        } catch (PDOException $e) {
-            // Feedback table might not exist, so we'll use 0
+            $stmt = $pdo->query('SELECT COUNT(*) AS total FROM guest_feedback WHERE is_resolved = 0');
+            $pending_feedback = (int)($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
+        } catch (PDOException $inner) {
+            // guest_feedback table might not exist in some training datasets
             $pending_feedback = 0;
         }
-        
+
         return [
             'total_guests' => $total_guests,
             'vip_guests' => $vip_guests,
             'active_guests' => $active_guests,
             'new_guests' => $new_guests,
-            'pending_feedback' => $pending_feedback
+            'pending_feedback' => $pending_feedback,
         ];
-        
+
     } catch (PDOException $e) {
-        error_log("Error getting guest statistics: " . $e->getMessage());
+        error_log('Error getting guest statistics: ' . $e->getMessage());
         return [
             'total_guests' => 0,
             'vip_guests' => 0,
             'active_guests' => 0,
             'new_guests' => 0,
-            'pending_feedback' => 0
+            'pending_feedback' => 0,
         ];
     }
 }
@@ -3940,6 +4225,7 @@ function getStatusBadgeClass($status) {
 }
 
 /**
+/**
  * Get status label
  */
 function getStatusLabel($status) {
@@ -3967,17 +4253,91 @@ function getStatusLabel($status) {
  */
 function getGuestDetails($guest_id) {
     global $pdo;
-    
+
     try {
+        $stmt = $pdo->prepare("SELECT * FROM guests WHERE id = ? LIMIT 1");
+        $stmt->execute([$guest_id]);
+        $guest = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if (!$guest) {
+            return null;
+        }
+
         $stmt = $pdo->prepare("
-            SELECT * FROM guests 
-            WHERE id = ?
+            SELECT
+                COUNT(*) AS total_stays,
+                MAX(check_out_date) AS last_stay,
+                COALESCE(SUM(total_amount), 0) AS total_spent,
+                COALESCE(AVG(total_amount), 0) AS avg_stay_amount
+            FROM reservations
+            WHERE guest_id = ?
         ");
         $stmt->execute([$guest_id]);
-        return $stmt->fetch();
-        
+        $stats = $stmt->fetch(PDO::FETCH_ASSOC) ?: [];
+
+        $guest['total_stays'] = (int)($stats['total_stays'] ?? 0);
+        $guest['last_stay'] = $stats['last_stay'] ?? null;
+        $guest['total_spent'] = (float)($stats['total_spent'] ?? 0);
+        $guest['avg_stay_amount'] = (float)($stats['avg_stay_amount'] ?? 0);
+
+        $stmt = $pdo->prepare("
+            SELECT
+                r.id,
+                r.reservation_number,
+                r.status,
+                r.check_in_date,
+                r.check_out_date,
+                r.total_amount,
+                rm.room_number,
+                rm.room_type
+            FROM reservations r
+            LEFT JOIN rooms rm ON r.room_id = rm.id
+            WHERE r.guest_id = ?
+            ORDER BY r.created_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute([$guest_id]);
+        $guest['recent_reservations'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmt = $pdo->prepare("
+            SELECT
+                gf.id,
+                gf.feedback_type,
+                gf.category,
+                gf.rating,
+                gf.comments,
+                gf.status,
+                gf.created_at,
+                gf.is_resolved,
+                r.reservation_number
+            FROM guest_feedback gf
+            LEFT JOIN reservations r ON gf.reservation_id = r.id
+            WHERE gf.guest_id = ?
+            ORDER BY gf.created_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute([$guest_id]);
+        $guest['feedback_history'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $stmt = $pdo->prepare("
+            SELECT
+                r.reservation_number,
+                r.special_requests,
+                r.created_at
+            FROM reservations r
+            WHERE r.guest_id = ?
+              AND r.special_requests IS NOT NULL
+              AND r.special_requests != ''
+            ORDER BY r.created_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute([$guest_id]);
+        $guest['service_notes_history'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        return $guest;
+
     } catch (PDOException $e) {
-        error_log("Error getting guest details: " . $e->getMessage());
+        error_log('Error getting guest details: ' . $e->getMessage());
         return null;
     }
 }
@@ -3987,7 +4347,7 @@ function getGuestDetails($guest_id) {
  */
 function getRoomDetails($room_id) {
     global $pdo;
-    
+
     try {
         $stmt = $pdo->prepare("
             SELECT * FROM rooms 
@@ -3995,7 +4355,7 @@ function getRoomDetails($room_id) {
         ");
         $stmt->execute([$room_id]);
         return $stmt->fetch();
-        
+
     } catch (PDOException $e) {
         error_log("Error getting room details: " . $e->getMessage());
         return null;

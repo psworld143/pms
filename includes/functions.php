@@ -312,7 +312,11 @@ function getUserRoles() {
     return [
         'manager' => 'Manager',
         'front_desk' => 'Front Desk',
-        'housekeeping' => 'Housekeeping'
+        'housekeeping' => 'Housekeeping',
+        'maintenance' => 'Maintenance',
+        'security' => 'Security',
+        'concierge' => 'Concierge',
+        'food_beverage' => 'Food & Beverage'
     ];
 }
 
@@ -320,8 +324,7 @@ function getUserRoles() {
  * Validate user role
  */
 function isValidUserRole($role) {
-    $valid_roles = ['manager', 'front_desk', 'housekeeping'];
-    return in_array($role, $valid_roles);
+    return in_array($role, array_keys(getUserRoles()), true);
 }
 
 /**

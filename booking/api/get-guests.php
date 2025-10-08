@@ -94,9 +94,7 @@ function getGuestsWithFilters($search, $vip_filter, $status_filter, $per_page, $
             }
         }
         
-        $query .= " ORDER BY g.created_at DESC LIMIT ? OFFSET ?";
-        $params[] = $per_page;
-        $params[] = $offset;
+        $query .= " ORDER BY g.created_at DESC LIMIT " . (int)$per_page . " OFFSET " . (int)$offset;
         
         $stmt = $pdo->prepare($query);
         $stmt->execute($params);

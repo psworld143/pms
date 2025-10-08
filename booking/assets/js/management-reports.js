@@ -332,7 +332,7 @@ function loadInventoryReports() {
 // Display functions
 function displayDailyReports(data) {
     const container = document.getElementById('daily-reports-container');
-    
+
     if (!data || !data.summary) {
         container.innerHTML = `
             <div class="text-center py-8">
@@ -343,63 +343,39 @@ function displayDailyReports(data) {
         `;
         return;
     }
-    
+
     const summary = data.summary;
     const reservations = data.reservations || [];
-    const checkIns = data.check_ins || [];
-    const checkOuts = data.check_outs || [];
-    
-    // Display summary cards
+
+    const summaryCards = [
+        { icon: 'fa-calendar-day', color: 'text-blue-600', bg: 'bg-blue-100', label: 'Total Reservations', value: formatNumber(summary.total_reservations) },
+        { icon: 'fa-sign-in-alt', color: 'text-green-600', bg: 'bg-green-100', label: 'Check-ins', value: formatNumber(summary.check_ins) },
+        { icon: 'fa-sign-out-alt', color: 'text-red-600', bg: 'bg-red-100', label: 'Check-outs', value: formatNumber(summary.check_outs) },
+        { icon: 'fa-bed', color: 'text-yellow-600', bg: 'bg-yellow-100', label: 'Occupancy Rate', value: `${Number(summary.occupancy_rate || 0).toFixed(1)}%` },
+        { icon: 'fa-peso-sign', color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Revenue', value: formatCurrency(summary.daily_revenue) },
+        { icon: 'fa-coins', color: 'text-indigo-600', bg: 'bg-indigo-100', label: 'Taxes', value: formatCurrency(summary.daily_taxes) },
+        { icon: 'fa-tags', color: 'text-purple-600', bg: 'bg-purple-100', label: 'Discounts', value: formatCurrency(summary.daily_discounts) },
+        { icon: 'fa-receipt', color: 'text-gray-600', bg: 'bg-gray-100', label: 'Transactions', value: formatNumber(summary.total_transactions) }
+    ];
+
     const summaryHtml = `
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex items-center">
-                    <div class="p-2 bg-blue-100 rounded-lg">
-                        <i class="fas fa-calendar-day text-blue-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Total Reservations</p>
-                        <p class="text-2xl font-bold text-gray-900">${summary.total_reservations}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex items-center">
-                    <div class="p-2 bg-green-100 rounded-lg">
-                        <i class="fas fa-sign-in-alt text-green-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Check-ins</p>
-                        <p class="text-2xl font-bold text-gray-900">${summary.check_ins}</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            ${summaryCards.map(card => `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 ${card.bg} rounded-lg">
+                            <i class="fas ${card.icon} ${card.color}"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">${card.label}</p>
+                            <p class="text-2xl font-bold text-gray-900">${card.value}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex items-center">
-                    <div class="p-2 bg-red-100 rounded-lg">
-                        <i class="fas fa-sign-out-alt text-red-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Check-outs</p>
-                        <p class="text-2xl font-bold text-gray-900">${summary.check_outs}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex items-center">
-                    <div class="p-2 bg-yellow-100 rounded-lg">
-                        <i class="fas fa-percentage text-yellow-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Occupancy Rate</p>
-                        <p class="text-2xl font-bold text-gray-900">${summary.occupancy_rate}%</p>
-                    </div>
-                </div>
-            </div>
+            `).join('')}
         </div>
     `;
-    
-    // Display reservations table
+
     const tableHtml = `
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -414,7 +390,6 @@ function displayDailyReports(data) {
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -422,17 +397,16 @@ function displayDailyReports(data) {
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">${reservation.guest_name}</div>
-                                    <div class="text-sm text-gray-500">${reservation.guest_email}</div>
+                                    <div class="text-sm text-gray-500">${reservation.guest_email || '—'}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${reservation.room_number} (${reservation.room_type})</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_in)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_out)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_in_date)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_out_date)}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(reservation.status)}">
                                         ${reservation.status.replace('_', ' ').toUpperCase()}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(reservation.total_amount || 0).toFixed(2)}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -440,7 +414,7 @@ function displayDailyReports(data) {
             </div>
         </div>
     `;
-    
+
     container.innerHTML = summaryHtml + tableHtml;
 }
 
@@ -458,6 +432,33 @@ function displayWeeklyReports(data) {
         return;
     }
     
+    const totals = data.totals || {};
+
+    const summaryCards = [
+        { icon: 'fa-peso-sign', color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Total Revenue', value: formatCurrency(totals.total_revenue) },
+        { icon: 'fa-coins', color: 'text-indigo-600', bg: 'bg-indigo-100', label: 'Taxes', value: formatCurrency(totals.total_taxes) },
+        { icon: 'fa-tags', color: 'text-purple-600', bg: 'bg-purple-100', label: 'Discounts', value: formatCurrency(totals.total_discounts) },
+        { icon: 'fa-bed', color: 'text-blue-600', bg: 'bg-blue-100', label: 'Occupied Nights', value: formatNumber(totals.occupied_nights) }
+    ];
+
+    const summaryHtml = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            ${summaryCards.map(card => `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 ${card.bg} rounded-lg">
+                            <i class="fas ${card.icon} ${card.color}"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">${card.label}</p>
+                            <p class="text-2xl font-bold text-gray-900">${card.value}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
     const tableHtml = `
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -468,31 +469,40 @@ function displayWeeklyReports(data) {
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservations</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taxes</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounts</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         ${data.data.map(report => `
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatDate(report.date)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.daily_reservations}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.daily_revenue || 0).toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatNumber(report.transactions)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.revenue)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.taxes)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.discounts)}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
             </div>
             <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                <div class="flex justify-between">
-                    <span class="text-sm font-medium text-gray-900">Weekly Totals:</span>
-                    <span class="text-sm text-gray-900">${data.totals.total_reservations} reservations, ₱${parseFloat(data.totals.total_revenue || 0).toFixed(2)} revenue</span>
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <span class="text-sm font-medium text-gray-900">Weekly Summary</span>
+                    <div class="text-sm text-gray-700 space-x-4">
+                        <span>Revenue: ${formatCurrency(totals.total_revenue)}</span>
+                        <span>Taxes: ${formatCurrency(totals.total_taxes)}</span>
+                        <span>Discounts: ${formatCurrency(totals.total_discounts)}</span>
+                        <span>Transactions: ${formatNumber(totals.total_reservations)}</span>
+                    </div>
                 </div>
             </div>
         </div>
     `;
-    
-    container.innerHTML = tableHtml;
+
+    container.innerHTML = summaryHtml + tableHtml;
 }
 
 function displayMonthlyReports(data) {
@@ -509,6 +519,33 @@ function displayMonthlyReports(data) {
         return;
     }
     
+    const totals = data.totals || {};
+
+    const summaryCards = [
+        { icon: 'fa-peso-sign', color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Total Revenue', value: formatCurrency(totals.total_revenue) },
+        { icon: 'fa-coins', color: 'text-indigo-600', bg: 'bg-indigo-100', label: 'Taxes', value: formatCurrency(totals.total_taxes) },
+        { icon: 'fa-tags', color: 'text-purple-600', bg: 'bg-purple-100', label: 'Discounts', value: formatCurrency(totals.total_discounts) },
+        { icon: 'fa-balance-scale', color: 'text-blue-600', bg: 'bg-blue-100', label: 'Avg. Reservation Value', value: formatCurrency(totals.average_reservation_value) }
+    ];
+
+    const summaryHtml = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            ${summaryCards.map(card => `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 ${card.bg} rounded-lg">
+                            <i class="fas ${card.icon} ${card.color}"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">${card.label}</p>
+                            <p class="text-2xl font-bold text-gray-900">${card.value}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
     const tableHtml = `
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -519,41 +556,49 @@ function displayMonthlyReports(data) {
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservations</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taxes</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounts</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         ${data.data.map(report => `
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatDate(report.date)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.daily_reservations}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.daily_revenue || 0).toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatNumber(report.transactions)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.revenue)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.taxes)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.discounts)}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
             </div>
             <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <span class="text-sm font-medium text-gray-500">Total Reservations:</span>
-                        <span class="text-sm text-gray-900 ml-2">${data.totals.total_reservations}</span>
-                    </div>
-                    <div>
-                        <span class="text-sm font-medium text-gray-500">Total Revenue:</span>
-                        <span class="text-sm text-gray-900 ml-2">₱${parseFloat(data.totals.total_revenue || 0).toFixed(2)}</span>
-                    </div>
-                    <div>
-                        <span class="text-sm font-medium text-gray-500">Avg. Reservation Value:</span>
-                        <span class="text-sm text-gray-900 ml-2">₱${parseFloat(data.totals.average_reservation_value || 0).toFixed(2)}</span>
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <span class="text-sm font-medium text-gray-900">Monthly Summary</span>
+                    <div class="text-sm text-gray-700 space-x-4">
+                        <span>Revenue: ${formatCurrency(totals.total_revenue)}</span>
+                        <span>Taxes: ${formatCurrency(totals.total_taxes)}</span>
+                        <span>Discounts: ${formatCurrency(totals.total_discounts)}</span>
+                        <span>Avg Value: ${formatCurrency(totals.average_reservation_value)}</span>
                     </div>
                 </div>
             </div>
         </div>
     `;
-    
-    container.innerHTML = tableHtml;
+
+    container.innerHTML = summaryHtml + tableHtml;
+}
+
+function formatCurrency(value) {
+    const amount = Number(value || 0);
+    return `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatNumber(value) {
+    return Number(value || 0).toLocaleString('en-US');
 }
 
 function displayInventoryReports(data) {

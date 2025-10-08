@@ -1,6 +1,6 @@
 <?php
-session_start();
-require_once "../config/database.php";
+require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+require_once '../config/database.php';
 require_once '../includes/functions.php';
 
 // Check if user is logged in and has manager access

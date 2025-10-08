@@ -51,7 +51,6 @@ $navigation_items = [
             'maintenance_management' => ['url' => booking_url('modules/management/maintenance-management.php'), 'label' => 'Maintenance Management'],
             'staff_scheduling' => ['url' => booking_url('modules/management/staff-scheduling.php'), 'label' => 'Staff Scheduling'],
             'room_management' => ['url' => booking_url('modules/management/room-management.php'), 'label' => 'Room Management'],
-            'user_management' => ['url' => booking_url('modules/management/user-management.php'), 'label' => 'User Management'],
             'staff' => ['url' => booking_url('modules/management/staff.php'), 'label' => 'Staff'],
             'settings' => ['url' => booking_url('modules/management/settings.php'), 'label' => 'System Settings'],
             'audit_log' => ['url' => booking_url('modules/management/audit-log.php'), 'label' => 'Audit Log']

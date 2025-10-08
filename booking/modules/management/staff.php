@@ -4,18 +4,28 @@
  * Hotel PMS Training System for Students
  */
 
-session_start();
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/functions.php';
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
+require_once dirname(__DIR__, 3) . '/includes/functions.php';
+require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
 
-// Check if user is logged in and has manager role
+booking_initialize_paths();
+
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
-    header('Location: ../../login.php');
+    header('Location: ' . booking_base() . 'login.php');
     exit();
 }
 
 // Set page title
 $page_title = 'Staff Management';
+
+$available_roles = getUserRoles();
+$user_stats = getUserStats();
+
+$asset_version = time();
+$additional_js  = '<script>window.currentUserIdFromServer = ' . (int)($_SESSION['user_id'] ?? 0) . ";</script>\n";
+$additional_js .= '<script src="' . booking_url('assets/js/main.js?v=' . $asset_version) . '"></script>' . "\n";
+$additional_js .= '<script src="' . booking_url('assets/js/staff-management.js?v=' . $asset_version) . '"></script>';
 
 // Include header
 include '../../includes/header-unified.php';
@@ -45,7 +55,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Staff</p>
-                            <p class="text-2xl font-semibold text-gray-900">24</p>
+                            <p id="staff-total-count" class="text-2xl font-semibold text-gray-900"><?php echo (int) $user_stats['total_users']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -59,7 +69,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active Staff</p>
-                            <p class="text-2xl font-semibold text-gray-900">22</p>
+                            <p id="staff-active-count" class="text-2xl font-semibold text-gray-900"><?php echo (int) $user_stats['active_users']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -73,7 +83,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">On Duty</p>
-                            <p class="text-2xl font-semibold text-gray-900">8</p>
+                            <p id="staff-duty-count" class="text-2xl font-semibold text-gray-900">0</p>
                         </div>
                     </div>
                 </div>
@@ -87,8 +97,40 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Training Required</p>
-                            <p class="text-2xl font-semibold text-gray-900">3</p>
+                            <p id="staff-training-count" class="text-2xl font-semibold text-gray-900">0</p>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                        <select id="staff-role-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">All Roles</option>
+                            <?php foreach ($available_roles as $role_key => $role_name): ?>
+                                <option value="<?php echo $role_key; ?>"><?php echo $role_name; ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                        <select id="staff-status-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                            <option value="">All Status</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                        <input type="text" id="staff-search" placeholder="Search staff..."
+                               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
+                    </div>
+                    <div class="flex items-end">
+                        <button id="staff-refresh-btn" class="w-full bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md">
+                            <i class="fas fa-sync-alt mr-2"></i>Refresh
+                        </button>
                     </div>
                 </div>
             </div>
@@ -104,100 +146,15 @@ include '../../includes/sidebar-unified.php';
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Staff Member</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody id="staff-table-body" class="bg-white divide-y divide-gray-200">
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
-                                                <span class="text-white font-medium">JS</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">John Smith</div>
-                                            <div class="text-sm text-gray-500">john.smith@hotel.com</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        Manager
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Management</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                                    <button class="text-red-600 hover:text-red-900">Delete</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center">
-                                                <span class="text-white font-medium">MJ</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Mary Johnson</div>
-                                            <div class="text-sm text-gray-500">mary.johnson@hotel.com</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Front Desk
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Front Desk</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                                    <button class="text-red-600 hover:text-red-900">Delete</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-purple-500 flex items-center justify-center">
-                                                <span class="text-white font-medium">RB</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Robert Brown</div>
-                                            <div class="text-sm text-gray-500">robert.brown@hotel.com</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                        Housekeeping
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Housekeeping</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        On Leave
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                                    <button class="text-red-600 hover:text-red-900">Delete</button>
+                                <td colspan="5" class="px-6 py-10 text-center text-gray-500">
+                                    <i class="fas fa-spinner fa-spin mr-2"></i>Loading staff directory...
                                 </td>
                             </tr>
                         </tbody>
@@ -223,7 +180,8 @@ include '../../includes/sidebar-unified.php';
                     </button>
                 </div>
                 
-                <form id="add-staff-form" class="space-y-6">
+                <form id="staff-form" class="space-y-6">
+                    <input type="hidden" id="staff_user_id" name="user_id">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Full Name *</label>
@@ -254,12 +212,9 @@ include '../../includes/sidebar-unified.php';
                             <select name="role" id="staff_role" required 
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Select Role</option>
-                                <option value="manager">Manager</option>
-                                <option value="front_desk">Front Desk</option>
-                                <option value="housekeeping">Housekeeping</option>
-                                <option value="maintenance">Maintenance</option>
-                                <option value="security">Security</option>
-                                <option value="concierge">Concierge</option>
+                                <?php foreach ($available_roles as $role_key => $role_name): ?>
+                                    <option value="<?php echo $role_key; ?>"><?php echo $role_name; ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         
@@ -315,212 +270,40 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     
                     <div class="flex justify-end space-x-4">
-                        <button type="button" onclick="closeAddStaffModal()" 
+                        <button type="button" id="staff-cancel-btn" 
                                 class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
                             Cancel
                         </button>
-                        <button type="submit" 
+                        <button type="submit" id="staff-submit-btn"
                                 class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            Add Staff Member
+                            <span id="staff-submit-text">Add Staff Member</span>
                         </button>
                     </div>
                 </form>
             </div>
         </div>
 
+        <!-- Delete Confirmation Modal -->
+        <div id="delete-staff-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
+                <div class="flex items-center mb-6">
+                    <div class="flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle text-red-600 text-2xl"></i>
+                    </div>
+                    <div class="ml-4">
+                        <h3 class="text-lg font-semibold text-gray-900">Delete Staff Member</h3>
+                        <p class="text-sm text-gray-600">Are you sure you want to remove this staff member?</p>
+                    </div>
+                </div>
+
+                <div id="delete-staff-info" class="mb-6 p-4 bg-gray-50 rounded-md text-sm text-gray-700"></div>
+
+                <div class="flex justify-end space-x-4">
+                    <button id="delete-staff-cancel" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+                    <button id="delete-staff-confirm" class="px-6 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Delete</button>
+                </div>
+            </div>
+        </div>
+
         <!-- Include footer -->
         <?php include '../../includes/footer.php'; ?>
-
-        <script>
-            // Modal functions
-            function openAddStaffModal() {
-                document.getElementById('add-staff-modal').classList.remove('hidden');
-                document.body.style.overflow = 'hidden';
-                
-                // Set today's date as default hire date
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('staff_hire_date').value = today;
-            }
-
-            function closeAddStaffModal() {
-                document.getElementById('add-staff-modal').classList.add('hidden');
-                document.body.style.overflow = 'auto';
-                document.getElementById('add-staff-form').reset();
-            }
-
-            // Close modal when clicking outside
-            document.getElementById('add-staff-modal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeAddStaffModal();
-                }
-            });
-
-            // Close modal with Escape key
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape' && !document.getElementById('add-staff-modal').classList.contains('hidden')) {
-                    closeAddStaffModal();
-                }
-            });
-
-            // Form submission
-            document.getElementById('add-staff-form').addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                // Validate passwords match
-                const password = document.getElementById('staff_password').value;
-                const confirmPassword = document.getElementById('staff_confirm_password').value;
-                
-                if (password !== confirmPassword) {
-                    showNotification('Passwords do not match', 'error');
-                    return;
-                }
-                
-                // Validate password strength
-                if (password.length < 6) {
-                    showNotification('Password must be at least 6 characters long', 'error');
-                    return;
-                }
-                
-                // Get form data
-                const formData = new FormData(this);
-                const data = Object.fromEntries(formData);
-                
-                // Show loading state
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
-                submitBtn.disabled = true;
-                
-                // Show modal loading overlay
-                document.getElementById('modal-loading').classList.remove('hidden');
-                
-                // Submit to API
-                fetch('../../api/create-user.php', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        showNotification(data.message, 'success');
-                        closeAddStaffModal();
-                        // Refresh the page to show new staff member
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 1000);
-                    } else {
-                        showNotification(data.message || 'Error adding staff member', 'error');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error adding staff member:', error);
-                    showNotification('Error adding staff member', 'error');
-                })
-                .finally(() => {
-                    // Reset button state
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                    
-                    // Hide modal loading overlay
-                    document.getElementById('modal-loading').classList.add('hidden');
-                });
-            });
-
-            // Auto-generate username from name
-            document.getElementById('staff_name').addEventListener('blur', function() {
-                const name = this.value.trim();
-                const usernameField = document.getElementById('staff_username');
-                
-                if (name && !usernameField.value) {
-                    // Generate username from name (first name + last name initial)
-                    const nameParts = name.toLowerCase().split(' ');
-                    if (nameParts.length >= 2) {
-                        const username = nameParts[0] + nameParts[nameParts.length - 1].charAt(0);
-                        usernameField.value = username;
-                    } else if (nameParts.length === 1) {
-                        usernameField.value = nameParts[0];
-                    }
-                }
-            });
-
-            // Auto-sync role and department
-            document.getElementById('staff_role').addEventListener('change', function() {
-                const role = this.value;
-                const departmentSelect = document.getElementById('staff_department');
-                
-                // Map roles to departments
-                const roleDepartmentMap = {
-                    'manager': 'management',
-                    'front_desk': 'front_desk',
-                    'housekeeping': 'housekeeping',
-                    'maintenance': 'maintenance',
-                    'security': 'security',
-                    'concierge': 'concierge'
-                };
-                
-                if (roleDepartmentMap[role]) {
-                    departmentSelect.value = roleDepartmentMap[role];
-                }
-            });
-
-            // Notification function
-            function showNotification(message, type = 'info') {
-                // Create notification element
-                const notification = document.createElement('div');
-                notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg max-w-sm ${
-                    type === 'success' ? 'bg-green-500 text-white' :
-                    type === 'error' ? 'bg-red-500 text-white' :
-                    'bg-blue-500 text-white'
-                }`;
-                
-                notification.innerHTML = `
-                    <div class="flex items-center">
-                        <i class="fas ${
-                            type === 'success' ? 'fa-check-circle' :
-                            type === 'error' ? 'fa-exclamation-circle' :
-                            'fa-info-circle'
-                        } mr-2"></i>
-                        <span>${message}</span>
-                    </div>
-                `;
-                
-                document.body.appendChild(notification);
-                
-                // Remove notification after 5 seconds
-                setTimeout(() => {
-                    notification.remove();
-                }, 5000);
-            }
-
-            // Real-time validation
-            document.getElementById('staff_email').addEventListener('blur', function() {
-                const email = this.value;
-                if (email && !isValidEmail(email)) {
-                    this.classList.add('border-red-500');
-                    showNotification('Please enter a valid email address', 'error');
-                } else {
-                    this.classList.remove('border-red-500');
-                }
-            });
-
-            document.getElementById('staff_confirm_password').addEventListener('input', function() {
-                const password = document.getElementById('staff_password').value;
-                const confirmPassword = this.value;
-                
-                if (confirmPassword && password !== confirmPassword) {
-                    this.classList.add('border-red-500');
-                } else {
-                    this.classList.remove('border-red-500');
-                }
-            });
-
-            function isValidEmail(email) {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                return emailRegex.test(email);
-            }
-        </script>
-    </body>
-</html>
