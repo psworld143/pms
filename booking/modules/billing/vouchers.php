@@ -8,6 +8,10 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
+// Load dynamic data
+$voucherMetrics = getVoucherMetrics();
+$vouchers = getVouchers('', null);
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../login.php');
@@ -37,7 +41,7 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Voucher Statistics -->
+            <!-- Voucher Statistics (Dynamic) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
@@ -48,7 +52,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Vouchers</p>
-                            <p class="text-2xl font-semibold text-gray-900">1,247</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($voucherMetrics['total_vouchers']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -61,8 +65,8 @@ include '../../includes/sidebar-unified.php';
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Redeemed</p>
-                            <p class="text-2xl font-semibold text-gray-900">856</p>
+                            <p class="text-sm font-medium text-gray-500">Used</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($voucherMetrics['used_vouchers']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -76,7 +80,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active</p>
-                            <p class="text-2xl font-semibold text-gray-900">234</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($voucherMetrics['active_vouchers']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -90,7 +94,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Expired</p>
-                            <p class="text-2xl font-semibold text-gray-900">157</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($voucherMetrics['expired_vouchers']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -241,84 +245,43 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Vouchers Table -->
+            <!-- Vouchers Table (Dynamic) -->
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800">All Vouchers</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher Code</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Issued To</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Expiry</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">VCH-001-ABC</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Free Night Voucher</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">1 Night</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-8 w-8">
-                                            <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-                                                <span class="text-white text-xs font-medium">JD</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-3">
-                                            <div class="text-sm font-medium text-gray-900">John Doe</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-06-30</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Redeem</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">VCH-002-XYZ</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Spa Treatment</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Service</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$100</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-8 w-8">
-                                            <div class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
-                                                <span class="text-white text-xs font-medium">JS</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-3">
-                                            <div class="text-sm font-medium text-gray-900">Jane Smith</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-05-15</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Used
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-gray-400 cursor-not-allowed">Redeem</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <?php if (!empty($vouchers)): ?>
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Voucher Code</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Used</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid Period</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php foreach ($vouchers as $v): ?>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?php echo htmlspecialchars($v['voucher_code']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars(ucfirst($v['voucher_type'])); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($v['voucher_value']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo number_format($v['used_count']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($v['valid_from']); ?> to <?php echo htmlspecialchars($v['valid_until']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php $cls = $v['status'] === 'active' ? 'bg-green-100 text-green-800' : ($v['status'] === 'used' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'); ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $cls; ?>"><?php echo htmlspecialchars(ucfirst($v['status'])); ?></span>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php else: ?>
+                        <div class="p-6 text-center text-gray-500">No vouchers found.</div>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>

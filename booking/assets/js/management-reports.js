@@ -294,39 +294,37 @@ function loadInventoryReports() {
     const categoryFilter = document.getElementById('inventory-category-filter').value;
     const params = new URLSearchParams({ category: categoryFilter });
     
-    // Updated: Use the proper inventory module API endpoints (corrected path: ../../../inventory/api/)
-    Promise.all([
-        fetch(`../../../inventory/api/get-inventory-items.php?${params}`),
-        fetch(`../../../inventory/api/get-inventory-stats.php`),
-        fetch(`../../../inventory/api/get-enhanced-report-data.php`)
-    ])
-    .then(responses => Promise.all(responses.map(r => r.json())))
-    .then(([itemsData, statsData, reportData]) => {
-        if (itemsData.success && statsData.success && reportData.success) {
-            // Combine the data in the expected format
-            const combinedData = {
-                success: true,
-                category_filter: categoryFilter,
-                inventory_items: itemsData.inventory_items,
-                stock_summary: {
-                    total_items: statsData.statistics.total_items,
-                    low_stock_items: statsData.statistics.low_stock,
-                    medium_stock_items: statsData.statistics.low_stock, // Using low_stock as medium for now
-                    good_stock_items: statsData.statistics.in_stock,
-                    total_inventory_value: reportData.kpis.total_inventory_value || 0
-                },
-                recent_transactions: [], // This would need a separate API call
-                enhanced_data: reportData
-            };
-            displayInventoryReports(combinedData);
+    // Use the new management-specific inventory reports API
+    fetch(`../../api/get-inventory-reports.php?${params}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Load categories into the filter dropdown
+            loadInventoryCategoriesFilter(data.categories || []);
+            displayInventoryReports(data);
         } else {
-            HotelPMS.Utils.showNotification('Error loading inventory reports', 'error');
+            console.error('API Error:', data);
+            HotelPMS.Utils.showNotification(data.message || 'Error loading inventory reports', 'error');
         }
     })
     .catch(error => {
         console.error('Error loading inventory reports:', error);
         HotelPMS.Utils.showNotification('Error loading inventory reports', 'error');
     });
+}
+
+function loadInventoryCategoriesFilter(categories) {
+    const select = document.getElementById('inventory-category-filter');
+    if (select && categories.length > 0) {
+        // Keep the "All Categories" option and add dynamic categories
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">All Categories</option>';
+        categories.forEach(category => {
+            select.innerHTML += `<option value="${category}">${category}</option>`;
+        });
+        // Restore the selected value
+        select.value = currentValue;
+    }
 }
 
 // Display functions
@@ -817,11 +815,11 @@ function switchInventoryTab(tabName) {
 }
 
 function loadInventoryItems() {
-    fetch('../../api/get-inventory-items.php')
+    fetch('../../inventory/api/get-inventory-items.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayInventoryItems(data.items);
+                displayInventoryItems(data.inventory_items || data.items || []);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading inventory items', 'error');
             }
@@ -917,7 +915,7 @@ function handleAddItemSubmit(e) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
     
-    fetch('../../api/add-inventory-item.php', {
+    fetch('../../inventory/api/create-inventory-item.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -944,13 +942,13 @@ function handleAddItemSubmit(e) {
 
 // Utility functions
 function loadInventoryCategories(selectId) {
-    fetch('../../api/get-inventory-categories.php')
+    fetch('../../inventory/api/get-inventory-categories.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const select = document.getElementById(selectId);
                 select.innerHTML = '<option value="">Select Category</option>';
-                data.categories.forEach(category => {
+                (data.categories || []).forEach(category => {
                     select.innerHTML += `<option value="${category.id}">${category.name}</option>`;
                 });
             }
@@ -961,11 +959,11 @@ function loadInventoryCategories(selectId) {
 }
 
 function loadInventoryCategories() {
-    fetch('../../api/get-inventory-categories.php')
+    fetch('../../inventory/api/get-inventory-categories.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayInventoryCategories(data.categories);
+                displayInventoryCategories(data.categories || []);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading categories', 'error');
             }
@@ -1028,11 +1026,11 @@ function displayInventoryCategories(categories) {
 }
 
 function loadInventoryTransactions() {
-    fetch('../../api/get-inventory-transactions.php')
+    fetch('../../inventory/api/get-transaction-stats.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayInventoryTransactions(data.transactions);
+                displayInventoryTransactions(data.transactions || []);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading transactions', 'error');
             }

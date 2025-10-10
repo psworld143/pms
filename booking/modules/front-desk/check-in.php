@@ -1,9 +1,9 @@
 <?php
-session_start();
+require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-require_once "../../config/database.php";
+require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {

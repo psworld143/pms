@@ -65,20 +65,16 @@ function createServiceRequest($data) {
     try {
         $pdo->beginTransaction();
         
-        // Insert service request
-        $stmt = $pdo->prepare("
-            INSERT INTO maintenance_requests (
-                room_id, request_type, priority, description, 
-                special_instructions, status, created_by, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, 'pending', ?, NOW(), NOW())
-        ");
+        // Insert service request (using reported_by per maintenance_requests schema)
+        $stmt = $pdo->prepare("INSERT INTO maintenance_requests (
+                room_id, issue_type, priority, description, status, reported_by, created_at, updated_at
+            ) VALUES (?, ?, ?, ?, 'pending', ?, NOW(), NOW())");
         
         $stmt->execute([
             $data['room_id'],
             $data['request_type'],
             $data['priority'],
             $data['description'],
-            $data['special_instructions'] ?? '',
             $_SESSION['user_id']
         ]);
         

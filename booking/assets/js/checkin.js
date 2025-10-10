@@ -1,359 +1,349 @@
-// Check-in JavaScript
+/**
+ * Check-in Management JavaScript
+ * Hotel PMS - Front Desk Module
+ */
 
-document.addEventListener('DOMContentLoaded', function() {
-    // Load pending check-ins
-    loadPendingCheckins();
-    
-    // Initialize form handlers
-    initializeCheckinForm();
-});
-
-// Load pending check-ins
-function loadPendingCheckins() {
-    const container = document.getElementById('pending-checkins');
-    if (!container) return;
-    
-    // Show loading
-    container.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>';
-    
-    // Fetch pending check-ins
-    fetch('../../api/get-pending-checkins.php')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                displayPendingCheckins(data.reservations);
-            } else {
-                container.innerHTML = '<div class="text-center py-8 text-gray-500">No pending check-ins</div>';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading pending check-ins:', error);
-            container.innerHTML = '<div class="text-center py-8 text-red-500">Error loading check-ins</div>';
-        });
-}
-
-// Display pending check-ins
-function displayPendingCheckins(reservations) {
-    const container = document.getElementById('pending-checkins');
-    
-    if (reservations.length === 0) {
-        container.innerHTML = '<div class="text-center py-8 text-gray-500">No pending check-ins for today</div>';
-        return;
+class CheckInManager {
+    constructor() {
+        this.init();
     }
-    
-    const tableHtml = `
-        <table class="min-w-full divide-y divide-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservation</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in Date</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-            </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
-                ${reservations.map(reservation => `
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="flex items-center">
-                                <div class="flex-shrink-0 h-10 w-10">
-                                    <div class="h-10 w-10 rounded-full bg-gray-300 flex items-center justify-center">
-                                        <span class="text-sm font-medium text-gray-700">
-                                            ${reservation.first_name.charAt(0)}${reservation.last_name.charAt(0)}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div class="ml-4">
-                                    <div class="text-sm font-medium text-gray-900">
-                                        ${reservation.first_name} ${reservation.last_name}
-                                        ${reservation.is_vip ? '<span class="ml-2 px-2 py-1 text-xs bg-yellow-100 text-yellow-800 rounded-full">VIP</span>' : ''}
-                                    </div>
-                                    <div class="text-sm text-gray-500">${reservation.adults} adults, ${reservation.children} children</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">${reservation.reservation_number}</div>
-                            <div class="text-sm text-gray-500">${formatDate(reservation.created_at)}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm text-gray-900">${reservation.room_number}</div>
-                            <div class="text-sm text-gray-500">${reservation.room_type}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            ${formatDate(reservation.check_in_date)}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                                Pending Check-in
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <button onclick="startCheckin(${reservation.id})" 
-                                    class="text-green-600 hover:text-green-900">
-                                <i class="fas fa-sign-in-alt mr-1"></i>Check In
-                            </button>
-                        </td>
-                    </tr>
-                `).join('')}
-            </tbody>
-        </table>
-    `;
-    
-    container.innerHTML = tableHtml;
-}
 
-// Search reservations
-function searchReservations() {
-    const reservationNumber = document.getElementById('search_reservation').value;
-    const guestName = document.getElementById('search_guest').value;
-    const checkInDate = document.getElementById('search_date').value;
-    const status = document.getElementById('search_status') ? document.getElementById('search_status').value : '';
-    
-    // Show loading
-    const container = document.getElementById('pending-checkins');
-    container.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>';
-    
-    // Build query parameters
-    const params = new URLSearchParams();
-    if (reservationNumber) params.append('reservation_number', reservationNumber);
-    if (guestName) params.append('guest_name', guestName);
-    if (checkInDate) params.append('check_in_date', checkInDate);
-    if (status) params.append('status', status);
-    
-    // Fetch search results - try multiple API endpoints
-    const apiEndpoints = [
-        `../../api/search-reservations.php?${params.toString()}`,
-        `../../api/get-pending-checkins.php?${params.toString()}`,
-        `../../api/get-all-reservations.php?${params.toString()}`
-    ];
-    
-    // Try the first endpoint, fallback to others if needed
-    fetch(apiEndpoints[0])
-        .then(response => {
-            if (!response.ok) {
-                // Try fallback endpoint
-                return fetch(apiEndpoints[1]);
-            }
-            return response;
-        })
-        .then(response => {
-            if (!response.ok) {
-                // Try final fallback endpoint
-                return fetch(apiEndpoints[2]);
-            }
-            return response;
-        })
-        .then(response => response.json())
-        .then(data => {
+    init() {
+        this.loadPendingCheckins();
+        this.setupEventListeners();
+    }
+
+    // Load pending check-ins
+    async loadPendingCheckins() {
+        try {
+            const response = await fetch('../../api/get-pending-checkins.php');
+            const data = await response.json();
+            
             if (data.success) {
-                displayPendingCheckins(data.reservations || data.data || []);
+                this.displayPendingCheckins(data.reservations);
             } else {
-                container.innerHTML = `
-                    <div class="px-6 py-12 text-center">
-                        <i class="fas fa-search text-gray-400 text-4xl mb-4"></i>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No search results found</h3>
-                        <p class="text-gray-500">Try adjusting your search criteria or filters.</p>
-                    </div>
-                `;
+                console.error('Error loading pending check-ins:', data.message);
             }
-        })
-        .catch(error => {
-            console.error('Error searching reservations:', error);
+        } catch (error) {
+            console.error('Error loading pending check-ins:', error);
+        }
+    }
+
+    // Display pending check-ins
+    displayPendingCheckins(reservations) {
+        const container = document.getElementById('pending-checkins');
+        if (!container) return;
+
+        if (reservations.length === 0) {
             container.innerHTML = `
-                <div class="px-6 py-12 text-center">
-                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
-                    <h3 class="text-lg font-medium text-gray-900 mb-2">Error searching reservations</h3>
-                    <p class="text-gray-500">Unable to search reservations. Please try again.</p>
+                <div class="px-6 py-12 text-center text-gray-500">
+                    <i class="fas fa-calendar-check text-4xl mb-4"></i>
+                    <p>No pending check-ins for today</p>
                 </div>
             `;
-        });
-}
+            return;
+        }
 
-// Start check-in process
-function startCheckin(reservationId) {
-    // Fetch reservation details
-    fetch(`../../api/get-reservation-details.php?id=${reservationId}`)
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                populateCheckinForm(data.reservation);
-                showCheckinForm();
+        const table = `
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservation</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in Time</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    ${reservations.map(reservation => `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10">
+                                        <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                                            <span class="text-white font-medium">
+                                                ${reservation.guest_name.charAt(0).toUpperCase()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-medium text-gray-900">${reservation.guest_name}</div>
+                                        <div class="text-sm text-gray-500">${reservation.email || ''}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${reservation.reservation_number}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                Room ${reservation.room_number}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                ${this.formatDateTime(reservation.check_in_date)}
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                <button onclick="startCheckIn(${reservation.id})" class="text-blue-600 hover:text-blue-900 mr-3">
+                                    <i class="fas fa-sign-in-alt mr-1"></i>Check In
+                                </button>
+                                <button onclick="viewReservationDetails(${reservation.id})" class="text-gray-600 hover:text-gray-900">
+                                    <i class="fas fa-eye mr-1"></i>View
+                                </button>
+                            </td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+
+        container.innerHTML = table;
+    }
+
+    // Setup event listeners
+    setupEventListeners() {
+        // Check-in form submission
+        const checkinForm = document.getElementById('checkin-form');
+        if (checkinForm) {
+            checkinForm.addEventListener('submit', this.handleCheckInSubmit.bind(this));
+        }
+
+        // Search functionality
+        const searchInputs = ['search_reservation', 'search_guest', 'search_date', 'search_status'];
+        searchInputs.forEach(inputId => {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.addEventListener('input', this.handleSearch.bind(this));
+            }
+        });
+    }
+
+    // Handle check-in form submission
+    async handleCheckInSubmit(event) {
+        event.preventDefault();
+        
+        const formData = new FormData(event.target);
+        const data = {
+            reservation_id: formData.get('reservation_id'),
+            room_key_issued: formData.get('room_key_issued'),
+            welcome_amenities: formData.get('welcome_amenities'),
+            special_instructions: formData.get('special_instructions')
+        };
+
+        try {
+            const response = await fetch('../../api/process-checkin.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification('Check-in completed successfully!', 'success');
+                this.hideCheckInForm();
+                this.loadPendingCheckins();
             } else {
-                showNotification(data.message || 'Error loading reservation details', 'error');
+                this.showNotification(result.message || 'Error processing check-in', 'error');
             }
-        })
-        .catch(error => {
-            console.error('Error loading reservation details:', error);
-            showNotification('Error loading reservation details', 'error');
+        } catch (error) {
+            console.error('Error processing check-in:', error);
+            this.showNotification('Error processing check-in. Please try again.', 'error');
+        }
+    }
+
+    // Handle search
+    handleSearch() {
+        const reservationNumber = document.getElementById('search_reservation').value;
+        const guestName = document.getElementById('search_guest').value;
+        const date = document.getElementById('search_date').value;
+        const status = document.getElementById('search_status').value;
+
+        this.searchReservations({
+            reservation_number: reservationNumber,
+            guest_name: guestName,
+            date: date,
+            status: status
         });
-}
-
-// Populate check-in form
-function populateCheckinForm(reservation) {
-    document.getElementById('reservation_id').value = reservation.id;
-    document.getElementById('guest_name').value = `${reservation.first_name} ${reservation.last_name}`;
-    document.getElementById('reservation_number').value = reservation.reservation_number;
-    document.getElementById('room_number').value = reservation.room_number;
-    document.getElementById('checkin_date').value = formatDate(reservation.check_in_date);
-}
-
-// Show check-in form
-function showCheckinForm() {
-    document.getElementById('checkin-form-container').classList.remove('hidden');
-    document.getElementById('checkin-form-container').scrollIntoView({ behavior: 'smooth' });
-}
-
-// Hide check-in form
-function hideCheckinForm() {
-    document.getElementById('checkin-form-container').classList.add('hidden');
-    document.getElementById('checkin-form').reset();
-}
-
-// Initialize check-in form
-function initializeCheckinForm() {
-    const form = document.getElementById('checkin-form');
-    if (form) {
-        form.addEventListener('submit', handleCheckinSubmit);
     }
-}
 
-// Handle check-in form submission
-function handleCheckinSubmit(e) {
-    e.preventDefault();
-    
-    if (!validateCheckinForm()) {
-        showNotification('Please fill in all required fields', 'warning');
-        return;
-    }
-    
-    const formData = new FormData(e.target);
-    const data = Object.fromEntries(formData.entries());
-    
-    // Show loading state
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.innerHTML;
-    submitBtn.disabled = true;
-    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
-    
-    // Submit check-in
-    fetch('../../api/check-in-guest.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            showNotification('Guest checked in successfully!', 'success');
-            hideCheckinForm();
-            loadPendingCheckins();
-        } else {
-            showNotification(result.message || 'Error checking in guest', 'error');
-        }
-    })
-    .catch(error => {
-        console.error('Error checking in guest:', error);
-        showNotification('Error checking in guest', 'error');
-    })
-    .finally(() => {
-        // Reset button state
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalText;
-    });
-}
+    // Search reservations
+    async searchReservations(filters) {
+        try {
+            const params = new URLSearchParams();
+            Object.keys(filters).forEach(key => {
+                if (filters[key]) {
+                    params.append(key, filters[key]);
+                }
+            });
 
-// Validate check-in form
-function validateCheckinForm() {
-    const requiredFields = ['room_key_issued', 'welcome_amenities'];
-    
-    let isValid = true;
-    
-    requiredFields.forEach(field => {
-        const element = document.getElementById(field);
-        if (!element.value) {
-            // Simple field validation styling
-            element.classList.add('border-red-500');
-            isValid = false;
-        } else {
-            element.classList.remove('border-red-500');
-        }
-    });
-    
-    return isValid;
-}
-
-// Cancel check-in
-function cancelCheckin() {
-    hideCheckinForm();
-}
-
-// Format date
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
-
-// Show notification function
-function showNotification(message, type = 'info') {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full`;
-    
-    // Set colors based on type
-    const colors = {
-        success: 'bg-green-500 text-white',
-        error: 'bg-red-500 text-white',
-        warning: 'bg-yellow-500 text-white',
-        info: 'bg-blue-500 text-white'
-    };
-    
-    notification.className += ` ${colors[type] || colors.info}`;
-    
-    // Set content
-    notification.innerHTML = `
-        <div class="flex items-center">
-            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} mr-3"></i>
-            <span>${message}</span>
-            <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `;
-    
-    // Add to page
-    document.body.appendChild(notification);
-    
-    // Animate in
-    setTimeout(() => {
-        notification.classList.remove('translate-x-full');
-    }, 100);
-    
-    // Auto remove after 5 seconds
-    setTimeout(() => {
-        notification.classList.add('translate-x-full');
-        setTimeout(() => {
-            if (notification.parentElement) {
-                notification.remove();
+            const response = await fetch(`../../api/search-reservations.php?${params.toString()}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                this.displayPendingCheckins(data.reservations);
+            } else {
+                console.error('Error searching reservations:', data.message);
             }
-        }, 300);
-    }, 5000);
+        } catch (error) {
+            console.error('Error searching reservations:', error);
+        }
+    }
+
+    // Start check-in process
+    startCheckIn(reservationId) {
+        this.loadReservationDetails(reservationId);
+    }
+
+    // Load reservation details for check-in
+    async loadReservationDetails(reservationId) {
+        try {
+            const response = await fetch(`../../api/get-reservation-details.php?id=${reservationId}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                this.populateCheckInForm(data.reservation);
+                this.showCheckInForm();
+            } else {
+                this.showNotification('Error loading reservation details', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading reservation details:', error);
+            this.showNotification('Error loading reservation details', 'error');
+        }
+    }
+
+    // Populate check-in form
+    populateCheckInForm(reservation) {
+        document.getElementById('reservation_id').value = reservation.id;
+        document.getElementById('guest_name').value = reservation.guest_name;
+        document.getElementById('reservation_number').value = reservation.reservation_number;
+        document.getElementById('room_number').value = reservation.room_number;
+        document.getElementById('checkin_date').value = this.formatDate(reservation.check_in_date);
+    }
+
+    // Show check-in form
+    showCheckInForm() {
+        const formContainer = document.getElementById('checkin-form-container');
+        if (formContainer) {
+            formContainer.classList.remove('hidden');
+            formContainer.scrollIntoView({ behavior: 'smooth' });
+        }
+    }
+
+    // Hide check-in form
+    hideCheckInForm() {
+        const formContainer = document.getElementById('checkin-form-container');
+        if (formContainer) {
+            formContainer.classList.add('hidden');
+        }
+    }
+
+    // Cancel check-in
+    cancelCheckin() {
+        this.hideCheckInForm();
+        document.getElementById('checkin-form').reset();
+    }
+
+    // Helper methods
+    formatDateTime(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toISOString().split('T')[0];
+    }
+
+    showNotification(message, type) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg shadow-lg text-white max-w-sm transform transition-all duration-300 translate-x-full`;
+        
+        // Set background color based on type
+        switch(type) {
+            case 'success':
+                notification.classList.add('bg-green-500');
+                break;
+            case 'error':
+                notification.classList.add('bg-red-500');
+                break;
+            case 'warning':
+                notification.classList.add('bg-yellow-500');
+                break;
+            default:
+                notification.classList.add('bg-blue-500');
+        }
+        
+        notification.textContent = message;
+        document.body.appendChild(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.classList.remove('translate-x-full');
+        }, 100);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            notification.classList.add('translate-x-full');
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 5000);
+    }
 }
 
-// Export functions for use in other modules
-window.Checkin = {
-    loadPendingCheckins,
-    searchReservations,
-    startCheckin,
-    handleCheckinSubmit,
-    cancelCheckin,
-    showNotification
-};
+// Global functions
+function searchReservations() {
+    if (window.checkInManager) {
+        window.checkInManager.handleSearch();
+    }
+}
+
+function clearFilters() {
+    document.getElementById('search_reservation').value = '';
+    document.getElementById('search_guest').value = '';
+    document.getElementById('search_date').value = '';
+    document.getElementById('search_status').value = '';
+    
+    if (window.checkInManager) {
+        window.checkInManager.loadPendingCheckins();
+    }
+}
+
+function refreshData() {
+    if (window.checkInManager) {
+        window.checkInManager.loadPendingCheckins();
+    }
+}
+
+function startCheckIn(reservationId) {
+    if (window.checkInManager) {
+        window.checkInManager.startCheckIn(reservationId);
+    }
+}
+
+function viewReservationDetails(reservationId) {
+    window.location.href = `view-reservation.php?id=${reservationId}`;
+}
+
+function cancelCheckin() {
+    if (window.checkInManager) {
+        window.checkInManager.cancelCheckin();
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', function() {
+    window.checkInManager = new CheckInManager();
+});

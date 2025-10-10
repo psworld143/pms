@@ -1939,7 +1939,7 @@ function getRoomStatusOverview() {
                 SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available,
                 SUM(CASE WHEN status = 'occupied' THEN 1 ELSE 0 END) as occupied,
                 SUM(CASE WHEN status = 'reserved' THEN 1 ELSE 0 END) as reserved,
-                SUM(CASE WHEN status = 'maintenance' THEN 1 ELSE 0 END) as maintenance
+                SUM(CASE WHEN housekeeping_status = 'maintenance' THEN 1 ELSE 0 END) as maintenance
             FROM rooms
             GROUP BY room_type
             ORDER BY room_type
@@ -3343,6 +3343,193 @@ function getLoyalty($tier_filter = '') {
 }
 
 /**
+ * VIP dashboard statistics
+ */
+function getVipDashboardStats() {
+    global $pdo;
+    
+    try {
+        // Total VIP guests
+        $total_stmt = $pdo->query("SELECT COUNT(*) AS total FROM guests WHERE is_vip = 1");
+        $total_vip = (int)$total_stmt->fetch()['total'];
+
+        // Currently staying (checked in)
+        $staying_stmt = $pdo->query("SELECT COUNT(*) AS total
+            FROM reservations r
+            JOIN guests g ON r.guest_id = g.id
+            WHERE g.is_vip = 1 AND r.status IN ('checked_in')");
+        $currently_staying = (int)$staying_stmt->fetch()['total'];
+
+        // Monthly revenue from VIP guests
+        $revenue_stmt = $pdo->query("SELECT COALESCE(SUM(b.total_amount), 0) AS total
+            FROM bills b
+            JOIN reservations r ON b.reservation_id = r.id
+            JOIN guests g ON r.guest_id = g.id
+            WHERE g.is_vip = 1 AND b.status = 'paid' 
+              AND YEAR(b.created_at) = YEAR(CURDATE())
+              AND MONTH(b.created_at) = MONTH(CURDATE())");
+        $monthly_revenue = (float)$revenue_stmt->fetch()['total'];
+
+        return [
+            'total_vip' => $total_vip,
+            'currently_staying' => $currently_staying,
+            // Average rating may not exist in schema; expose null for now
+            'average_rating' => null,
+            'monthly_revenue' => $monthly_revenue
+        ];
+    } catch (PDOException $e) {
+        error_log('Error getting VIP dashboard stats: ' . $e->getMessage());
+        return [
+            'total_vip' => 0,
+            'currently_staying' => 0,
+            'average_rating' => null,
+            'monthly_revenue' => 0
+        ];
+    }
+}
+
+/**
+ * VIP tiers summary (counts per tier among VIP guests)
+ */
+function getVipTiersSummary() {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->query("SELECT loyalty_tier, COUNT(*) AS members
+            FROM guests
+            WHERE is_vip = 1
+            GROUP BY loyalty_tier");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Error getting VIP tiers summary: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get VIP guests directory with current stay status and room
+ */
+function getVipGuests() {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->query("SELECT 
+                g.id,
+                CONCAT(g.first_name, ' ', g.last_name) AS name,
+                g.loyalty_tier,
+                COALESCE(r.status, 'not_staying') AS stay_status,
+                rm.room_number,
+                rm.room_type
+            FROM guests g
+            LEFT JOIN reservations r ON r.guest_id = g.id AND r.status IN ('checked_in')
+            LEFT JOIN rooms rm ON r.room_id = rm.id
+            WHERE g.is_vip = 1
+            ORDER BY g.first_name, g.last_name");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Error getting VIP guests: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Loyalty dashboard statistics
+ */
+function getLoyaltyDashboardStats() {
+    global $pdo;
+    
+    try {
+        // Total members with any tier
+        $members_stmt = $pdo->query("SELECT COUNT(*) AS total FROM guests WHERE loyalty_tier IS NOT NULL");
+        $total_members = (int)$members_stmt->fetch()['total'];
+
+        // Total points issued (earn)
+        $points_stmt = $pdo->query("SELECT COALESCE(SUM(points),0) AS total FROM loyalty_points WHERE action = 'earn'");
+        $points_issued = (int)$points_stmt->fetch()['total'];
+
+        // Rewards redeemed (redeem actions count)
+        $redeemed_stmt = $pdo->query("SELECT COUNT(*) AS total FROM loyalty_points WHERE action = 'redeem'");
+        $rewards_redeemed = (int)$redeemed_stmt->fetch()['total'];
+
+        // Retention rate: percentage of members with 2+ stays
+        $retained_stmt = $pdo->query("SELECT 
+                (SELECT COUNT(*) FROM (
+                    SELECT res.guest_id
+                    FROM reservations res
+                    JOIN guests g ON g.id = res.guest_id AND g.loyalty_tier IS NOT NULL
+                    GROUP BY res.guest_id
+                    HAVING COUNT(res.id) >= 2
+                ) t) AS retained,
+                (SELECT COUNT(*) FROM guests WHERE loyalty_tier IS NOT NULL) AS total");
+        $row = $retained_stmt->fetch();
+        $retention_rate = ($row['total'] > 0) ? round(($row['retained'] / $row['total']) * 100, 0) : 0;
+
+        return [
+            'total_members' => $total_members,
+            'points_issued' => $points_issued,
+            'rewards_redeemed' => $rewards_redeemed,
+            'retention_rate' => $retention_rate
+        ];
+    } catch (PDOException $e) {
+        error_log('Error getting loyalty dashboard stats: ' . $e->getMessage());
+        return [
+            'total_members' => 0,
+            'points_issued' => 0,
+            'rewards_redeemed' => 0,
+            'retention_rate' => 0
+        ];
+    }
+}
+
+/**
+ * Loyalty tiers summary (count by tier)
+ */
+function getLoyaltyTiersSummary() {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->query("SELECT loyalty_tier, COUNT(*) AS members FROM guests WHERE loyalty_tier IS NOT NULL GROUP BY loyalty_tier");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Error getting loyalty tiers summary: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Top loyalty members (by points)
+ */
+function getTopLoyaltyMembers($limit = 3) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("SELECT 
+                g.id,
+                CONCAT(g.first_name, ' ', g.last_name) AS name,
+                g.loyalty_tier,
+                COALESCE(lp.total_points, 0) AS points,
+                COALESCE(st.stays, 0) AS stays
+            FROM guests g
+            LEFT JOIN (
+                SELECT guest_id, SUM(CASE WHEN action = 'earn' THEN points ELSE -points END) AS total_points
+                FROM loyalty_points
+                GROUP BY guest_id
+            ) lp ON lp.guest_id = g.id
+            LEFT JOIN (
+                SELECT guest_id, COUNT(*) AS stays FROM reservations GROUP BY guest_id
+            ) st ON st.guest_id = g.id
+            WHERE g.loyalty_tier IS NOT NULL
+            ORDER BY points DESC
+            LIMIT ?");
+        $stmt->execute([$limit]);
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log('Error getting top loyalty members: ' . $e->getMessage());
+        return [];
+    }
+}
+
+/**
  * Get pending bills for discount application
  */
 function getPendingBills() {
@@ -4306,7 +4493,7 @@ function getGuestDetails($guest_id) {
                 gf.category,
                 gf.rating,
                 gf.comments,
-                gf.status,
+                CASE WHEN gf.is_resolved = 1 THEN 'resolved' ELSE 'pending' END AS status,
                 gf.created_at,
                 gf.is_resolved,
                 r.reservation_number
@@ -4350,8 +4537,16 @@ function getRoomDetails($room_id) {
 
     try {
         $stmt = $pdo->prepare("
-            SELECT * FROM rooms 
-            WHERE id = ?
+            SELECT r.*,
+                   CASE r.room_type
+                       WHEN 'standard' THEN 'Standard Room'
+                       WHEN 'deluxe' THEN 'Deluxe Room'
+                       WHEN 'suite' THEN 'Suite'
+                       WHEN 'presidential' THEN 'Presidential Suite'
+                       ELSE r.room_type
+                   END as room_type_name
+            FROM rooms r
+            WHERE r.id = ?
         ");
         $stmt->execute([$room_id]);
         return $stmt->fetch();
@@ -4406,4 +4601,47 @@ function get_school_abbreviation($conn) {
     return 'HMS';
 }
 
-?>
+
+
+/**
+ * Generate training certificate for completed attempt
+ */
+function generateTrainingCertificate($user_id, $attempt_id, $scenario_type) {
+    global $pdo;
+    
+    try {
+        // Get attempt details
+        $stmt = $pdo->prepare("SELECT * FROM training_attempts WHERE id = ? AND user_id = ? AND status = 'completed'");
+        $stmt->execute([$attempt_id, $user_id]);
+        $attempt = $stmt->fetch();
+        
+        if (!$attempt) {
+            return false;
+        }
+        
+        // Check if certificate already exists
+        $stmt = $pdo->prepare("SELECT id FROM training_certificates WHERE user_id = ? AND attempt_id = ?");
+        $stmt->execute([$user_id, $attempt_id]);
+        if ($stmt->fetch()) {
+            return true; // Certificate already exists
+        }
+        
+        // Determine certificate type based on score
+        $certificate_type = 'completion';
+        if ($attempt['score'] >= 95) {
+            $certificate_type = 'mastery';
+        } elseif ($attempt['score'] >= 90) {
+            $certificate_type = 'achievement';
+        }
+        
+        // Insert certificate
+        $stmt = $pdo->prepare("INSERT INTO training_certificates (user_id, attempt_id, scenario_type, certificate_type, issued_date) VALUES (?, ?, ?, ?, NOW())");
+        $stmt->execute([$user_id, $attempt_id, $scenario_type, $certificate_type]);
+        
+        return true;
+        
+    } catch (PDOException $e) {
+        error_log("Error generating training certificate: " . $e->getMessage());
+        return false;
+    }
+}

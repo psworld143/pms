@@ -37,32 +37,4 @@ try {
         'message' => $e->getMessage()
     ]);
 }
-
-/**
- * Get detailed room information
- */
-function getRoomDetails($room_id) {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->prepare("
-            SELECT r.*, 
-                   CASE r.room_type 
-                       WHEN 'standard' THEN 'Standard Room'
-                       WHEN 'deluxe' THEN 'Deluxe Room'
-                       WHEN 'suite' THEN 'Suite'
-                       WHEN 'presidential' THEN 'Presidential Suite'
-                       ELSE r.room_type
-                   END as room_type_name
-            FROM rooms r
-            WHERE r.id = ?
-        ");
-        $stmt->execute([$room_id]);
-        return $stmt->fetch();
-        
-    } catch (PDOException $e) {
-        error_log("Error getting room details: " . $e->getMessage());
-        return null;
-    }
-}
 ?>

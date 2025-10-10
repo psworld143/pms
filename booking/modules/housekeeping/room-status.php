@@ -149,6 +149,22 @@ include '../../includes/sidebar-unified.php';
         </main>
     </div>
 
+    <!-- Room Details Modal -->
+    <div id="room-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Room Details</h3>
+                <button onclick="closeRoomDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            
+            <div id="room-details-content">
+                <!-- Room details will be loaded here -->
+            </div>
+        </div>
+    </div>
+
     <!-- Update Housekeeping Status Modal -->
     <div id="update-status-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
         <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4">
@@ -268,7 +284,7 @@ include '../../includes/sidebar-unified.php';
     </div>
 
     <script src="../../assets/js/main.js"></script>
-    <script src="../../assets/js/room-status.js"></script>
+    <script src="../../assets/js/room-status.js?v=1"></script>
     
     <?php include '../../includes/footer.php'; ?>
 

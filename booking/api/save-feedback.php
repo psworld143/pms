@@ -97,6 +97,16 @@ function saveFeedback($data) {
             if (!$stmt->fetch()) {
                 throw new Exception('Reservation does not belong to this guest');
             }
+        } else {
+            $stmt = $pdo->prepare("SELECT id FROM reservations WHERE guest_id = ? ORDER BY check_in_date DESC, created_at DESC LIMIT 1");
+            $stmt->execute([$data['guest_id']]);
+            $latestReservation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$latestReservation) {
+                throw new Exception('Guest has no reservations to attach feedback to. Please create a reservation first.');
+            }
+
+            $data['reservation_id'] = (int)$latestReservation['id'];
         }
 
         $stmt = $pdo->prepare("

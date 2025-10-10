@@ -173,8 +173,175 @@ function handleMaintenanceRequest(e) {
 }
 
 function viewRoomDetails(roomId) {
-    // Open room details in a new window or modal
-    window.open(`../../api/get-room-details.php?id=${roomId}`, '_blank');
+    // Show loading state
+    const modal = document.getElementById('room-details-modal');
+    const content = document.getElementById('room-details-content');
+    
+    content.innerHTML = `
+        <div class="flex justify-center items-center py-8">
+            <i class="fas fa-spinner fa-spin text-2xl text-blue-600"></i>
+            <span class="ml-2 text-gray-600">Loading room details...</span>
+        </div>
+    `;
+    
+    modal.classList.remove('hidden');
+    
+    // Fetch room details
+    fetch(`../../api/get-room-details.php?id=${roomId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayRoomDetails(data.room);
+            } else {
+                content.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                        <p class="text-gray-600">Error loading room details: ${data.message}</p>
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            content.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-3xl text-red-500 mb-4"></i>
+                    <p class="text-gray-600">Error loading room details. Please try again.</p>
+                </div>
+            `;
+        });
+}
+
+function displayRoomDetails(room) {
+    const content = document.getElementById('room-details-content');
+    
+    const statusBadgeClass = getStatusBadgeClass(room.status);
+    const housekeepingBadgeClass = getHousekeepingStatusBadgeClass(room.housekeeping_status);
+    
+    content.innerHTML = `
+        <div class="space-y-6">
+            <!-- Room Header -->
+            <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-6">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h4 class="text-2xl font-bold text-blue-800">Room ${room.room_number}</h4>
+                        <p class="text-blue-600 font-medium">${room.room_type_name}</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-2xl font-bold text-blue-600">₱${parseFloat(room.rate).toFixed(2)}</div>
+                        <div class="text-sm text-blue-500">per night</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Status Information -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <h5 class="font-semibold text-gray-800 mb-3">Room Status</h5>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Status:</span>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${statusBadgeClass}">
+                                ${getStatusLabel(room.status)}
+                            </span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Housekeeping:</span>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${housekeepingBadgeClass}">
+                                ${getHousekeepingStatusLabel(room.housekeeping_status)}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white border border-gray-200 rounded-lg p-4">
+                    <h5 class="font-semibold text-gray-800 mb-3">Room Information</h5>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Floor:</span>
+                            <span class="font-medium">${room.floor}</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Capacity:</span>
+                            <span class="font-medium">${room.capacity} guests</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Amenities -->
+            <div class="bg-white border border-gray-200 rounded-lg p-4">
+                <h5 class="font-semibold text-gray-800 mb-3">Amenities</h5>
+                <div class="flex flex-wrap gap-2">
+                    ${room.amenities ? room.amenities.split(', ').map(amenity => 
+                        `<span class="px-3 py-1 bg-gray-100 text-gray-700 rounded-full text-sm">${amenity}</span>`
+                    ).join('') : '<span class="text-gray-500">No amenities listed</span>'}
+                </div>
+            </div>
+            
+            <!-- Timestamps -->
+            <div class="bg-gray-50 rounded-lg p-4">
+                <h5 class="font-semibold text-gray-800 mb-3">Record Information</h5>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-600">Created:</span>
+                        <span class="ml-2 font-medium">${new Date(room.created_at).toLocaleString()}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-600">Last Updated:</span>
+                        <span class="ml-2 font-medium">${new Date(room.updated_at).toLocaleString()}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function closeRoomDetailsModal() {
+    document.getElementById('room-details-modal').classList.add('hidden');
+}
+
+// Helper functions for status badges and labels
+function getStatusBadgeClass(status) {
+    switch (status) {
+        case 'available': return 'bg-green-100 text-green-800';
+        case 'occupied': return 'bg-red-100 text-red-800';
+        case 'reserved': return 'bg-yellow-100 text-yellow-800';
+        case 'maintenance': return 'bg-orange-100 text-orange-800';
+        case 'out_of_service': return 'bg-gray-100 text-gray-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getStatusLabel(status) {
+    switch (status) {
+        case 'available': return 'Available';
+        case 'occupied': return 'Occupied';
+        case 'reserved': return 'Reserved';
+        case 'maintenance': return 'Maintenance';
+        case 'out_of_service': return 'Out of Service';
+        default: return 'Unknown';
+    }
+}
+
+function getHousekeepingStatusBadgeClass(status) {
+    switch (status) {
+        case 'clean': return 'bg-green-100 text-green-800';
+        case 'dirty': return 'bg-red-100 text-red-800';
+        case 'cleaning': return 'bg-yellow-100 text-yellow-800';
+        case 'maintenance': return 'bg-blue-100 text-blue-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getHousekeepingStatusLabel(status) {
+    switch (status) {
+        case 'clean': return 'Clean';
+        case 'dirty': return 'Dirty';
+        case 'cleaning': return 'Cleaning';
+        case 'maintenance': return 'Maintenance';
+        default: return 'Unknown';
+    }
 }
 
 // Export functions for global access
@@ -183,3 +350,4 @@ window.closeUpdateStatusModal = closeUpdateStatusModal;
 window.createMaintenanceRequest = createMaintenanceRequest;
 window.closeMaintenanceModal = closeMaintenanceModal;
 window.viewRoomDetails = viewRoomDetails;
+window.closeRoomDetailsModal = closeRoomDetailsModal;

@@ -202,10 +202,7 @@ include '../../includes/sidebar-unified.php';
                     <div class="flex space-x-2">
                         <select id="inventory-category-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                             <option value="">All Categories</option>
-                            <option value="minibar">Minibar</option>
-                            <option value="housekeeping">Housekeeping</option>
-                            <option value="amenities">Amenities</option>
-                            <option value="linens">Linens</option>
+                            <!-- Categories will be loaded dynamically -->
                         </select>
                         <button onclick="exportReport('inventory')" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
                             <i class="fas fa-download mr-2"></i>Export

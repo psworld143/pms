@@ -1,6 +1,6 @@
 <?php
-session_start();
-require_once "../../config/database.php";
+require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
+require_once dirname(__DIR__, 2) . '/../includes/database.php';
 // Check if user is logged in and has front desk role
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'front_desk') {
     header('Location: ../../login.php');

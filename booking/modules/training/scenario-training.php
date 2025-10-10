@@ -33,34 +33,38 @@ try {
     }
 
     // Fetch questions for this scenario
-    $stmt = $pdo->prepare("
-        SELECT sq.*, GROUP_CONCAT(
-            CONCAT(qo.option_value, ':', qo.option_text) 
-            ORDER BY qo.option_order 
-            SEPARATOR '|'
-        ) as options
-        FROM scenario_questions sq
-        LEFT JOIN question_options qo ON sq.id = qo.question_id
-        WHERE sq.scenario_id = ?
-        GROUP BY sq.id
-        ORDER BY sq.question_order
-    ");
+    $stmt = $pdo->prepare("SELECT * FROM scenario_questions WHERE scenario_id = ? ORDER BY question_order");
     $stmt->execute([$scenario_id]);
-    $questions = $stmt->fetchAll();
+    $questions = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Process questions to create options array
-    foreach ($questions as &$question) {
-        $options_array = [];
-        $options_string = $question['options'];
-        $option_pairs = explode('|', $options_string);
-        
-        foreach ($option_pairs as $pair) {
-            $parts = explode(':', $pair, 2);
-            if (count($parts) == 2) {
-                $options_array[$parts[0]] = $parts[1];
-            }
+    // Fetch all options for these questions in one query and map them
+    $questionIds = array_map(function($q){ return (int)$q['id']; }, $questions);
+    $optionsMap = [];
+    if (!empty($questionIds)) {
+        $in = implode(',', array_fill(0, count($questionIds), '?'));
+        $optStmt = $pdo->prepare("SELECT question_id, option_value, option_text FROM question_options WHERE question_id IN ($in) ORDER BY question_id, option_order");
+        $optStmt->execute($questionIds);
+        while ($row = $optStmt->fetch(PDO::FETCH_ASSOC)) {
+            $qid = (int)$row['question_id'];
+            if (!isset($optionsMap[$qid])) $optionsMap[$qid] = [];
+            $optionsMap[$qid][$row['option_value']] = $row['option_text'];
         }
-        $question['options_array'] = $options_array;
+    }
+    // Attach options to each question
+    foreach ($questions as &$question) {
+        $qid = (int)$question['id'];
+        $question['options_array'] = $optionsMap[$qid] ?? [];
+        
+        // If no options found, create default options A-D based on correct_answer
+        if (empty($question['options_array'])) {
+            $correct_answer = $question['correct_answer'];
+            $question['options_array'] = [
+                'A' => 'Option A',
+                'B' => 'Option B', 
+                'C' => 'Option C',
+                'D' => 'Option D'
+            ];
+        }
     }
 
     // Handle attempt creation or retrieval
@@ -80,6 +84,14 @@ try {
         
         $answers = $attempt['answers'] ? json_decode($attempt['answers'], true) : [];
         $current_question = isset($_GET['question']) ? (int)$_GET['question'] : 1;
+        
+        // Ensure current_question is within valid range
+        if ($current_question < 1) $current_question = 1;
+        if ($current_question > count($questions)) {
+            // If we're past the last question, redirect to results
+            header('Location: scenario-results.php?attempt_id=' . $attempt_id);
+            exit();
+        }
     } else {
         // Create new attempt
         $stmt = $pdo->prepare("
@@ -147,17 +159,24 @@ include '../../includes/sidebar-unified.php';
                         <input type="hidden" name="scenario_type" value="scenario">
                         
                         <div class="space-y-4">
+                            <?php if (!empty($question['options_array'])): ?>
                             <?php foreach ($question['options_array'] as $value => $text): ?>
-                                <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                                    <input type="radio" name="answer" value="<?php echo $value; ?>" 
-                                           class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
-                                           <?php echo (isset($answers[$current_question]) && $answers[$current_question] === $value) ? 'checked' : ''; ?>>
-                                    <span class="ml-3 text-gray-700">
-                                        <span class="font-medium"><?php echo $value; ?>.</span>
-                                        <?php echo htmlspecialchars($text); ?>
-                                    </span>
-                                </label>
-                            <?php endforeach; ?>
+                                    <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                                        <input type="radio" name="answer" value="<?php echo $value; ?>" 
+                                               class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300"
+                                           <?php echo (isset($answers[$current_question]) && $answers[$current_question] === $value) ? 'checked' : ''; ?>
+                                           required>
+                                        <span class="ml-3 text-gray-700">
+                                            <span class="font-medium"><?php echo $value; ?>.</span>
+                                            <?php echo htmlspecialchars($text); ?>
+                                        </span>
+                                    </label>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <div class="p-4 border border-yellow-200 bg-yellow-50 text-yellow-800 rounded">
+                                    This question has no options configured yet. Please contact an administrator.
+                                </div>
+                            <?php endif; ?>
                         </div>
 
                         <div class="flex justify-between mt-8">
@@ -233,14 +252,33 @@ include '../../includes/sidebar-unified.php';
             }
         }
 
-        // Prevent form submission if no answer is selected
+        // Form submission handler
         document.getElementById('questionForm').addEventListener('submit', function(e) {
+            console.log('Form submit event triggered');
+            
             const selectedAnswer = document.querySelector('input[name="answer"]:checked');
+            console.log('Selected answer:', selectedAnswer);
+            
             if (!selectedAnswer) {
                 e.preventDefault();
-                Utils.showNotification('Please select an answer before continuing.', 'warning');
+                alert('Please select an answer before continuing.');
+                return false;
             }
+            
+            console.log('Form submitting with answer:', selectedAnswer.value);
+            
+            // Show loading state
+            const submitBtn = document.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+            }
+            
+            // Allow form to submit - don't prevent default
+            console.log('Allowing form submission');
         });
+        
     </script>
     
     <?php include '../../includes/footer.php'; ?>
+    

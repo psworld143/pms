@@ -1,6 +1,6 @@
 <?php
-session_start();
-require_once "../../config/database.php";
+require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
+require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
@@ -19,31 +19,6 @@ include '../../includes/header-unified.php';
 // Include unified sidebar (automatically selects appropriate sidebar)
 include '../../includes/sidebar-unified.php';
 ?>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Billing & Payment - Hotel PMS</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#3B82F6',
-                        'primary-dark': '#2563EB',
-                        secondary: '#6B7280',
-                        success: '#10B981',
-                        warning: '#F59E0B',
-                        danger: '#EF4444'
-                    }
-                }
-            }
-        }
-    </script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-</head>
-<body class="bg-gray-50">
         <!-- Main Content -->
         <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
         <!-- Statistics Cards -->

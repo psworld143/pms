@@ -1,7 +1,236 @@
+// Training Dashboard dynamic loader - moved to main DOMContentLoaded event below
+
+function switchTrainingTab(tab) {
+  const ids = ['scenarios','customer-service','problems','progress'];
+  ids.forEach(t => {
+    document.getElementById('tab-content-' + t).classList.toggle('active', t === tab);
+    document.getElementById('tab-' + (t === 'customer-service' ? 'customer-service' : t)).classList.toggle('text-primary', t === tab);
+  });
+}
+
+async function loadScenarios() {
+  const diff = document.getElementById('scenario-difficulty-filter').value;
+  const cat = document.getElementById('scenario-category-filter').value;
+  const container = document.getElementById('scenarios-container');
+  container.innerHTML = '<div class="p-6 text-gray-500">Loading scenarios...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-scenarios.php?difficulty=${encodeURIComponent(diff)}&category=${encodeURIComponent(cat)}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Failed');
+    if (!data.scenarios.length) { container.innerHTML = '<div class="p-6 text-gray-500">No scenarios found.</div>'; return; }
+    container.innerHTML = data.scenarios.map(s => scenarioCard(s)).join('');
+  } catch(err) {
+    console.error(err); container.innerHTML = '<div class="p-6 text-red-600">Error loading scenarios.</div>';
+  }
+}
+
+function scenarioCard(s) {
+  return `
+  <div class="border rounded-lg p-4 mb-3 hover:shadow">
+    <div class="flex justify-between items-center">
+      <div>
+        <div class="font-semibold text-gray-800">${escapeHtml(s.title || 'Scenario')}</div>
+        <div class="text-sm text-gray-500">Difficulty: ${s.difficulty || '-'} • Category: ${s.category || '-'}</div>
+      </div>
+      <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm" onclick="openScenario(${s.id})">Start</button>
+    </div>
+  </div>`;
+}
+
+async function openScenario(id) {
+  const modal = document.getElementById('scenario-modal');
+  const title = document.getElementById('scenario-title');
+  const content = document.getElementById('scenario-content');
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-scenario-details.php?id=${id}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Failed');
+    title.textContent = data.scenario.title || 'Scenario';
+    content.innerHTML = renderScenarioQuestions(data);
+  } catch (e) { content.innerHTML = '<div class="p-6 text-red-600">Failed to load scenario.</div>'; }
+}
+
+function renderScenarioQuestions(data) {
+  const q = data.questions || [];
+  return q.map((item, idx) => `
+    <div class="mb-4">
+      <div class="font-medium text-gray-800 mb-2">${idx+1}. ${escapeHtml(item.question)}</div>
+      ${(item.options || []).map(opt => `
+        <label class="flex items-center space-x-2 mb-1">
+          <input type="radio" name="q_${item.id}" value="${escapeHtml(opt.id)}" class="text-primary">
+          <span class="text-sm text-gray-700">${escapeHtml(opt.text)}</span>
+        </label>`).join('')}
+    </div>`).join('') + `
+    <div class="text-right">
+      <button class="px-4 py-2 bg-primary text-white rounded" onclick="submitScenario(${data.scenario.id})">Submit</button>
+    </div>`;
+}
+
+async function submitScenario(id) {
+  const answers = {};
+  document.querySelectorAll('#scenario-content [name^="q_"]').forEach(inp => { if (inp.checked) answers[inp.name.replace('q_','')] = inp.value; });
+  try {
+    const res = await fetch('../../api/training/submit-scenario.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scenario_id:id, answers })});
+    const data = await res.json();
+    alert(data.success ? `Submitted. Score: ${data.score}` : (data.message || 'Failed'));
+  } catch(e) { alert('Network error'); }
+}
+
+async function loadCustomerService() {
+  const type = document.getElementById('service-type-filter').value;
+  const container = document.getElementById('customer-service-container');
+  container.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-customer-service.php?type=${encodeURIComponent(type)}`);
+    const data = await res.json();
+    if (!data.success || !data.items.length) { container.innerHTML = '<div class="p-6 text-gray-500">No items.</div>'; return; }
+    container.innerHTML = data.items.map(cs => `
+      <div class="border rounded-lg p-4 mb-3">
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="font-semibold text-gray-800">${escapeHtml(cs.title || 'Case')}</div>
+            <div class="text-sm text-gray-500">Difficulty: ${cs.difficulty || '-'}</div>
+          </div>
+          <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm" onclick="openCustomerService(${cs.id})">Practice</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { container.innerHTML = '<div class="p-6 text-red-600">Error loading.</div>'; }
+}
+
+async function openCustomerService(id) {
+  const modal = document.getElementById('customer-service-modal');
+  const title = document.getElementById('cs-title');
+  const content = document.getElementById('customer-service-content');
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-customer-service-details.php?id=${id}`);
+    const data = await res.json();
+    if (!data.success) throw new Error();
+    title.textContent = data.item.title || 'Customer Service';
+    content.innerHTML = `
+      <div class="mb-4 text-gray-800">${escapeHtml(data.item.prompt || '')}</div>
+      <textarea id="cs-response" class="w-full border rounded p-2" rows="4" placeholder="Type your response..."></textarea>
+      <div class="text-right mt-3">
+        <button class="px-4 py-2 bg-primary text-white rounded" onclick="submitCustomerService(${id})">Submit Response</button>
+      </div>`;
+  } catch(e) { content.innerHTML = '<div class="p-6 text-red-600">Failed to load.</div>'; }
+}
+
+async function submitCustomerService(id) {
+  const response = document.getElementById('cs-response').value;
+  try {
+    const res = await fetch('../../api/training/submit-customer-service.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scenario_id:id, response })});
+    const data = await res.json();
+    alert(data.success ? `Submitted. Feedback: ${data.feedback || 'Recorded.'}` : (data.message || 'Failed'));
+  } catch(e) { alert('Network error'); }
+}
+
+async function loadProblems() {
+  const sev = document.getElementById('problem-severity-filter').value;
+  const container = document.getElementById('problems-container');
+  container.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-problems.php?severity=${encodeURIComponent(sev)}`);
+    const data = await res.json();
+    if (!data.success || !data.scenarios.length) { container.innerHTML = '<div class="p-6 text-gray-500">No problems found.</div>'; return; }
+    container.innerHTML = data.scenarios.map(p => `
+      <div class="border rounded-lg p-4 mb-3">
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="font-semibold text-gray-800">${escapeHtml(p.title || 'Problem')}</div>
+            <div class="text-sm text-gray-500">Severity: ${p.severity || '-'}</div>
+          </div>
+          <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm" onclick="openProblem(${p.id})">Start</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { container.innerHTML = '<div class="p-6 text-red-600">Error loading problems.</div>'; }
+}
+
+async function openProblem(id) {
+  const modal = document.getElementById('problem-modal');
+  const title = document.getElementById('problem-title');
+  const content = document.getElementById('problem-content');
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-problem-details.php?id=${id}`);
+    const data = await res.json();
+    if (!data.success) throw new Error();
+    title.textContent = data.item.title || 'Problem';
+    content.innerHTML = `
+      <div class="mb-4 text-gray-800">${escapeHtml(data.item.description || '')}</div>
+      <textarea id="problem-response" class="w-full border rounded p-2" rows="4" placeholder="Describe your solution..."></textarea>
+      <div class="text-right mt-3">
+        <button class="px-4 py-2 bg-primary text-white rounded" onclick="submitProblem(${id})">Submit Solution</button>
+      </div>`;
+  } catch(e) { content.innerHTML = '<div class="p-6 text-red-600">Failed to load.</div>'; }
+}
+
+async function submitProblem(id) {
+  const response = document.getElementById('problem-response').value;
+  try {
+    const res = await fetch('../../api/training/submit-problem.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scenario_id:id, response })});
+    const data = await res.json();
+    alert(data.success ? `Submitted. Score: ${data.score}` : (data.message || 'Failed'));
+  } catch(e) { alert('Network error'); }
+}
+
+async function loadProgress() {
+  const container = document.getElementById('progress-container');
+  container.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch('../../api/training/get-progress.php');
+    const data = await res.json();
+    if (!data.success) throw new Error();
+    container.innerHTML = renderProgress(data);
+  } catch(e) { container.innerHTML = '<div class="p-6 text-red-600">Error loading progress.</div>'; }
+}
+
+function renderProgress(data) {
+  const rows = (data.recent_activity || []).map(a => `<tr>
+    <td class="px-4 py-2 text-sm text-gray-700">${escapeHtml(a.type)}</td>
+    <td class="px-4 py-2 text-sm text-gray-700">${escapeHtml(a.title)}</td>
+    <td class="px-4 py-2 text-sm text-gray-700">${a.score ?? '-'}${a.score!=null?'%':''}</td>
+    <td class="px-4 py-2 text-sm text-gray-700">${escapeHtml(a.completed_at)}</td>
+  </tr>`).join('');
+  return `
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">${rows || '<tr><td colspan="4" class="px-4 py-6 text-center text-gray-500">No progress yet.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function closeScenarioModal(){ document.getElementById('scenario-modal').classList.add('hidden'); }
+function closeCustomerServiceModal(){ document.getElementById('customer-service-modal').classList.add('hidden'); }
+function closeProblemModal(){ document.getElementById('problem-modal').classList.add('hidden'); }
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+// Filters
+document.addEventListener('change', (e)=>{
+  if (e.target && e.target.id==='scenario-difficulty-filter' || e.target.id==='scenario-category-filter') loadScenarios();
+  if (e.target && e.target.id==='service-type-filter') loadCustomerService();
+  if (e.target && e.target.id==='problem-severity-filter') loadProblemScenarios();
+});
 // Training Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     initializeTrainingDashboard();
     loadScenarios();
+    loadCustomerService();
+    loadProblemScenarios();
+    loadProgress();
 });
 
 // Trivia refresh function
@@ -144,7 +373,7 @@ function loadScenarios() {
     if (categoryFilter) params.append('category', categoryFilter);
     
     // Fetch scenarios from API
-    fetch(`../../api/get-training-scenarios.php?${params.toString()}`, {
+    fetch(`../../api/training/get-scenarios.php?${params.toString()}`, {
         credentials: 'same-origin'
     })
         .then(response => {
@@ -199,7 +428,7 @@ function loadCustomerService() {
     if (typeFilter) params.append('type', typeFilter);
     
     // Fetch customer service scenarios from API
-    fetch(`../../api/get-customer-service-scenarios.php?${params.toString()}`, {
+    fetch(`../../api/training/get-customer-service.php?${params.toString()}`, {
         credentials: 'same-origin'
     })
         .then(response => {
@@ -254,7 +483,7 @@ function loadProblemScenarios() {
     if (severityFilter) params.append('severity', severityFilter);
     
     // Fetch problem scenarios from API
-    fetch(`../../api/get-problem-scenarios.php?${params.toString()}`, {
+    fetch(`../../api/training/get-problems.php?${params.toString()}`, {
         credentials: 'same-origin'
     })
         .then(response => {
@@ -429,7 +658,7 @@ function displayCustomerService(scenarios) {
 }
 
 function displayProblemScenarios(scenarios) {
-    const container = document.getElementById('problem-scenarios-container');
+    const container = document.getElementById('problems-container');
     
     if (!scenarios || scenarios.length === 0) {
         container.innerHTML = `

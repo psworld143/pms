@@ -37,7 +37,8 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- VIP Statistics -->
+            <!-- VIP Statistics (Dynamic) -->
+            <?php $vip_stats = getVipDashboardStats(); ?>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
@@ -48,7 +49,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total VIP Guests</p>
-                            <p class="text-2xl font-semibold text-gray-900">89</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($vip_stats['total_vip']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -62,7 +63,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Currently Staying</p>
-                            <p class="text-2xl font-semibold text-gray-900">12</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($vip_stats['currently_staying']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -76,7 +77,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Average Rating</p>
-                            <p class="text-2xl font-semibold text-gray-900">4.9/5</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $vip_stats['average_rating'] !== null ? $vip_stats['average_rating'] . '/5' : 'N/A'; ?></p>
                         </div>
                     </div>
                 </div>
@@ -90,15 +91,17 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Monthly Revenue</p>
-                            <p class="text-2xl font-semibold text-gray-900">$45K</p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($vip_stats['monthly_revenue'], 2); ?></p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- VIP Tiers -->
+            <!-- VIP Tiers (Dynamic counts per tier) -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <!-- Platinum VIP -->
+                <?php $tiers = getVipTiersSummary(); $tierMap = [];
+                foreach ($tiers as $t) { $tierMap[strtolower($t['loyalty_tier'] ?? 'unknown')] = (int)$t['members']; }
+                ?>
                 <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg shadow p-6 text-white">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold">Platinum VIP</h3>
@@ -107,7 +110,7 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-2">
                         <div class="flex justify-between">
                             <span class="text-gray-300">Members:</span>
-                            <span class="font-semibold">15</span>
+                            <span class="font-semibold"><?php echo $tierMap['platinum'] ?? 0; ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-300">Benefits:</span>
@@ -120,7 +123,6 @@ include '../../includes/sidebar-unified.php';
                     </div>
                 </div>
 
-                <!-- Gold VIP -->
                 <div class="bg-gradient-to-br from-yellow-600 to-yellow-700 rounded-lg shadow p-6 text-white">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold">Gold VIP</h3>
@@ -129,7 +131,7 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-2">
                         <div class="flex justify-between">
                             <span class="text-yellow-100">Members:</span>
-                            <span class="font-semibold">32</span>
+                            <span class="font-semibold"><?php echo $tierMap['gold'] ?? 0; ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-yellow-100">Benefits:</span>
@@ -142,7 +144,6 @@ include '../../includes/sidebar-unified.php';
                     </div>
                 </div>
 
-                <!-- Silver VIP -->
                 <div class="bg-gradient-to-br from-gray-400 to-gray-500 rounded-lg shadow p-6 text-white">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold">Silver VIP</h3>
@@ -151,7 +152,7 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-2">
                         <div class="flex justify-between">
                             <span class="text-gray-100">Members:</span>
-                            <span class="font-semibold">42</span>
+                            <span class="font-semibold"><?php echo $tierMap['silver'] ?? 0; ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-100">Benefits:</span>
@@ -200,7 +201,7 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- VIP Guests Table -->
+            <!-- VIP Guests Table (Dynamic) -->
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800">VIP Guest Directory</h3>
@@ -218,78 +219,43 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
+                            <?php foreach (getVipGuests() as $vip): ?>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-12 w-12">
                                             <div class="h-12 w-12 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center justify-center">
-                                                <span class="text-white font-bold">JD</span>
+                                                <span class="text-white font-bold"><?php echo strtoupper(substr($vip['name'],0,1)); ?></span>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">John Doe</div>
-                                            <div class="text-sm text-gray-500">CEO, Tech Corp</div>
+                                            <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($vip['name']); ?></div>
+                                            <div class="text-sm text-gray-500">VIP Guest</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-800 text-white">
-                                        Platinum
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo strtolower($vip['loyalty_tier']) === 'platinum' ? 'bg-gray-800 text-white' : (strtolower($vip['loyalty_tier']) === 'gold' ? 'bg-yellow-600 text-white' : 'bg-gray-500 text-white'); ?>">
+                                        <?php echo $vip['loyalty_tier'] ? htmlspecialchars(ucfirst($vip['loyalty_tier'])) : '—'; ?>
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Currently Staying
+                                    <?php $stay_map = ['checked_in' => ['Currently Staying','bg-green-100 text-green-800'], 'not_staying' => ['Not Staying','bg-gray-100 text-gray-800']];
+                                    $stay = $stay_map[$vip['stay_status']] ?? ['Unknown','bg-gray-100 text-gray-800']; ?>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $stay[1]; ?>">
+                                        <?php echo $stay[0]; ?>
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Presidential Suite</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-wine-glass text-purple-500 mr-1"></i>
-                                        <span>Champagne Service</span>
-                                    </div>
+                                    <?php echo $vip['room_number'] ? htmlspecialchars($vip['room_number'] . ' (' . $vip['room_type'] . ')') : '—'; ?>
                                 </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">—</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
                                     <button class="text-green-600 hover:text-green-900">Service</button>
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-12 w-12">
-                                            <div class="h-12 w-12 rounded-full bg-gradient-to-r from-yellow-500 to-yellow-700 flex items-center justify-center">
-                                                <span class="text-white font-bold">JS</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Jane Smith</div>
-                                            <div class="text-sm text-gray-500">Celebrity Guest</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-600 text-white">
-                                        Gold
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        Arriving Today
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Deluxe Suite</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-car text-blue-500 mr-1"></i>
-                                        <span>Airport Transfer</span>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Prepare</button>
-                                </td>
-                            </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>

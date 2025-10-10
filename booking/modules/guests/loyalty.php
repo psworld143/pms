@@ -37,7 +37,8 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Loyalty Statistics -->
+            <!-- Loyalty Statistics (Dynamic) -->
+            <?php $loyalty_stats = getLoyaltyDashboardStats(); ?>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
@@ -48,7 +49,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Members</p>
-                            <p class="text-2xl font-semibold text-gray-900">1,456</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($loyalty_stats['total_members']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -62,7 +63,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Points Issued</p>
-                            <p class="text-2xl font-semibold text-gray-900">45,678</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($loyalty_stats['points_issued']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -76,7 +77,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Rewards Redeemed</p>
-                            <p class="text-2xl font-semibold text-gray-900">234</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($loyalty_stats['rewards_redeemed']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -90,13 +91,14 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Retention Rate</p>
-                            <p class="text-2xl font-semibold text-gray-900">78%</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($loyalty_stats['retention_rate']); ?>%</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Loyalty Tiers -->
+            <!-- Loyalty Tiers (Dynamic counts per tier) -->
+            <?php $tiers = getLoyaltyTiersSummary(); $tierMap = []; foreach ($tiers as $t) { $tierMap[strtolower($t['loyalty_tier'] ?? 'unknown')] = (int)$t['members']; } ?>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
                 <!-- Bronze Tier -->
                 <div class="bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow p-6 text-white">
@@ -107,7 +109,7 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-2">
                         <div class="flex justify-between">
                             <span class="text-orange-100">Members:</span>
-                            <span class="font-semibold">856</span>
+                            <span class="font-semibold"><?php echo $tierMap['bronze'] ?? 0; ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-orange-100">Points Required:</span>
@@ -133,7 +135,7 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-2">
                         <div class="flex justify-between">
                             <span class="text-gray-100">Members:</span>
-                            <span class="font-semibold">456</span>
+                            <span class="font-semibold"><?php echo $tierMap['silver'] ?? 0; ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-100">Points Required:</span>
@@ -159,7 +161,7 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-2">
                         <div class="flex justify-between">
                             <span class="text-yellow-100">Members:</span>
-                            <span class="font-semibold">144</span>
+                            <span class="font-semibold"><?php echo $tierMap['gold'] ?? 0; ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-yellow-100">Points Required:</span>
@@ -232,59 +234,31 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Top Members -->
+            <!-- Top Members (Dynamic) -->
             <div class="bg-white rounded-lg shadow p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Top Loyalty Members</h3>
                 <div class="space-y-4">
+                    <?php foreach (getTopLoyaltyMembers(3) as $m): ?>
                     <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                         <div class="flex items-center">
                             <div class="w-12 h-12 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center justify-center">
-                                <span class="text-white font-bold">JD</span>
+                                <span class="text-white font-bold"><?php echo strtoupper(substr($m['name'],0,1)); ?></span>
                             </div>
                             <div class="ml-4">
-                                <h4 class="font-semibold text-gray-800">John Doe</h4>
-                                <p class="text-sm text-gray-600">Gold Member</p>
+                                <h4 class="font-semibold text-gray-800"><?php echo htmlspecialchars($m['name']); ?></h4>
+                                <p class="text-sm text-gray-600"><?php echo htmlspecialchars(ucfirst($m['loyalty_tier'])); ?> Member</p>
                             </div>
                         </div>
                         <div class="text-right">
-                            <p class="text-lg font-bold text-gray-900">8,450 points</p>
-                            <p class="text-sm text-gray-600">15 stays</p>
+                            <p class="text-lg font-bold text-gray-900"><?php echo number_format($m['points']); ?> points</p>
+                            <p class="text-sm text-gray-600"><?php echo number_format($m['stays']); ?> stays</p>
                         </div>
                     </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div class="flex items-center">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 flex items-center justify-center">
-                                <span class="text-white font-bold">JS</span>
-                            </div>
-                            <div class="ml-4">
-                                <h4 class="font-semibold text-gray-800">Jane Smith</h4>
-                                <p class="text-sm text-gray-600">Silver Member</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-lg font-bold text-gray-900">2,340 points</p>
-                            <p class="text-sm text-gray-600">8 stays</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                        <div class="flex items-center">
-                            <div class="w-12 h-12 rounded-full bg-gradient-to-r from-orange-400 to-orange-600 flex items-center justify-center">
-                                <span class="text-white font-bold">RB</span>
-                            </div>
-                            <div class="ml-4">
-                                <h4 class="font-semibold text-gray-800">Robert Brown</h4>
-                                <p class="text-sm text-gray-600">Bronze Member</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <p class="text-lg font-bold text-gray-900">890 points</p>
-                            <p class="text-sm text-gray-600">3 stays</p>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
 
-            <!-- Loyalty Members Table -->
+            <!-- Loyalty Members Table (Dynamic) -->
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800">Loyalty Members</h3>
@@ -303,70 +277,38 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
+                            <?php foreach (getLoyalty('') as $row): ?>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10">
                                             <div class="h-10 w-10 rounded-full bg-gradient-to-r from-yellow-400 to-yellow-600 flex items-center justify-center">
-                                                <span class="text-white font-medium">JD</span>
+                                                <span class="text-white font-medium"><?php echo strtoupper(substr($row['guest_name'],0,1)); ?></span>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">John Doe</div>
-                                            <div class="text-sm text-gray-500">john.doe@email.com</div>
+                                            <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($row['guest_name']); ?></div>
+                                            <div class="text-sm text-gray-500"><?php echo htmlspecialchars($row['email']); ?></div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Gold
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo strtolower($row['tier']) === 'gold' ? 'bg-yellow-100 text-yellow-800' : (strtolower($row['tier']) === 'silver' ? 'bg-gray-100 text-gray-800' : 'bg-orange-100 text-orange-800'); ?>">
+                                        <?php echo htmlspecialchars(ucfirst($row['tier'])); ?>
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">8,450</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">15</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2023-06-15</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo number_format($row['points']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo number_format($row['total_spent']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars(date('Y-m-d', strtotime($row['last_activity']))); ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
-                                    </span>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
                                     <button class="text-green-600 hover:text-green-900">Manage</button>
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-gray-400 to-gray-600 flex items-center justify-center">
-                                                <span class="text-white font-medium">JS</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Jane Smith</div>
-                                            <div class="text-sm text-gray-500">jane.smith@email.com</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
-                                        Silver
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2,340</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">8</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2023-09-22</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Manage</button>
-                                </td>
-                            </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>

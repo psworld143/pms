@@ -8,6 +8,10 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
+// Load dynamic stats and lists
+$stats = getServiceRequestStats();
+$requests = getServiceRequests('', '');
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../login.php');
@@ -34,7 +38,7 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Service Statistics -->
+            <!-- Service Statistics (Dynamic) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
@@ -44,8 +48,8 @@ include '../../includes/sidebar-unified.php';
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Active Requests</p>
-                            <p class="text-2xl font-semibold text-gray-900">8</p>
+                            <p class="text-sm font-medium text-gray-500">Pending Requests</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['pending'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -59,7 +63,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Completed Today</p>
-                            <p class="text-2xl font-semibold text-gray-900">15</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['completed'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -73,7 +77,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Average Response</p>
-                            <p class="text-2xl font-semibold text-gray-900">12 min</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['avg_response_time'] ?? 0); ?> min</p>
                         </div>
                     </div>
                 </div>
@@ -86,8 +90,8 @@ include '../../includes/sidebar-unified.php';
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Satisfaction</p>
-                            <p class="text-2xl font-semibold text-gray-900">4.8/5</p>
+                            <p class="text-sm font-medium text-gray-500">Urgent Open</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['urgent'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -213,12 +217,13 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Service Requests Table -->
+            <!-- Service Requests Table (Dynamic) -->
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800">All Service Requests</h3>
                 </div>
                 <div class="overflow-x-auto">
+                    <?php if (!empty($requests)): ?>
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -231,48 +236,54 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
+                            <?php foreach ($requests as $req): ?>
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#SR-001</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 205</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room Service</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#<?php echo (int)$req['id']; ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room <?php echo htmlspecialchars($req['room_number']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars(ucfirst($req['issue_type'])); ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Normal
-                                    </span>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $req['priority']==='high'?'bg-red-100 text-red-800':($req['priority']==='urgent'?'bg-red-200 text-red-900':'bg-yellow-100 text-yellow-800'); ?>"><?php echo htmlspecialchars(ucfirst($req['priority'])); ?></span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        In Progress
-                                    </span>
+                                    <?php $cls = $req['status']==='completed'?'bg-green-100 text-green-800':($req['status']==='in_progress'?'bg-blue-100 text-blue-800':($req['status']==='pending'?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-800')); ?>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $cls; ?>"><?php echo htmlspecialchars(getStatusLabel($req['status'])); ?></span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Complete</button>
+                                    <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewServiceRequest(<?php echo (int)$req['id']; ?>)">View</button>
+                                    <?php if ($req['status']!=='completed'): ?>
+                                    <button class="text-green-600 hover:text-green-900" onclick="completeServiceRequest(<?php echo (int)$req['id']; ?>)">Complete</button>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#SR-002</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 301</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Housekeeping</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        High
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Pending
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Assign</button>
-                                </td>
-                            </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php else: ?>
+                        <div class="p-6 text-center text-gray-500">No service requests found.</div>
+                    <?php endif; ?>
                 </div>
             </div>
+        
+            <script>
+            async function viewServiceRequest(id) {
+                try {
+                    const res = await fetch(`../../api/get-service-request.php?id=${id}`);
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message || 'Failed');
+                    alert(`Request #${data.request.id}\nRoom: ${data.request.room_number}\nType: ${data.request.issue_type}\nPriority: ${data.request.priority}\nStatus: ${data.request.status}\n\nDescription:\n${data.request.description}`);
+                } catch (e) {
+                    alert('Unable to load service request details.');
+                }
+            }
+            async function completeServiceRequest(id) {
+                if (!confirm('Mark this service request as completed?')) return;
+                try {
+                    const res = await fetch('../../api/complete-service-request.php', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ id })});
+                    const data = await res.json();
+                    if (data.success) location.reload(); else alert(data.message || 'Failed to complete request');
+                } catch(e) { alert('Network error'); }
+            }
+            </script>
         </main>
 
         <!-- Include footer -->
