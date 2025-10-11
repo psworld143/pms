@@ -72,6 +72,8 @@ function switchReportTab(tabName) {
 function loadCharts() {
     loadOccupancyChart();
     loadRevenueChart();
+    loadGuestDemographicsChart();
+    loadInventoryAnalytics();
 }
 
 function loadOccupancyChart() {
@@ -91,13 +93,14 @@ function loadOccupancyChart() {
     fetch('../../api/get-occupancy-data.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.data) {
-                // Process the data to extract labels and values
-                const labels = data.data.map(item => {
+            if (data.success && data.data && data.data.daily) {
+                // Process the daily occupancy data
+                const dailyData = data.data.daily || [];
+                const labels = dailyData.map(item => {
                     const date = new Date(item.date);
                     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 });
-                const values = data.data.map(item => item.occupancy_rate);
+                const values = dailyData.map(item => parseFloat(item.occupancy_rate) || 0);
                 
                 const ctx = document.getElementById('occupancyChart').getContext('2d');
                 chartInstances.occupancyChart = new Chart(ctx, {
@@ -171,25 +174,27 @@ function loadRevenueChart() {
     fetch('../../api/get-revenue-data.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.data) {
-                // Process the data to extract labels and values
-                const labels = data.data.map(item => {
+            if (data.success && data.data && data.data.daily) {
+                // Process the daily revenue data
+                const dailyData = data.data.daily || [];
+                const labels = dailyData.map(item => {
                     const date = new Date(item.date);
                     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 });
-                const values = data.data.map(item => item.revenue);
+                const values = dailyData.map(item => parseFloat(item.daily_revenue) || 0);
                 
                 const ctx = document.getElementById('revenueChart').getContext('2d');
                 chartInstances.revenueChart = new Chart(ctx, {
-                    type: 'bar',
+                    type: 'line',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Revenue (₱)',
+                            label: 'Daily Revenue (₱)',
                             data: values,
-                            backgroundColor: '#10B981',
-                            borderColor: '#059669',
-                            borderWidth: 1
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            tension: 0.4,
+                            fill: true
                         }]
                     },
                     options: {
@@ -711,24 +716,186 @@ function displayInventoryReports(data) {
 
 // Report generation functions
 function generateReport(type) {
-    const params = new URLSearchParams({ type: type });
-    
-    fetch(`../../api/generate-report.php?${params}`)
+    switch(type) {
+        case 'revenue':
+            generateRevenueReport();
+            break;
+        case 'occupancy':
+            generateOccupancyReport();
+            break;
+        case 'demographics':
+            generateDemographicsReport();
+            break;
+        case 'inventory':
+            generateInventoryReport();
+            break;
+        default:
+            HotelPMS.Utils.showNotification('Report type not supported', 'error');
+    }
+}
+
+function generateRevenueReport() {
+    fetch('../../api/get-revenue-data.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                HotelPMS.Utils.showNotification(`${type.charAt(0).toUpperCase() + type.slice(1)} report generated successfully!`, 'success');
-                if (data.download_url) {
-                    window.open(data.download_url, '_blank');
+                // Create a simple text report
+                let reportContent = 'REVENUE REPORT\n';
+                reportContent += '================\n\n';
+                
+                if (data.data.daily && data.data.daily.length > 0) {
+                    reportContent += 'Daily Revenue (Last 30 Days):\n';
+                    data.data.daily.forEach(day => {
+                        reportContent += `${day.date}: ₱${parseFloat(day.daily_revenue).toLocaleString()}\n`;
+                    });
                 }
+                
+                if (data.data.breakdown && data.data.breakdown.length > 0) {
+                    reportContent += '\nRevenue Breakdown:\n';
+                    data.data.breakdown.forEach(item => {
+                        reportContent += `${item.source}: ₱${parseFloat(item.amount).toLocaleString()}\n`;
+                    });
+                }
+                
+                // Download the report
+                downloadTextFile(reportContent, 'revenue-report.txt');
+                HotelPMS.Utils.showNotification('Revenue report generated successfully!', 'success');
             } else {
-                HotelPMS.Utils.showNotification(data.message || 'Error generating report', 'error');
+                HotelPMS.Utils.showNotification('Error generating revenue report', 'error');
             }
         })
         .catch(error => {
-            console.error('Error generating report:', error);
-            HotelPMS.Utils.showNotification('Error generating report', 'error');
+            console.error('Error generating revenue report:', error);
+            HotelPMS.Utils.showNotification('Error generating revenue report', 'error');
         });
+}
+
+function generateOccupancyReport() {
+    fetch('../../api/get-occupancy-data.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let reportContent = 'OCCUPANCY REPORT\n';
+                reportContent += '==================\n\n';
+                
+                if (data.data.daily && data.data.daily.length > 0) {
+                    reportContent += 'Daily Occupancy (Last 30 Days):\n';
+                    data.data.daily.forEach(day => {
+                        reportContent += `${day.date}: ${day.occupancy_rate}% (${day.occupied_rooms}/${day.total_rooms} rooms)\n`;
+                    });
+                }
+                
+                if (data.data.by_type && data.data.by_type.length > 0) {
+                    reportContent += '\nOccupancy by Room Type:\n';
+                    data.data.by_type.forEach(type => {
+                        reportContent += `${type.room_type}: ${type.occupancy_rate}% (${type.occupied_rooms}/${type.total_rooms} rooms)\n`;
+                    });
+                }
+                
+                downloadTextFile(reportContent, 'occupancy-report.txt');
+                HotelPMS.Utils.showNotification('Occupancy report generated successfully!', 'success');
+            } else {
+                HotelPMS.Utils.showNotification('Error generating occupancy report', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error generating occupancy report:', error);
+            HotelPMS.Utils.showNotification('Error generating occupancy report', 'error');
+        });
+}
+
+function generateDemographicsReport() {
+    fetch('../../api/get-guest-demographics.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let reportContent = 'GUEST DEMOGRAPHICS REPORT\n';
+                reportContent += '==========================\n\n';
+                
+                if (data.data.age_groups && data.data.age_groups.length > 0) {
+                    reportContent += 'Age Groups:\n';
+                    data.data.age_groups.forEach(group => {
+                        reportContent += `${group.age_group}: ${group.count} guests\n`;
+                    });
+                }
+                
+                if (data.data.nationalities && data.data.nationalities.length > 0) {
+                    reportContent += '\nTop Nationalities:\n';
+                    data.data.nationalities.forEach(nationality => {
+                        reportContent += `${nationality.nationality}: ${nationality.count} guests\n`;
+                    });
+                }
+                
+                if (data.data.genders && data.data.genders.length > 0) {
+                    reportContent += '\nGender Distribution:\n';
+                    data.data.genders.forEach(gender => {
+                        reportContent += `${gender.gender}: ${gender.count} guests\n`;
+                    });
+                }
+                
+                if (data.data.guest_types && data.data.guest_types.length > 0) {
+                    reportContent += '\nGuest Types:\n';
+                    data.data.guest_types.forEach(type => {
+                        reportContent += `${type.guest_type}: ${type.count} guests\n`;
+                    });
+                }
+                
+                downloadTextFile(reportContent, 'demographics-report.txt');
+                HotelPMS.Utils.showNotification('Demographics report generated successfully!', 'success');
+            } else {
+                HotelPMS.Utils.showNotification('Error generating demographics report', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error generating demographics report:', error);
+            HotelPMS.Utils.showNotification('Error generating demographics report', 'error');
+        });
+}
+
+function generateInventoryReport() {
+    fetch('../../api/get-inventory-reports.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let reportContent = 'INVENTORY REPORT\n';
+                reportContent += '==================\n\n';
+                
+                if (data.data.items && data.data.items.length > 0) {
+                    reportContent += 'Inventory Items:\n';
+                    data.data.items.forEach(item => {
+                        reportContent += `${item.item_name}: ${item.current_stock}/${item.minimum_stock} (${item.stock_status})\n`;
+                    });
+                }
+                
+                if (data.data.categories && data.data.categories.length > 0) {
+                    reportContent += '\nCategories:\n';
+                    data.data.categories.forEach(category => {
+                        reportContent += `${category.category_name}: ${category.item_count} items\n`;
+                    });
+                }
+                
+                downloadTextFile(reportContent, 'inventory-report.txt');
+                HotelPMS.Utils.showNotification('Inventory report generated successfully!', 'success');
+            } else {
+                HotelPMS.Utils.showNotification('Error generating inventory report', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error generating inventory report:', error);
+            HotelPMS.Utils.showNotification('Error generating inventory report', 'error');
+        });
+}
+
+function downloadTextFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
 }
 
 function exportReport(type) {
@@ -1171,4 +1338,375 @@ function openAddCategoryModal() {
 
 function openAddTransactionModal() {
     HotelPMS.Utils.showNotification('Add transaction feature coming soon', 'info');
+}
+
+// Guest Demographics Functions
+function loadGuestDemographicsChart() {
+    fetch('../../api/get-guest-demographics.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                // Create pie charts
+                createAgeGroupsPieChart(data.data.age_groups);
+                createNationalitiesPieChart(data.data.nationalities);
+                createGenderPieChart(data.data.genders);
+                createGuestTypesPieChart(data.data.guest_types);
+                
+                // Create additional data displays
+                createAgeGroupChart(data.data.age_groups);
+                createNationalityChart(data.data.nationalities);
+                createGenderChart(data.data.genders);
+                createGuestTypeChart(data.data.guest_types);
+            } else {
+                console.error('Failed to load guest demographics:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading guest demographics:', error);
+        });
+}
+
+function createAgeGroupsPieChart(ageGroups) {
+    const ctx = document.getElementById('ageGroupsChart').getContext('2d');
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+    
+    chartInstances.ageGroupsChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ageGroups.map(group => group.age_group),
+            datasets: [{
+                data: ageGroups.map(group => group.count),
+                backgroundColor: colors.slice(0, ageGroups.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createNationalitiesPieChart(nationalities) {
+    const ctx = document.getElementById('nationalitiesChart').getContext('2d');
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'];
+    
+    chartInstances.nationalitiesChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: nationalities.map(nationality => nationality.nationality),
+            datasets: [{
+                data: nationalities.map(nationality => nationality.count),
+                backgroundColor: colors.slice(0, nationalities.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createGenderPieChart(genders) {
+    const ctx = document.getElementById('genderChart').getContext('2d');
+    const colors = ['#3B82F6', '#EC4899', '#10B981'];
+    
+    chartInstances.genderChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: genders.map(gender => gender.gender),
+            datasets: [{
+                data: genders.map(gender => gender.count),
+                backgroundColor: colors.slice(0, genders.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createGuestTypesPieChart(guestTypes) {
+    const ctx = document.getElementById('guestTypesChart').getContext('2d');
+    const colors = ['#F59E0B', '#6B7280'];
+    
+    chartInstances.guestTypesChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: guestTypes.map(type => type.guest_type),
+            datasets: [{
+                data: guestTypes.map(type => type.count),
+                backgroundColor: colors.slice(0, guestTypes.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createAgeGroupChart(ageGroups) {
+    const container = document.getElementById('guest-demographics-container');
+    if (!container) return;
+    
+    const chartHtml = `
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Guest Age Groups</h4>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                ${ageGroups.map(group => `
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600">${group.count}</div>
+                        <div class="text-sm text-gray-600">${group.age_group}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML += chartHtml;
+}
+
+function createNationalityChart(nationalities) {
+    const container = document.getElementById('guest-demographics-container');
+    if (!container) return;
+    
+    const chartHtml = `
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Top Nationalities</h4>
+            <div class="space-y-3">
+                ${nationalities.map(nationality => `
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-700">${nationality.nationality}</span>
+                        <div class="flex items-center">
+                            <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${(nationality.count / nationalities[0].count) * 100}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">${nationality.count}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML += chartHtml;
+}
+
+function createGenderChart(genders) {
+    const container = document.getElementById('guest-demographics-container');
+    if (!container) return;
+    
+    const chartHtml = `
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Gender Distribution</h4>
+            <div class="grid grid-cols-2 gap-4">
+                ${genders.map(gender => `
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600">${gender.count}</div>
+                        <div class="text-sm text-gray-600">${gender.gender}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML += chartHtml;
+}
+
+function createGuestTypeChart(guestTypes) {
+    const container = document.getElementById('guest-demographics-container');
+    if (!container) return;
+    
+    const chartHtml = `
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">VIP vs Regular Guests</h4>
+            <div class="grid grid-cols-2 gap-4">
+                ${guestTypes.map(type => `
+                    <div class="text-center p-4 ${type.guest_type === 'VIP' ? 'bg-yellow-50' : 'bg-gray-50'} rounded-lg">
+                        <div class="text-2xl font-bold ${type.guest_type === 'VIP' ? 'text-yellow-600' : 'text-gray-600'}">${type.count}</div>
+                        <div class="text-sm text-gray-600">${type.guest_type}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML += chartHtml;
+}
+
+// Inventory Analytics Functions
+function loadInventoryAnalytics() {
+    fetch('../../api/get-inventory-reports.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                // Create inventory charts
+                createInventoryCategoryChart(data.data.categories || []);
+                createStockStatusChart(data.data.items || []);
+                createLowStockChart(data.data.items || []);
+                createInventoryValueChart(data.data.categories || []);
+            } else {
+                console.error('Failed to load inventory analytics:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading inventory analytics:', error);
+        });
+}
+
+function createInventoryCategoryChart(categories) {
+    const ctx = document.getElementById('inventoryCategoryChart').getContext('2d');
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'];
+    
+    chartInstances.inventoryCategoryChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: categories.map(cat => cat.category_name || 'Unknown'),
+            datasets: [{
+                label: 'Items Count',
+                data: categories.map(cat => cat.item_count || 0),
+                backgroundColor: colors.slice(0, categories.length),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function createStockStatusChart(items) {
+    const ctx = document.getElementById('stockStatusChart').getContext('2d');
+    
+    // Calculate stock status distribution
+    const statusCounts = {
+        'In Stock': 0,
+        'Low Stock': 0,
+        'Out of Stock': 0
+    };
+    
+    items.forEach(item => {
+        if (item.current_stock <= 0) {
+            statusCounts['Out of Stock']++;
+        } else if (item.current_stock <= item.minimum_stock) {
+            statusCounts['Low Stock']++;
+        } else {
+            statusCounts['In Stock']++;
+        }
+    });
+    
+    chartInstances.stockStatusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(statusCounts),
+            datasets: [{
+                data: Object.values(statusCounts),
+                backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createLowStockChart(items) {
+    const ctx = document.getElementById('lowStockChart').getContext('2d');
+    
+    // Get low stock items
+    const lowStockItems = items.filter(item => item.current_stock <= item.minimum_stock).slice(0, 10);
+    
+    chartInstances.lowStockChart = new Chart(ctx, {
+        type: 'horizontalBar',
+        data: {
+            labels: lowStockItems.map(item => item.item_name || 'Unknown'),
+            datasets: [{
+                label: 'Current Stock',
+                data: lowStockItems.map(item => item.current_stock || 0),
+                backgroundColor: '#EF4444',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function createInventoryValueChart(categories) {
+    const ctx = document.getElementById('inventoryValueChart').getContext('2d');
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+    
+    // Calculate total value for each category (simplified)
+    const categoryValues = categories.map(cat => ({
+        name: cat.category_name || 'Unknown',
+        value: (cat.item_count || 0) * 100 // Simplified calculation
+    }));
+    
+    chartInstances.inventoryValueChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: categoryValues.map(cat => cat.name),
+            datasets: [{
+                data: categoryValues.map(cat => cat.value),
+                backgroundColor: colors.slice(0, categoryValues.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
 }

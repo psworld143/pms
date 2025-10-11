@@ -1,76 +1,97 @@
 <?php
+/**
+ * Get Occupancy Data API
+ */
+
 require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
-require_once '../../includes/database.php';
-require_once '../includes/functions.php';
-require_once '../includes/booking-paths.php';
+require_once dirname(__DIR__) . '/config/database.php';
 
-booking_initialize_paths();
+header('Content-Type: application/json');
 
+// Check if user is logged in and has access
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
-    http_response_code(401);
     echo json_encode([
         'success' => false,
-        'message' => 'Unauthorized access',
-        'redirect' => booking_base() . 'login.php'
+        'message' => 'Unauthorized access'
     ]);
     exit();
 }
-
-header('Content-Type: application/json');
 
 try {
     // Get occupancy data for the last 30 days
     $stmt = $pdo->query("
         SELECT 
-            DATE(created_at) as date,
-            COUNT(*) as total_reservations,
-            SUM(CASE WHEN status = 'confirmed' THEN 1 ELSE 0 END) as confirmed_reservations,
-            SUM(CASE WHEN status = 'checked_in' THEN 1 ELSE 0 END) as checked_in_reservations
+            DATE(check_in_date) as date,
+            COUNT(*) as occupied_rooms,
+            (SELECT COUNT(*) FROM rooms) as total_rooms,
+            ROUND((COUNT(*) / (SELECT COUNT(*) FROM rooms)) * 100, 2) as occupancy_rate
         FROM reservations 
-        WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-        GROUP BY DATE(created_at)
+        WHERE check_in_date <= CURDATE() 
+        AND check_out_date >= CURDATE()
+        AND status IN ('confirmed', 'checked_in')
+        AND check_in_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        GROUP BY DATE(check_in_date)
         ORDER BY date ASC
     ");
+    $occupancyData = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    $occupancy_data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // Get occupancy by room type
+    $stmt = $pdo->query("
+        SELECT 
+            r.room_type,
+            COUNT(r.id) as total_rooms,
+            COUNT(CASE WHEN res.id IS NOT NULL THEN 1 END) as occupied_rooms,
+            ROUND((COUNT(CASE WHEN res.id IS NOT NULL THEN 1 END) / COUNT(r.id)) * 100, 2) as occupancy_rate
+        FROM rooms r
+        LEFT JOIN reservations res ON r.id = res.room_id 
+            AND res.check_in_date <= CURDATE() 
+            AND res.check_out_date >= CURDATE()
+            AND res.status IN ('confirmed', 'checked_in')
+        GROUP BY r.room_type
+        ORDER BY occupancy_rate DESC
+    ");
+    $occupancyByType = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Get total rooms count
-    $stmt = $pdo->query("SELECT COUNT(*) as total_rooms FROM rooms WHERE status != 'maintenance'");
-    $total_rooms = $stmt->fetch()['total_rooms'];
+    // Get monthly occupancy trend
+    $stmt = $pdo->query("
+        SELECT 
+            MONTH(check_in_date) as month,
+            YEAR(check_in_date) as year,
+            AVG(occupancy_rate) as avg_occupancy_rate
+        FROM (
+            SELECT 
+                check_in_date,
+                ROUND((COUNT(*) / (SELECT COUNT(*) FROM rooms)) * 100, 2) as occupancy_rate
+            FROM reservations 
+            WHERE status IN ('confirmed', 'checked_in')
+            AND check_in_date >= DATE_SUB(CURDATE(), INTERVAL 12 MONTH)
+            GROUP BY DATE(check_in_date)
+        ) as daily_occupancy
+        GROUP BY YEAR(check_in_date), MONTH(check_in_date)
+        ORDER BY year ASC, month ASC
+    ");
+    $monthlyOccupancy = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
-    // Calculate occupancy rates
-    $processed_data = [];
-    foreach ($occupancy_data as $row) {
-        $occupancy_rate = $total_rooms > 0 ? round(($row['checked_in_reservations'] / $total_rooms) * 100, 1) : 0;
-        $processed_data[] = [
-            'date' => $row['date'],
-            'occupancy_rate' => $occupancy_rate,
-            'total_reservations' => (int)$row['total_reservations'],
-            'confirmed_reservations' => (int)$row['confirmed_reservations'],
-            'checked_in_reservations' => (int)$row['checked_in_reservations']
-        ];
-    }
-    
-    $current_day = end($processed_data);
-    $summary = [
-        'today_rate' => $current_day['occupancy_rate'] ?? 0,
-        'average_rate' => !empty($processed_data)
-            ? round(array_sum(array_column($processed_data, 'occupancy_rate')) / count($processed_data), 1)
-            : 0,
-        'total_rooms' => (int)$total_rooms
-    ];
-
     echo json_encode([
         'success' => true,
-        'data' => $processed_data,
-        'summary' => $summary
+        'data' => [
+            'daily' => $occupancyData,
+            'by_type' => $occupancyByType,
+            'monthly' => $monthlyOccupancy
+        ]
     ]);
     
-} catch (Exception $e) {
-    http_response_code(500);
+} catch (PDOException $e) {
+    error_log('Error getting occupancy data: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Error fetching occupancy data: ' . $e->getMessage()
+        'message' => 'Database error occurred'
+    ]);
+} catch (Exception $e) {
+    error_log('Error getting occupancy data: ' . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'An error occurred'
     ]);
 }
 ?>
