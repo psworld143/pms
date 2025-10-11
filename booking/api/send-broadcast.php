@@ -33,9 +33,8 @@ try {
     $roles = [];
     switch ($target) {
         case 'front_desk': $roles = ['front_desk']; break;
-        case 'housekeeping': $roles = ['housekeeping']; break;
         case 'manager': $roles = ['manager']; break;
-        default: $roles = ['front_desk','housekeeping','manager'];
+        default: $roles = ['front_desk','manager'];
     }
 
     // Fetch users by role

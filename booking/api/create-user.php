@@ -36,7 +36,7 @@ try {
     }
     
     // Validate role
-    $valid_roles = ['front_desk', 'housekeeping', 'manager'];
+    $valid_roles = ['front_desk', 'manager'];
     if (!in_array($input['role'], $valid_roles)) {
         throw new Exception('Invalid user role');
     }

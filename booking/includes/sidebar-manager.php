@@ -73,8 +73,7 @@ $navigation_items = [
         'submenu' => [
             'room_status' => ['url' => booking_url('modules/housekeeping/room-status.php'), 'label' => 'Room Status'],
             'tasks' => ['url' => booking_url('modules/housekeeping/tasks.php'), 'label' => 'Task Management'],
-            'maintenance' => ['url' => booking_url('modules/housekeeping/maintenance.php'), 'label' => 'Maintenance'],
-            'inventory' => ['url' => booking_url('modules/housekeeping/inventory.php'), 'label' => 'Inventory']
+            'maintenance' => ['url' => booking_url('modules/housekeeping/maintenance.php'), 'label' => 'Maintenance']
         ]
     ],
     'guests' => [

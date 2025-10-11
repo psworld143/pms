@@ -1934,15 +1934,12 @@ function getRoomStatusOverview() {
     try {
         $stmt = $pdo->query("
             SELECT 
-                room_type,
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available,
-                SUM(CASE WHEN status = 'occupied' THEN 1 ELSE 0 END) as occupied,
-                SUM(CASE WHEN status = 'reserved' THEN 1 ELSE 0 END) as reserved,
-                SUM(CASE WHEN housekeeping_status = 'maintenance' THEN 1 ELSE 0 END) as maintenance
+                housekeeping_status,
+                COUNT(*) as count
             FROM rooms
-            GROUP BY room_type
-            ORDER BY room_type
+            WHERE housekeeping_status IS NOT NULL
+            GROUP BY housekeeping_status
+            ORDER BY housekeeping_status
         ");
         return $stmt->fetchAll();
     } catch (PDOException $e) {

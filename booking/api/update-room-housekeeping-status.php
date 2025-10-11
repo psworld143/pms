@@ -1,46 +1,72 @@
 <?php
-session_start();
-require_once "../config/database.php";
-require_once '../includes/functions.php';
-// Check if user is logged in and has housekeeping access
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['housekeeping', 'manager'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+/**
+ * Update Room Housekeeping Status API
+ */
+
+require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+require_once dirname(__DIR__) . '/config/database.php';
+
+header('Content-Type: application/json');
+
+// Check if user is logged in and has access (manager or front_desk only)
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['manager', 'front_desk'])) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Unauthorized access'
+    ]);
     exit();
 }
 
-// Check if it's a POST request
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Invalid request method'
+    ]);
     exit();
 }
 
 try {
-    $room_id = $_POST['room_id'] ?? '';
-    $housekeeping_status = $_POST['housekeeping_status'] ?? '';
-    $notes = $_POST['notes'] ?? '';
+    $input = json_decode(file_get_contents('php://input'), true);
     
-    // Validate inputs
-    if (empty($room_id) || empty($housekeeping_status)) {
-        throw new Exception('Room ID and housekeeping status are required');
+    if (!$input) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid JSON data'
+        ]);
+        exit();
+    }
+    
+    $room_id = $input['room_id'] ?? null;
+    $housekeeping_status = $input['housekeeping_status'] ?? null;
+    
+    if (!$room_id || !$housekeeping_status) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Missing required fields'
+        ]);
+        exit();
     }
     
     // Validate housekeeping status
-    $valid_statuses = ['clean', 'dirty', 'cleaning', 'maintenance'];
+    $valid_statuses = ['clean', 'dirty', 'maintenance', 'cleaning'];
     if (!in_array($housekeeping_status, $valid_statuses)) {
-        throw new Exception('Invalid housekeeping status');
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid housekeeping status'
+        ]);
+        exit();
     }
     
-    // Update room housekeeping status
-    $result = updateRoomHousekeepingStatus($room_id, $housekeeping_status);
+    // Update the room's housekeeping status
+    $stmt = $pdo->prepare("
+        UPDATE rooms 
+        SET housekeeping_status = ?, updated_at = NOW() 
+        WHERE id = ?
+    ");
     
-    if ($result['success']) {
-        // Log the activity with notes if provided
-        if (!empty($notes)) {
-            logActivity($_SESSION['user_id'], 'housekeeping_notes', "Updated room {$room_id} with notes: {$notes}");
-        }
-        
+    $stmt->execute([$housekeeping_status, $room_id]);
+    
+    if ($stmt->rowCount() > 0) {
         echo json_encode([
             'success' => true,
             'message' => 'Room housekeeping status updated successfully'
@@ -48,15 +74,21 @@ try {
     } else {
         echo json_encode([
             'success' => false,
-            'message' => $result['message']
+            'message' => 'Room not found or no changes made'
         ]);
     }
     
-} catch (Exception $e) {
-    error_log("Error in update-room-housekeeping-status.php: " . $e->getMessage());
+} catch (PDOException $e) {
+    error_log('Error updating room housekeeping status: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Error updating room status: ' . $e->getMessage()
+        'message' => 'Database error occurred'
+    ]);
+} catch (Exception $e) {
+    error_log('Error updating room housekeeping status: ' . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'An error occurred'
     ]);
 }
 ?>

@@ -4,14 +4,51 @@
  * Hotel PMS Training System for Students
  */
 
-session_start();
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/functions.php';
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+require_once '../../config/database.php';
+require_once '../../includes/functions.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
+// Check if user is logged in and has access (manager or front_desk only)
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['manager', 'front_desk'])) {
     header('Location: ../../login.php');
     exit();
+}
+
+// Get maintenance statistics
+try {
+    // Active maintenance requests
+    $stmt = $pdo->query("SELECT COUNT(*) as active FROM maintenance_requests WHERE status = 'pending' OR status = 'in_progress'");
+    $activeRequests = $stmt->fetch()['active'];
+    
+    // Completed today
+    $stmt = $pdo->query("SELECT COUNT(*) as completed_today FROM maintenance_requests WHERE status = 'completed' AND DATE(updated_at) = CURDATE()");
+    $completedToday = $stmt->fetch()['completed_today'];
+    
+    // Pending approval
+    $stmt = $pdo->query("SELECT COUNT(*) as pending FROM maintenance_requests WHERE status = 'pending'");
+    $pendingApproval = $stmt->fetch()['pending'];
+    
+    // Total cost
+    $stmt = $pdo->query("SELECT SUM(estimated_cost) as total_cost FROM maintenance_requests WHERE status = 'completed'");
+    $totalCost = $stmt->fetch()['total_cost'] ?? 0;
+    
+    // Get all maintenance requests
+    $stmt = $pdo->query("
+        SELECT 
+            mr.*,
+            r.room_number,
+            u.name as reported_by_name
+        FROM maintenance_requests mr
+        LEFT JOIN rooms r ON mr.room_id = r.id
+        LEFT JOIN users u ON mr.reported_by = u.id
+        ORDER BY mr.created_at DESC
+    ");
+    $maintenanceRequests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    
+} catch (PDOException $e) {
+    error_log('Error loading maintenance data: ' . $e->getMessage());
+    $activeRequests = $completedToday = $pendingApproval = $totalCost = 0;
+    $maintenanceRequests = [];
 }
 
 // Set page title
@@ -28,8 +65,8 @@ include '../../includes/sidebar-unified.php';
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Maintenance Management</h2>
                 <div class="flex items-center space-x-4">
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                        <i class="fas fa-plus mr-2"></i>New Maintenance Request
+                    <button onclick="showNewMaintenanceModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                        <i class="fas fa-plus mr-2"></i>New Request
                     </button>
                 </div>
             </div>
@@ -39,13 +76,13 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                            <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
                                 <i class="fas fa-tools text-white"></i>
                             </div>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active Requests</p>
-                            <p class="text-2xl font-semibold text-gray-900">12</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $activeRequests; ?></p>
                         </div>
                     </div>
                 </div>
@@ -59,7 +96,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Completed Today</p>
-                            <p class="text-2xl font-semibold text-gray-900">8</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $completedToday; ?></p>
                         </div>
                     </div>
                 </div>
@@ -68,12 +105,12 @@ include '../../includes/sidebar-unified.php';
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-exclamation-triangle text-white"></i>
+                                <i class="fas fa-clock text-white"></i>
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Urgent Issues</p>
-                            <p class="text-2xl font-semibold text-gray-900">3</p>
+                            <p class="text-sm font-medium text-gray-500">Pending Approval</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo $pendingApproval; ?></p>
                         </div>
                     </div>
                 </div>
@@ -81,198 +118,186 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-clock text-white"></i>
+                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-dollar-sign text-white"></i>
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Avg. Response</p>
-                            <p class="text-2xl font-semibold text-gray-900">25 min</p>
+                            <p class="text-sm font-medium text-gray-500">Total Cost</p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($totalCost, 2); ?></p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Maintenance Categories -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <!-- HVAC Issues -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800">HVAC Issues</h3>
-                        <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">4 Active</span>
-                    </div>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                                <p class="font-medium text-gray-900">Room 301 - AC Not Working</p>
-                                <p class="text-sm text-gray-500">Reported 30 minutes ago</p>
-                            </div>
-                            <span class="px-2 py-1 bg-red-100 text-red-800 text-xs font-semibold rounded-full">Urgent</span>
-                        </div>
-                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                                <p class="font-medium text-gray-900">Room 205 - Heating Issue</p>
-                                <p class="text-sm text-gray-500">Reported 1 hour ago</p>
-                            </div>
-                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">High</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Plumbing Issues -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-gray-800">Plumbing Issues</h3>
-                        <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">2 Active</span>
-                    </div>
-                    <div class="space-y-3">
-                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                                <p class="font-medium text-gray-900">Room 102 - Leaky Faucet</p>
-                                <p class="text-sm text-gray-500">Reported 2 hours ago</p>
-                            </div>
-                            <span class="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-semibold rounded-full">Normal</span>
-                        </div>
-                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                                <p class="font-medium text-gray-900">Room 201 - Toilet Clog</p>
-                                <p class="text-sm text-gray-500">Reported 45 minutes ago</p>
-                            </div>
-                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">High</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Maintenance Request Form -->
-            <div class="bg-white rounded-lg shadow p-6 mb-8">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">New Maintenance Request</h3>
-                <form class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Room Number</label>
-                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>Select Room</option>
-                                <option>Room 101</option>
-                                <option>Room 102</option>
-                                <option>Room 201</option>
-                                <option>Room 202</option>
-                                <option>Room 301</option>
-                                <option>Room 302</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Issue Category</label>
-                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>Select Category</option>
-                                <option>HVAC</option>
-                                <option>Plumbing</option>
-                                <option>Electrical</option>
-                                <option>Furniture</option>
-                                <option>Appliances</option>
-                                <option>Other</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Priority Level</label>
-                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>Normal</option>
-                                <option>High</option>
-                                <option>Urgent</option>
-                                <option>Emergency</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Assigned Technician</label>
-                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>Auto-assign</option>
-                                <option>Mike Johnson</option>
-                                <option>Sarah Davis</option>
-                                <option>Tom Wilson</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Issue Description</label>
-                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Describe the maintenance issue in detail"></textarea>
-                    </div>
-                    <div class="flex justify-end space-x-4">
-                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
-                            Cancel
-                        </button>
-                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
-                            Submit Request
-                        </button>
-                    </div>
-                </form>
-            </div>
-
-            <!-- Maintenance Requests Table -->
+            <!-- Recent Maintenance Requests -->
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800">All Maintenance Requests</h3>
+                    <h3 class="text-lg font-semibold text-gray-800">Recent Maintenance Requests</h3>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request ID</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reported By</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Technician</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#MR-001</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 301</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">HVAC</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        Urgent
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Mike Johnson</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        In Progress
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Complete</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#MR-002</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 201</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Plumbing</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        High
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Sarah Davis</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                        Assigned
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Start</button>
-                                </td>
-                            </tr>
+                            <?php if (!empty($maintenanceRequests)): ?>
+                                <?php foreach ($maintenanceRequests as $request): 
+                                    $priorityClass = '';
+                                    $priorityText = '';
+                                    switch($request['priority']) {
+                                        case 'urgent':
+                                            $priorityClass = 'bg-red-100 text-red-800';
+                                            $priorityText = 'Urgent';
+                                            break;
+                                        case 'high':
+                                            $priorityClass = 'bg-orange-100 text-orange-800';
+                                            $priorityText = 'High';
+                                            break;
+                                        case 'normal':
+                                        default:
+                                            $priorityClass = 'bg-blue-100 text-blue-800';
+                                            $priorityText = 'Normal';
+                                            break;
+                                    }
+                                    
+                                    $statusClass = '';
+                                    $statusText = '';
+                                    switch($request['status']) {
+                                        case 'completed':
+                                            $statusClass = 'bg-green-100 text-green-800';
+                                            $statusText = 'Completed';
+                                            break;
+                                        case 'in_progress':
+                                            $statusClass = 'bg-yellow-100 text-yellow-800';
+                                            $statusText = 'In Progress';
+                                            break;
+                                        case 'pending':
+                                        default:
+                                            $statusClass = 'bg-gray-100 text-gray-800';
+                                            $statusText = 'Pending';
+                                            break;
+                                    }
+                                ?>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($request['issue_type']); ?></div>
+                                        <div class="text-sm text-gray-500"><?php echo htmlspecialchars(substr($request['description'], 0, 50)) . (strlen($request['description']) > 50 ? '...' : ''); ?></div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($request['room_number'] ?? 'N/A'); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($request['reported_by_name'] ?? 'Unknown'); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $priorityClass; ?>">
+                                            <?php echo $priorityText; ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $statusClass; ?>">
+                                            <?php echo $statusText; ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onclick="viewMaintenanceRequest(<?php echo $request['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                                        <button onclick="updateMaintenanceStatus(<?php echo $request['id']; ?>, 'in_progress')" class="text-yellow-600 hover:text-yellow-900 mr-3">Start</button>
+                                        <button onclick="updateMaintenanceStatus(<?php echo $request['id']; ?>, 'completed')" class="text-green-600 hover:text-green-900">Complete</button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <tr>
+                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                        <div class="flex flex-col items-center">
+                                            <i class="fas fa-tools text-4xl mb-4"></i>
+                                            <p class="text-lg font-medium">No maintenance requests found</p>
+                                            <p class="text-sm">Create a new request to get started</p>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
         </main>
 
-        <!-- Include footer -->
-        <?php include '../../includes/footer.php'; ?>
+        <!-- New Maintenance Request Modal -->
+        <div id="new-maintenance-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 hidden">
+            <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                <div class="mt-3">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-medium text-gray-900">New Maintenance Request</h3>
+                        <button onclick="closeNewMaintenanceModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <form id="new-maintenance-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Room Number *</label>
+                            <select name="room_id" id="room_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Room</option>
+                                <?php
+                                try {
+                                    $stmt = $pdo->query("SELECT id, room_number FROM rooms ORDER BY room_number ASC");
+                                    $rooms = $stmt->fetchAll();
+                                    foreach ($rooms as $room) {
+                                        echo '<option value="' . $room['id'] . '">' . htmlspecialchars($room['room_number']) . '</option>';
+                                    }
+                                } catch (PDOException $e) {
+                                    error_log('Error loading rooms: ' . $e->getMessage());
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Issue Type *</label>
+                            <select name="issue_type" id="issue_type" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Issue Type</option>
+                                <option value="plumbing">Plumbing</option>
+                                <option value="electrical">Electrical</option>
+                                <option value="hvac">HVAC</option>
+                                <option value="appliance">Appliance</option>
+                                <option value="furniture">Furniture</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                            <select name="priority" id="priority" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="normal">Normal</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
+                            <textarea name="description" id="description" rows="3" required placeholder="Describe the issue..." class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Estimated Cost</label>
+                            <input type="number" step="0.01" min="0" name="estimated_cost" id="estimated_cost" placeholder="0.00" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" onclick="closeNewMaintenanceModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                                Create Request
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="../../assets/js/housekeeping-maintenance.js"></script>
+        <script src="../../assets/js/main.js"></script>
     </body>
 </html>

@@ -1,6 +1,6 @@
 <?php
 /**
- * Create Maintenance Request API
+ * Create Inventory Item API
  */
 
 require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
@@ -8,8 +8,8 @@ require_once dirname(__DIR__) . '/config/database.php';
 
 header('Content-Type: application/json');
 
-// Check if user is logged in and has access (manager or front_desk only)
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['manager', 'front_desk'])) {
+// Check if user is logged in and has housekeeping access
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['housekeeping', 'manager'])) {
     echo json_encode([
         'success' => false,
         'message' => 'Unauthorized access'
@@ -36,13 +36,14 @@ try {
         exit();
     }
     
-    $room_id = $input['room_id'] ?? null;
-    $issue_type = $input['issue_type'] ?? null;
-    $priority = $input['priority'] ?? 'normal';
+    $name = $input['name'] ?? null;
+    $category_id = $input['category_id'] ?? null;
+    $current_stock = $input['current_stock'] ?? 0;
+    $minimum_stock = $input['minimum_stock'] ?? 0;
+    $unit_price = $input['unit_price'] ?? 0;
     $description = $input['description'] ?? '';
-    $estimated_cost = $input['estimated_cost'] ?? 0;
     
-    if (!$room_id || !$issue_type || !$description) {
+    if (!$name || !$category_id) {
         echo json_encode([
             'success' => false,
             'message' => 'Missing required fields'
@@ -50,45 +51,44 @@ try {
         exit();
     }
     
-    // Create the maintenance request
     $stmt = $pdo->prepare("
-        INSERT INTO maintenance_requests 
-        (room_id, reported_by, issue_type, priority, description, estimated_cost, status, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
+        INSERT INTO inventory_items 
+        (item_name, category_id, current_stock, minimum_stock, unit_price, description, created_at, last_updated) 
+        VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())
     ");
     
     $stmt->execute([
-        $room_id,
-        $_SESSION['user_id'],
-        $issue_type,
-        $priority,
-        $description,
-        $estimated_cost
+        $name,
+        $category_id,
+        $current_stock,
+        $minimum_stock,
+        $unit_price,
+        $description
     ]);
     
     if ($stmt->rowCount() > 0) {
-        $request_id = $pdo->lastInsertId();
+        $item_id = $pdo->lastInsertId();
         
         echo json_encode([
             'success' => true,
-            'message' => 'Maintenance request created successfully',
-            'request_id' => $request_id
+            'message' => 'Inventory item created successfully',
+            'item_id' => $item_id
         ]);
     } else {
         echo json_encode([
             'success' => false,
-            'message' => 'Failed to create maintenance request'
+            'message' => 'Failed to create inventory item'
         ]);
     }
     
 } catch (PDOException $e) {
-    error_log('Error creating maintenance request: ' . $e->getMessage());
+    error_log('Error creating inventory item: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'Database error occurred'
     ]);
 } catch (Exception $e) {
-    error_log('Error creating maintenance request: ' . $e->getMessage());
+    error_log('Error creating inventory item: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'An error occurred'

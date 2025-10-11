@@ -1,6 +1,6 @@
 <?php
 /**
- * Get Room Details API
+ * Get Maintenance Request API
  */
 
 require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
@@ -25,12 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit();
 }
 
-$room_id = $_GET['id'] ?? null;
+$request_id = $_GET['id'] ?? null;
 
-if (!$room_id) {
+if (!$request_id) {
     echo json_encode([
         'success' => false,
-        'message' => 'Room ID is required'
+        'message' => 'Request ID is required'
     ]);
     exit();
 }
@@ -38,42 +38,38 @@ if (!$room_id) {
 try {
     $stmt = $pdo->prepare("
         SELECT 
-            id,
-            room_number,
-            room_type,
-            floor,
-            capacity,
-            rate,
-            status,
-            housekeeping_status,
-            amenities
-        FROM rooms 
-        WHERE id = ?
+            mr.*,
+            r.room_number,
+            u.name as reported_by_name
+        FROM maintenance_requests mr
+        LEFT JOIN rooms r ON mr.room_id = r.id
+        LEFT JOIN users u ON mr.reported_by = u.id
+        WHERE mr.id = ?
     ");
-    $stmt->execute([$room_id]);
-    $room = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt->execute([$request_id]);
+    $request = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$room) {
+    if (!$request) {
         echo json_encode([
             'success' => false,
-            'message' => 'Room not found'
+            'message' => 'Maintenance request not found'
         ]);
         exit();
     }
     
     echo json_encode([
         'success' => true,
-        'room' => $room
+        'request' => $request
     ]);
     
 } catch (PDOException $e) {
-    error_log('Error getting room details: ' . $e->getMessage());
+    error_log('Error getting maintenance request: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'Database error occurred'
     ]);
 } catch (Exception $e) {
-    error_log('Error getting room details: ' . $e->getMessage());
+    error_log('Error getting maintenance request: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'An error occurred'

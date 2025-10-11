@@ -57,12 +57,11 @@ $navigation_items = [
         'url' => booking_url('modules/housekeeping/'),
         'icon' => 'fas fa-broom',
         'label' => 'Housekeeping',
-        'roles' => ['manager', 'housekeeping'],
+        'roles' => ['manager', 'front_desk'],
         'submenu' => [
             'room_status' => ['url' => booking_url('modules/housekeeping/room-status.php'), 'label' => 'Room Status'],
             'tasks' => ['url' => booking_url('modules/housekeeping/tasks.php'), 'label' => 'Tasks'],
-            'maintenance' => ['url' => booking_url('modules/housekeeping/maintenance.php'), 'label' => 'Maintenance'],
-            'inventory' => ['url' => booking_url('modules/housekeeping/inventory.php'), 'label' => 'Inventory']
+            'maintenance' => ['url' => booking_url('modules/housekeeping/maintenance.php'), 'label' => 'Maintenance']
         ]
     ],
     'guests' => [

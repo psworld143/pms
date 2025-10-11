@@ -1,6 +1,6 @@
 <?php
 /**
- * Create Maintenance Request API
+ * Update Maintenance Status API
  */
 
 require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
@@ -36,13 +36,10 @@ try {
         exit();
     }
     
-    $room_id = $input['room_id'] ?? null;
-    $issue_type = $input['issue_type'] ?? null;
-    $priority = $input['priority'] ?? 'normal';
-    $description = $input['description'] ?? '';
-    $estimated_cost = $input['estimated_cost'] ?? 0;
+    $request_id = $input['request_id'] ?? null;
+    $status = $input['status'] ?? null;
     
-    if (!$room_id || !$issue_type || !$description) {
+    if (!$request_id || !$status) {
         echo json_encode([
             'success' => false,
             'message' => 'Missing required fields'
@@ -50,45 +47,45 @@ try {
         exit();
     }
     
-    // Create the maintenance request
+    // Validate status
+    $valid_statuses = ['pending', 'in_progress', 'completed', 'cancelled'];
+    if (!in_array($status, $valid_statuses)) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid status'
+        ]);
+        exit();
+    }
+    
+    // Update the maintenance request status
     $stmt = $pdo->prepare("
-        INSERT INTO maintenance_requests 
-        (room_id, reported_by, issue_type, priority, description, estimated_cost, status, created_at, updated_at) 
-        VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
+        UPDATE maintenance_requests 
+        SET status = ?, updated_at = NOW() 
+        WHERE id = ?
     ");
     
-    $stmt->execute([
-        $room_id,
-        $_SESSION['user_id'],
-        $issue_type,
-        $priority,
-        $description,
-        $estimated_cost
-    ]);
+    $stmt->execute([$status, $request_id]);
     
     if ($stmt->rowCount() > 0) {
-        $request_id = $pdo->lastInsertId();
-        
         echo json_encode([
             'success' => true,
-            'message' => 'Maintenance request created successfully',
-            'request_id' => $request_id
+            'message' => 'Maintenance request status updated successfully'
         ]);
     } else {
         echo json_encode([
             'success' => false,
-            'message' => 'Failed to create maintenance request'
+            'message' => 'Maintenance request not found or no changes made'
         ]);
     }
     
 } catch (PDOException $e) {
-    error_log('Error creating maintenance request: ' . $e->getMessage());
+    error_log('Error updating maintenance status: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'Database error occurred'
     ]);
 } catch (Exception $e) {
-    error_log('Error creating maintenance request: ' . $e->getMessage());
+    error_log('Error updating maintenance status: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'An error occurred'

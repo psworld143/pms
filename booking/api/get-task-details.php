@@ -1,6 +1,6 @@
 <?php
 /**
- * Get Room Details API
+ * Get Task Details API
  */
 
 require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
@@ -25,12 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     exit();
 }
 
-$room_id = $_GET['id'] ?? null;
+$task_id = $_GET['id'] ?? null;
 
-if (!$room_id) {
+if (!$task_id) {
     echo json_encode([
         'success' => false,
-        'message' => 'Room ID is required'
+        'message' => 'Task ID is required'
     ]);
     exit();
 }
@@ -38,42 +38,38 @@ if (!$room_id) {
 try {
     $stmt = $pdo->prepare("
         SELECT 
-            id,
-            room_number,
-            room_type,
-            floor,
-            capacity,
-            rate,
-            status,
-            housekeeping_status,
-            amenities
-        FROM rooms 
-        WHERE id = ?
+            ht.*,
+            r.room_number,
+            u.name as staff_name
+        FROM housekeeping_tasks ht
+        LEFT JOIN rooms r ON ht.room_id = r.id
+        LEFT JOIN users u ON ht.assigned_to = u.id
+        WHERE ht.id = ?
     ");
-    $stmt->execute([$room_id]);
-    $room = $stmt->fetch(PDO::FETCH_ASSOC);
+    $stmt->execute([$task_id]);
+    $task = $stmt->fetch(PDO::FETCH_ASSOC);
     
-    if (!$room) {
+    if (!$task) {
         echo json_encode([
             'success' => false,
-            'message' => 'Room not found'
+            'message' => 'Task not found'
         ]);
         exit();
     }
     
     echo json_encode([
         'success' => true,
-        'room' => $room
+        'task' => $task
     ]);
     
 } catch (PDOException $e) {
-    error_log('Error getting room details: ' . $e->getMessage());
+    error_log('Error getting task details: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'Database error occurred'
     ]);
 } catch (Exception $e) {
-    error_log('Error getting room details: ' . $e->getMessage());
+    error_log('Error getting task details: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'An error occurred'
