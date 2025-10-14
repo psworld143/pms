@@ -28,17 +28,23 @@ try {
     global $pdo;
     
     $pdo->beginTransaction();
+
+    // Determine correct rooms table (hotel_rooms preferred)
+    $roomsTable = 'hotel_rooms';
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'hotel_rooms'");
+    if ($tableCheck->rowCount() === 0) {
+        $roomsTable = 'rooms';
+    }
     
-    // Update last audited timestamp for the specific room
-    $stmt = $pdo->prepare("
-        UPDATE hotel_rooms 
-        SET last_audited = NOW() 
-        WHERE id = ?
-    ");
-    $stmt->execute([$room_id]);
+    // Update last audited timestamp for the specific room only if column exists
+    $colCheck = $pdo->query("SHOW COLUMNS FROM `{$roomsTable}` LIKE 'last_audited'");
+    if ($colCheck->rowCount() > 0) {
+        $stmt = $pdo->prepare("UPDATE `{$roomsTable}` SET last_audited = NOW() WHERE id = ?");
+        $stmt->execute([$room_id]);
+    }
     
     // Get room details for logging
-    $stmt = $pdo->prepare("SELECT room_number FROM hotel_rooms WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT room_number FROM `{$roomsTable}` WHERE id = ?");
     $stmt->execute([$room_id]);
     $room = $stmt->fetch();
     
@@ -55,7 +61,7 @@ try {
     
     // Get room inventory items for summary
     $stmt = $pdo->prepare("
-        SELECT ri.*, ii.item_name
+        SELECT ri.*, ii.id AS inv_id
         FROM room_inventory_items ri
         JOIN inventory_items ii ON ri.item_id = ii.id
         WHERE ri.room_id = ?
