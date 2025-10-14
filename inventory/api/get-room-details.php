@@ -48,12 +48,25 @@ try {
         exit();
     }
     
-    // Get room inventory items
-    $stmt = $pdo->prepare("
+    // Build schema-adaptive columns for inventory_items
+    $colsStmt = $pdo->query("SHOW COLUMNS FROM inventory_items");
+    $cols = $colsStmt->fetchAll(PDO::FETCH_COLUMN, 0);
+    $hasItemName = in_array('item_name', $cols, true);
+    $hasName = in_array('name', $cols, true);
+    $hasSku = in_array('sku', $cols, true);
+    $hasUnit = in_array('unit', $cols, true);
+
+    $nameExpr = $hasItemName ? 'ii.item_name' : ($hasName ? 'ii.name' : 'ii.id');
+    $skuExpr = $hasSku ? 'ii.sku' : "'' AS sku";
+    $unitExpr = $hasUnit ? 'ii.unit' : "'' AS unit";
+    $orderBy = $hasItemName ? 'ii.item_name' : ($hasName ? 'ii.name' : 'ii.id');
+
+    // Get room inventory items (using schema-adaptive fields)
+    $sqlItems = "
         SELECT ri.*, 
-               ii.item_name, 
-               ii.sku,
-               ii.unit,
+               $nameExpr AS item_name,
+               $skuExpr,
+               $unitExpr,
                ri.quantity_allocated,
                ri.quantity_current,
                ri.par_level,
@@ -61,8 +74,9 @@ try {
         FROM room_inventory_items ri
         JOIN inventory_items ii ON ri.item_id = ii.id
         WHERE ri.room_id = ?
-        ORDER BY ii.item_name
-    ");
+        ORDER BY $orderBy
+    ";
+    $stmt = $pdo->prepare($sqlItems);
     $stmt->execute([$room_id]);
     $inventory_items = $stmt->fetchAll();
     
