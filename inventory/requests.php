@@ -269,11 +269,33 @@ try {
     error_log("Error getting requests: " . $e->getMessage());
 }
 
-// Get items for request creation
+// Get items for request creation (schema-adaptive for localhost vs cyberpanel)
 $items = [];
 try {
     global $pdo;
-    $stmt = $pdo->query("SELECT id, item_name as name, current_stock as quantity, unit FROM inventory_items WHERE status = 'active' ORDER BY item_name");
+
+    // Detect column availability
+    $columnsStmt = $pdo->query("SHOW COLUMNS FROM inventory_items");
+    $columns = $columnsStmt->fetchAll(PDO::FETCH_COLUMN, 0);
+    $hasItemName = in_array('item_name', $columns, true);
+    $hasName = in_array('name', $columns, true);
+    $hasStatus = in_array('status', $columns, true);
+    $hasUnit = in_array('unit', $columns, true);
+    $hasCurrentStock = in_array('current_stock', $columns, true);
+    $hasQuantity = in_array('quantity', $columns, true); // fallback some schemas
+
+    // Build SELECT parts
+    $nameExpr = $hasItemName ? 'item_name' : ($hasName ? 'name' : "IFNULL(sku, description)");
+    $qtyExpr = $hasCurrentStock ? 'current_stock' : ($hasQuantity ? 'quantity' : '0');
+    $unitExpr = $hasUnit ? 'unit' : "'' AS unit";
+
+    $sql = "SELECT id, $nameExpr AS name, $qtyExpr AS quantity, $unitExpr FROM inventory_items";
+    if ($hasStatus) {
+        $sql .= " WHERE status = 'active'";
+    }
+    $sql .= $hasItemName ? " ORDER BY item_name" : ($hasName ? " ORDER BY name" : " ORDER BY id");
+
+    $stmt = $pdo->query($sql);
     $items = $stmt->fetchAll();
 } catch (PDOException $e) {
     error_log("Error getting items: " . $e->getMessage());
