@@ -6,8 +6,8 @@ require_once '../includes/database.php';
 require_once 'includes/progress-tracker.php';
 require_once 'includes/dynamic-training-manager.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'student') {
+// Check if user is logged in (allow all user roles to access tutorials)
+if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
@@ -146,7 +146,7 @@ $user_role = $_SESSION['user_role'] ?? 'student';
                                 <i class="fas fa-tachometer-alt mr-2"></i>PMS Dashboard
                             </a>
                             <hr class="my-2">
-                            <a href="../booking/logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                            <a href="logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
                                 <i class="fas fa-sign-out-alt mr-2"></i>Logout
                             </a>
                         </div>

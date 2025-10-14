@@ -4,6 +4,10 @@
  * Hotel PMS Training System - Inventory Module
  */
 
+// Suppress warnings and notices for clean JSON output
+error_reporting(E_ERROR | E_PARSE);
+ini_set('display_errors', 0);
+
 session_start();
 require_once '../config/database.php';
 
@@ -17,22 +21,12 @@ if (!isset($_SESSION['user_id'])) {
 header('Content-Type: application/json');
 
 try {
-    $items = getInventoryReportData();
-    $csvContent = generateInventoryCSVContent($items);
-    $filename = 'inventory_report_' . date('Y-m-d_H-i-s') . '.csv';
-    
-    // Save CSV file
-    $filepath = '../exports/' . $filename;
-    if (!file_exists('../exports/')) {
-        mkdir('../exports/', 0755, true);
-    }
-    
-    file_put_contents($filepath, $csvContent);
+    $result = exportInventoryReport();
     
     echo json_encode([
         'success' => true,
-        'download_url' => 'exports/' . $filename,
-        'filename' => $filename
+        'message' => 'Inventory report exported successfully',
+        'download_url' => $result['download_url']
     ]);
     
 } catch (Exception $e) {
@@ -44,75 +38,74 @@ try {
 }
 
 /**
- * Get inventory report data
+ * Export inventory report
  */
-function getInventoryReportData() {
+function exportInventoryReport() {
     global $pdo;
     
     try {
+        // Get inventory data
         $stmt = $pdo->query("
             SELECT 
-                i.id,
-                i.name,
-                i.sku,
-                i.description,
-                i.quantity,
-                i.minimum_stock,
-                i.maximum_stock,
-                i.unit_price,
-                i.cost_price,
-                i.supplier,
-                i.location,
-                i.unit,
-                i.status,
-                i.created_at,
-                c.name as category_name,
+                ii.item_name,
+                ic.name as category_name,
+                ii.sku,
+                ii.description,
+                ii.current_stock,
+                ii.minimum_stock,
+                ii.unit_price,
+                (ii.current_stock * ii.unit_price) as total_value,
                 CASE 
-                    WHEN i.quantity = 0 THEN 'Out of Stock'
-                    WHEN i.quantity <= i.minimum_stock THEN 'Low Stock'
+                    WHEN ii.current_stock = 0 THEN 'Out of Stock'
+                    WHEN ii.current_stock <= ii.minimum_stock THEN 'Low Stock'
                     ELSE 'In Stock'
-                END as stock_status
-            FROM inventory_items i
-            LEFT JOIN inventory_categories c ON i.category_id = c.id
-            WHERE i.status = 'active'
-            ORDER BY c.name, i.name ASC
+                END as stock_status,
+                ii.created_at,
+                ii.last_updated
+            FROM inventory_items ii
+            LEFT JOIN inventory_categories ic ON ii.category_id = ic.id
+            ORDER BY ii.item_name ASC
         ");
         
-        return $stmt->fetchAll();
+        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Create CSV content
+        $csv_content = "Item Name,Category,SKU,Description,Current Stock,Minimum Stock,Unit Price,Total Value,Stock Status,Created At,Last Updated\n";
+        
+        foreach ($items as $item) {
+            $csv_content .= '"' . str_replace('"', '""', $item['item_name']) . '",';
+            $csv_content .= '"' . str_replace('"', '""', $item['category_name']) . '",';
+            $csv_content .= '"' . str_replace('"', '""', $item['sku']) . '",';
+            $csv_content .= '"' . str_replace('"', '""', $item['description']) . '",';
+            $csv_content .= $item['current_stock'] . ',';
+            $csv_content .= $item['minimum_stock'] . ',';
+            $csv_content .= $item['unit_price'] . ',';
+            $csv_content .= $item['total_value'] . ',';
+            $csv_content .= '"' . $item['stock_status'] . '",';
+            $csv_content .= '"' . $item['created_at'] . '",';
+            $csv_content .= '"' . $item['last_updated'] . '"';
+            $csv_content .= "\n";
+        }
+        
+        // Generate filename
+        $filename = 'inventory_report_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        // Save to temp directory
+        $temp_dir = __DIR__ . '/../../temp/';
+        if (!is_dir($temp_dir)) {
+            mkdir($temp_dir, 0755, true);
+        }
+        
+        $filepath = $temp_dir . $filename;
+        file_put_contents($filepath, $csv_content);
+        
+        return [
+            'download_url' => '../../temp/' . $filename
+        ];
         
     } catch (PDOException $e) {
-        error_log("Error getting inventory report data: " . $e->getMessage());
-        return [];
+        error_log("Error exporting inventory report: " . $e->getMessage());
+        throw $e;
     }
-}
-
-/**
- * Generate CSV content
- */
-function generateInventoryCSVContent($items) {
-    $csv = "Item ID,Name,SKU,Description,Category,Quantity,Min Stock,Max Stock,Unit Price,Cost Price,Supplier,Location,Unit,Stock Status,Created Date\n";
-    
-    foreach ($items as $item) {
-        $csv .= sprintf(
-            "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
-            $item['id'],
-            '"' . str_replace('"', '""', $item['name']) . '"',
-            $item['sku'],
-            '"' . str_replace('"', '""', $item['description']) . '"',
-            '"' . str_replace('"', '""', $item['category_name']) . '"',
-            $item['quantity'],
-            $item['minimum_stock'],
-            $item['maximum_stock'],
-            $item['unit_price'],
-            $item['cost_price'],
-            '"' . str_replace('"', '""', $item['supplier']) . '"',
-            '"' . str_replace('"', '""', $item['location']) . '"',
-            $item['unit'],
-            $item['stock_status'],
-            $item['created_at']
-        );
-    }
-    
-    return $csv;
 }
 ?>

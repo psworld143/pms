@@ -19,9 +19,48 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
 // Set page title
 $page_title = 'Business Analytics';
 
-$analytics_kpis = getAnalyticsKpis();
-$revenue_breakdown = getRevenueBreakdown(30);
-$guest_sentiment = getGuestSentimentMetrics(90);
+// Debug session info
+error_log('Analytics page - Session ID: ' . session_id());
+error_log('Analytics page - User ID: ' . ($_SESSION['user_id'] ?? 'NOT SET'));
+error_log('Analytics page - User Role: ' . ($_SESSION['user_role'] ?? 'NOT SET'));
+
+// Get analytics data with error handling
+try {
+    $analytics_kpis = getAnalyticsKpis();
+    $revenue_breakdown = getRevenueBreakdown(30);
+    $guest_sentiment = getGuestSentimentMetrics(90);
+} catch (Exception $e) {
+    error_log('Analytics data loading error: ' . $e->getMessage());
+    // Provide default data structure
+    $analytics_kpis = [
+        'window_days' => 30,
+        'total_rooms' => 0,
+        'today_revenue' => 0,
+        'yesterday_revenue' => 0,
+        'revenue_growth_pct' => 0,
+        'today_occupancy_pct' => 0,
+        'average_occupancy_pct' => 0,
+        'average_room_rate' => 0,
+        'returning_guests_pct' => 0,
+        'guest_satisfaction_score' => null,
+        'positive_feedback_pct' => 0,
+        'resolved_feedback_pct' => 0,
+        'average_response_hours' => null,
+        'room_nights' => 0,
+        'reservation_revenue' => 0,
+        'feedback_sample' => 0
+    ];
+    $revenue_breakdown = [];
+    $guest_sentiment = [
+        'sample_size' => 0,
+        'complaints' => 0,
+        'positive_pct' => 0,
+        'resolved_pct' => 0,
+        'average_response_hours' => null,
+        'average_rating' => null,
+        'top_drivers' => []
+    ];
+}
 
 $asset_version = time();
 $additional_js = '

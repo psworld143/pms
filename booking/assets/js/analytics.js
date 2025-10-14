@@ -18,6 +18,9 @@
     document.addEventListener('DOMContentLoaded', initializeAnalyticsPage);
 
     function initializeAnalyticsPage() {
+        console.log('🚀 Initializing analytics page...');
+        console.log('API endpoints:', ENDPOINTS);
+        
         updateCurrentDate();
         const refreshButton = document.getElementById('analytics-refresh');
         const activityRefreshButton = document.getElementById('analytics-activity-refresh');
@@ -40,38 +43,100 @@
 
         hydrateBootstrapData();
 
+        console.log('🔄 Starting initial data load...');
         reloadAnalytics();
     }
 
     async function reloadAnalytics(button) {
         setButtonLoadingState(button, true);
+        let hasErrors = false;
+        let errorMessages = [];
+        
         try {
-            const [kpiData, revenueData, occupancyData] = await Promise.all([
-                fetchJson(ENDPOINTS.kpis),
-                fetchJson(ENDPOINTS.revenue),
-                fetchJson(ENDPOINTS.occupancy)
-            ]);
-
-            if (kpiData.success) {
-                renderKpis(kpiData.data || {});
-                if (kpiData.guest_sentiment) {
-                    renderGuestSentiment(kpiData.guest_sentiment);
+            // Load KPIs data
+            try {
+                console.log('Loading KPIs from:', ENDPOINTS.kpis);
+                const kpiData = await fetchJson(ENDPOINTS.kpis);
+                console.log('KPIs response:', kpiData);
+                if (kpiData.success) {
+                    renderKpis(kpiData.data || {});
+                    if (kpiData.guest_sentiment) {
+                        renderGuestSentiment(kpiData.guest_sentiment);
+                    }
+                    console.log('✅ KPIs loaded successfully');
+                } else {
+                    console.error('❌ KPIs API error:', kpiData.message);
+                    errorMessages.push('KPIs: ' + kpiData.message);
+                    hasErrors = true;
                 }
+            } catch (error) {
+                console.error('❌ Error loading KPIs:', error);
+                errorMessages.push('KPIs: ' + error.message);
+                hasErrors = true;
             }
 
-            if (revenueData.success) {
-                renderRevenueChart(revenueData.data || []);
+            // Load revenue data
+            try {
+                console.log('Loading revenue from:', ENDPOINTS.revenue);
+                const revenueData = await fetchJson(ENDPOINTS.revenue);
+                console.log('Revenue response:', revenueData);
+                if (revenueData.success) {
+                    renderRevenueChart(revenueData.data || []);
+                    console.log('✅ Revenue loaded successfully');
+                } else {
+                    console.error('❌ Revenue API error:', revenueData.message);
+                    errorMessages.push('Revenue: ' + revenueData.message);
+                    hasErrors = true;
+                }
+            } catch (error) {
+                console.error('❌ Error loading revenue data:', error);
+                errorMessages.push('Revenue: ' + error.message);
+                hasErrors = true;
             }
 
-            if (occupancyData.success) {
-                renderOccupancySummary(occupancyData.summary || {}, occupancyData.data || []);
-                renderOccupancyChart(occupancyData.data || []);
+            // Load occupancy data
+            try {
+                console.log('Loading occupancy from:', ENDPOINTS.occupancy);
+                const occupancyData = await fetchJson(ENDPOINTS.occupancy);
+                console.log('Occupancy response:', occupancyData);
+                if (occupancyData.success) {
+                    renderOccupancySummary(occupancyData.summary || {}, occupancyData.data || []);
+                    renderOccupancyChart(occupancyData.data || []);
+                    console.log('✅ Occupancy loaded successfully');
+                } else {
+                    console.error('❌ Occupancy API error:', occupancyData.message);
+                    errorMessages.push('Occupancy: ' + occupancyData.message);
+                    hasErrors = true;
+                }
+            } catch (error) {
+                console.error('❌ Error loading occupancy data:', error);
+                errorMessages.push('Occupancy: ' + error.message);
+                hasErrors = true;
             }
 
-            await loadRevenueBreakdown(currentBreakdownDays, true);
+            // Load revenue breakdown
+            try {
+                console.log('Loading revenue breakdown...');
+                await loadRevenueBreakdown(currentBreakdownDays, true);
+                console.log('✅ Revenue breakdown loaded successfully');
+            } catch (error) {
+                console.error('❌ Error loading revenue breakdown:', error);
+                errorMessages.push('Revenue Breakdown: ' + error.message);
+                hasErrors = true;
+            }
+
+            // Show success/error notification
+            if (hasErrors) {
+                console.error('❌ Analytics errors:', errorMessages);
+                showErrorNotification('Some analytics data could not be loaded: ' + errorMessages.join(', '));
+            } else {
+                console.log('✅ All analytics data loaded successfully');
+                showSuccessNotification('Analytics data refreshed successfully.');
+            }
+
         } catch (error) {
-            console.error('Error loading analytics data:', error);
-            showErrorNotification('Unable to load analytics KPIs.');
+            console.error('❌ Critical error loading analytics data:', error);
+            showErrorNotification('Unable to load analytics data. Please check your connection and try again.');
         } finally {
             setButtonLoadingState(button, false);
             loadRecentActivity();
@@ -166,8 +231,19 @@
             revenueChartInstance.destroy();
         }
 
+        // Handle empty or invalid data
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+            const ctx = canvas.getContext('2d');
+            ctx.fillStyle = '#6B7280';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('No revenue data available', canvas.width / 2, canvas.height / 2);
+            return;
+        }
+
         const labels = data.map(item => formatDateLabel(item.date));
-        const revenueDataset = data.map(item => item.revenue || 0);
+        const revenueDataset = data.map(item => item.revenue || item.daily_revenue || 0);
         const transactionDataset = data.map(item => item.transactions || 0);
 
         revenueChartInstance = new Chart(canvas.getContext('2d'), {
@@ -223,46 +299,101 @@
     }
 
     function renderOccupancyChart(data) {
+        console.log('🎯 Rendering occupancy chart with data:', data);
+        
         const canvas = document.getElementById('analytics-occupancy-chart');
         const loader = document.getElementById('analytics-occupancy-loading');
-        if (!canvas) return;
+        
+        if (!canvas) {
+            console.error('❌ Canvas element not found!');
+            return;
+        }
 
-        toggleElementVisibility(loader, false);
+        // Hide loader and show canvas
+        if (loader) {
+            loader.style.display = 'none';
+        }
+        canvas.style.display = 'block';
         canvas.classList.remove('hidden');
 
         if (occupancyChartInstance) {
             occupancyChartInstance.destroy();
         }
 
-        const labels = data.map(item => formatDateLabel(item.date));
-        const occupancyDataset = data.map(item => item.occupancy_rate || 0);
+        // Handle empty or invalid data
+        if (!data || !Array.isArray(data) || data.length === 0) {
+            console.log('❌ No occupancy data available');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#6B7280';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('No occupancy data available', canvas.width / 2, canvas.height / 2);
+            return;
+        }
 
-        occupancyChartInstance = new Chart(canvas.getContext('2d'), {
-            type: 'bar',
-            data: {
-                labels,
-                datasets: [
-                    {
-                        label: 'Occupancy (%)',
-                        data: occupancyDataset,
-                        backgroundColor: '#22C55E'
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            callback: value => `${value}%`
+        console.log('Processing occupancy data...');
+        const labels = data.map(item => formatDateLabel(item.date));
+        const occupancyDataset = data.map(item => {
+            const rate = parseFloat(item.occupancy_rate) || 0;
+            return Math.max(0, Math.min(100, rate)); // Ensure it's between 0-100
+        });
+        
+        console.log('Labels:', labels);
+        console.log('Dataset:', occupancyDataset);
+
+        try {
+            console.log('Creating Chart.js instance...');
+            occupancyChartInstance = new Chart(canvas.getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [
+                        {
+                            label: 'Occupancy (%)',
+                            data: occupancyDataset,
+                            backgroundColor: '#22C55E',
+                            borderColor: '#16A34A',
+                            borderWidth: 1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: {
+                                callback: value => `${value}%`
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                maxRotation: 45
+                            }
                         }
                     }
                 }
-            }
-        });
+            });
+            
+            console.log('✅ Occupancy chart created successfully!');
+        } catch (error) {
+            console.error('❌ Error creating occupancy chart:', error);
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#DC2626';
+            ctx.font = '16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Error creating chart', canvas.width / 2, canvas.height / 2);
+        }
     }
 
     function renderRecentActivity(container, activities) {
@@ -286,22 +417,34 @@
     }
 
     async function fetchJson(url) {
-        const response = await fetch(url, {
-            credentials: 'include'
-        });
+        try {
+            const response = await fetch(url, {
+                credentials: 'include',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
 
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
 
-        const payload = await response.json();
+            const payload = await response.json();
 
-        if (payload.redirect) {
-            window.location.href = payload.redirect;
+            if (payload.redirect) {
+                window.location.href = payload.redirect;
+                return payload;
+            }
+
+            if (!payload.success) {
+                throw new Error(payload.message || 'API request failed');
+            }
+
             return payload;
+        } catch (error) {
+            console.error(`Fetch error for ${url}:`, error);
+            throw error;
         }
-
-        return payload;
     }
 
     function updateCurrentDate() {
@@ -336,12 +479,12 @@
     }
 
     function updatePercentCard(elementId, value, allowSigned = false) {
-        if (value == null || isNaN(value)) {
+        if (value == null || isNaN(value) || typeof value !== 'number') {
             updateCard(elementId, '—');
             return;
         }
 
-        const formatted = `${allowSigned && value > 0 ? '+' : ''}${value.toFixed(1)}%`;
+        const formatted = `${allowSigned && value > 0 ? '+' : ''}${Number(value).toFixed(1)}%`;
         updateCard(elementId, formatted, value);
     }
 

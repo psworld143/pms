@@ -3,8 +3,8 @@
 // This file should only contain the header/navbar, not the complete HTML structure
 
 // Get user information from session (should be set before including this file)
-$user_role = $_SESSION['role'] ?? 'student';
-$user_name = $_SESSION['name'] ?? 'Student';
+$user_role = $_SESSION['user_role'] ?? '';
+$user_name = $_SESSION['user_name'] ?? 'User';
 
 // Get school logo and abbreviation from database
 require_once __DIR__ . '/../../includes/database.php';

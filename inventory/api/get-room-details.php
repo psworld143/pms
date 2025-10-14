@@ -1,106 +1,82 @@
 <?php
 /**
- * Get Room Details with Inventory
- * Hotel PMS Training System - Inventory Module
+ * Get detailed room information with inventory items
  */
 
-session_start();
-require_once '../config/database.php';
+require_once '../../vps_session_fix.php';
+require_once '../../includes/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
-header('Content-Type: application/json');
+$room_id = $_GET['room_id'] ?? '';
+
+if (empty($room_id)) {
+    echo json_encode(['success' => false, 'message' => 'Room ID required']);
+    exit();
+}
 
 try {
-    $room_id = $_GET['room_id'] ?? '';
+    global $pdo;
     
-    if (empty($room_id)) {
-        echo json_encode(['success' => false, 'message' => 'Room ID is required']);
+    // Get room details from hotel_rooms table
+    $stmt = $pdo->prepare("
+        SELECT r.*, 
+               COUNT(ri.id) as total_items,
+               CASE 
+                   WHEN COUNT(ri.id) = 0 THEN 'unknown'
+                   WHEN COUNT(CASE WHEN ri.quantity_current < ri.par_level THEN 1 END) = 0 THEN 'fully_stocked'
+                   WHEN COUNT(CASE WHEN ri.quantity_current = 0 THEN 1 END) > 0 THEN 'critical_stock'
+                   ELSE 'needs_restocking'
+               END as stock_status
+        FROM hotel_rooms r
+        LEFT JOIN room_inventory_items ri ON r.id = ri.room_id
+        WHERE r.id = ?
+        GROUP BY r.id
+    ");
+    $stmt->execute([$room_id]);
+    $room = $stmt->fetch();
+    
+    // The max_occupancy field already exists in hotel_rooms table
+    // No need to map from capacity field
+    
+    if (!$room) {
+        echo json_encode(['success' => false, 'message' => 'Room not found']);
         exit();
     }
     
-    $room = getRoomDetails($room_id);
+    // Get room inventory items
+    $stmt = $pdo->prepare("
+        SELECT ri.*, 
+               ii.item_name, 
+               ii.sku,
+               ii.unit,
+               ri.quantity_allocated,
+               ri.quantity_current,
+               ri.par_level,
+               ri.updated_at as last_updated
+        FROM room_inventory_items ri
+        JOIN inventory_items ii ON ri.item_id = ii.id
+        WHERE ri.room_id = ?
+        ORDER BY ii.item_name
+    ");
+    $stmt->execute([$room_id]);
+    $inventory_items = $stmt->fetchAll();
+    
+    $room['inventory_items'] = $inventory_items;
     
     echo json_encode([
         'success' => true,
         'room' => $room
     ]);
     
-} catch (Exception $e) {
-    error_log("Error getting room details: " . $e->getMessage());
+} catch (PDOException $e) {
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => 'Database error: ' . $e->getMessage()
     ]);
-}
-
-/**
- * Get room details with inventory items
- */
-function getRoomDetails($room_id) {
-    global $pdo;
-    
-    try {
-        // Get room basic information
-        $stmt = $pdo->prepare("
-            SELECT 
-                r.id,
-                r.room_number,
-                r.room_type,
-                r.status,
-                r.max_occupancy,
-                r.description,
-                f.floor_name,
-                f.floor_number
-            FROM hotel_rooms r
-            LEFT JOIN hotel_floors f ON r.floor_id = f.id
-            WHERE r.id = ? AND r.active = 1
-        ");
-        
-        $stmt->execute([$room_id]);
-        $room = $stmt->fetch();
-        
-        if (!$room) {
-            return null;
-        }
-        
-        // Get room inventory items
-        $stmt = $pdo->prepare("
-            SELECT 
-                ri.id,
-                ri.quantity_allocated,
-                ri.quantity_current,
-                ri.par_level,
-                ri.last_restocked,
-                ri.last_audited,
-                ri.notes,
-                i.name as item_name,
-                i.sku,
-                i.description as item_description,
-                i.unit,
-                c.name as category_name,
-                c.color as category_color,
-                c.icon as category_icon
-            FROM room_inventory_items ri
-            LEFT JOIN inventory_items i ON ri.item_id = i.id
-            LEFT JOIN inventory_categories c ON i.category_id = c.id
-            WHERE ri.room_id = ?
-            ORDER BY c.name, i.name ASC
-        ");
-        
-        $stmt->execute([$room_id]);
-        $room['inventory_items'] = $stmt->fetchAll();
-        
-        return $room;
-        
-    } catch (PDOException $e) {
-        error_log("Error getting room details: " . $e->getMessage());
-        return null;
-    }
 }
 ?>

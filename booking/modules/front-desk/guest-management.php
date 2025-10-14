@@ -1,7 +1,7 @@
 <?php
-require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/../includes/database.php';
-require_once '../../includes/functions.php';
+require_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'vps_session_fix.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
     header('Location: ../../login.php');
@@ -72,10 +72,9 @@ if (isset($_GET['error'])) {
     }
 }
 
-// Include unified header (automatically selects appropriate navbar)
-include '../../includes/header-unified.php';
-// Include unified sidebar (automatically selects appropriate sidebar)
-include '../../includes/sidebar-unified.php';
+// Include unified navigation (automatically selects based on user role)
+include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'header-unified.php';
+include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'sidebar-unified.php';
 ?>
         <!-- Main Content -->
         <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
@@ -252,7 +251,7 @@ include '../../includes/sidebar-unified.php';
                                         <?php echo $guest['total_stays']; ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        $<?php echo number_format($guest['total_spent'], 2); ?>
+                                        ₱<?php echo number_format($guest['total_spent'], 2); ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <button onclick="viewGuestDetails(<?php echo $guest['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">
@@ -546,7 +545,7 @@ include '../../includes/sidebar-unified.php';
                 phone: guestPhone,
                 is_vip: vipStatus.includes('VIP'),
                 total_stays: stays,
-                total_spent: parseFloat(totalSpent.replace('$', '').replace(',', ''))
+                total_spent: parseFloat(totalSpent.replace('₱', '').replace(',', ''))
             });
         }
         
@@ -605,7 +604,7 @@ include '../../includes/sidebar-unified.php';
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Total Spent</label>
-                                <p class="mt-1 text-sm text-gray-900">$${(guest.total_spent || 0).toFixed(2)}</p>
+                                <p class="mt-1 text-sm text-gray-900">₱${(guest.total_spent || 0).toFixed(2)}</p>
                             </div>
                         </div>
                         

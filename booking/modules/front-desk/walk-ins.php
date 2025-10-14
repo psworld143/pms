@@ -4,9 +4,18 @@
  * Hotel PMS Training System for Students
  */
 
-session_start();
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/functions.php';
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
+require_once dirname(__DIR__, 2) . '/includes/functions.php';
+require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
+
+booking_initialize_paths();
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    header('Location: ' . booking_base() . 'login.php');
+    exit();
+}
 
 // Load dynamic data
 $today = date('Y-m-d');
@@ -17,19 +26,13 @@ $pendingWalkIns = array_filter($recentWalkIns, function($r){ return ($r['status'
 $walkInRevenue = 0;
 foreach ($recentWalkIns as $r) { $walkInRevenue += (float)($r['total_amount'] ?? 0); }
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../login.php');
-    exit();
-}
-
 // Set page title
 $page_title = 'Walk-in Reservations';
 
 // Include header
-include '../../includes/header-unified.php';
+include dirname(__DIR__, 2) . '/includes/header-unified.php';
 // Include sidebar
-include '../../includes/sidebar-unified.php';
+include dirname(__DIR__, 2) . '/includes/sidebar-unified.php';
 ?>
 
         <!-- Main Content -->
@@ -118,6 +121,20 @@ include '../../includes/sidebar-unified.php';
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
                             <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter email address">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ID Type</label>
+                            <select name="id_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <option value="">Select ID Type</option>
+                                <option value="passport">Passport</option>
+                                <option value="drivers_license">Driver's License</option>
+                                <option value="national_id">National ID</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ID Number</label>
+                            <input type="text" name="id_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter ID number" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Room Type</label>
@@ -218,7 +235,7 @@ include '../../includes/sidebar-unified.php';
         </main>
 
         <!-- Include footer -->
-        <?php include '../../includes/footer.php'; ?>
+        <?php include dirname(__DIR__, 2) . '/includes/footer.php'; ?>
         <script>
         document.getElementById('walkin-form').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -229,6 +246,8 @@ include '../../includes/sidebar-unified.php';
                 last_name: lastName || 'In',
                 phone: form.querySelector('input[type="tel"]').value || '',
                 email: form.querySelector('input[type="email"]').value || '',
+                id_type: form.querySelector('select[name="id_type"]').value || 'other',
+                id_number: form.querySelector('input[name="id_number"]').value || 'WALKIN' + Date.now(),
                 room_type: form.querySelector('select[name="room_type"]').value,
                 check_in_date: form.querySelector('input[type="date"]').value,
                 check_out_date: form.querySelectorAll('input[type="date"]')[1].value,

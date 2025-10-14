@@ -599,7 +599,7 @@ $page_title = 'Mobile Tutorials';
                     <a href="../profile.php" class="block p-3 bg-gray-100 rounded-lg text-gray-900">
                         <i class="fas fa-user mr-3"></i>Profile
                     </a>
-                    <a href="../logout.php" class="block p-3 bg-red-100 rounded-lg text-red-900">
+                    <a href="logout.php" class="block p-3 bg-red-100 rounded-lg text-red-900">
                         <i class="fas fa-sign-out-alt mr-3"></i>Logout
                     </a>
                 </div>

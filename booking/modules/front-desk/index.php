@@ -1,7 +1,7 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
-require_once "../../config/database.php";
-require_once '../../includes/functions.php';
+require_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'vps_session_fix.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
     header('Location: ../../login.php');
@@ -15,8 +15,8 @@ $stats = getFrontDeskStats();
 $page_title = 'Front Desk Dashboard';
 
 // Include unified navigation (automatically selects based on user role)
-include '../../includes/header-unified.php';
-include '../../includes/sidebar-unified.php';
+include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'header-unified.php';
+include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'sidebar-unified.php';
 ?>
 
         <!-- Main Content -->

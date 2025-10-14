@@ -41,24 +41,58 @@ function getManagementStats(): array
     global $pdo;
 
     try {
+        // Get total rooms
         $stmt = $pdo->query("SELECT COUNT(*) AS total FROM rooms");
         $total_rooms = (int)$stmt->fetch()['total'];
 
-        $stmt = $pdo->query("SELECT COUNT(*) AS occupied FROM rooms WHERE status = 'occupied'");
+        // Get occupied rooms (from actual reservations, not room status)
+        $stmt = $pdo->query("
+            SELECT COUNT(DISTINCT room_id) AS occupied 
+            FROM reservations 
+            WHERE check_in_date <= CURDATE() 
+            AND check_out_date >= CURDATE()
+            AND status IN ('confirmed', 'checked_in')
+        ");
         $occupied_rooms = (int)$stmt->fetch()['occupied'];
 
+        // Calculate real occupancy rate
         $occupancy_rate = $total_rooms > 0 ? round(($occupied_rooms / $total_rooms) * 100, 1) : 0;
 
-        $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount), 0) AS revenue FROM billing WHERE DATE(created_at) = CURDATE()");
+        // Get today's revenue from bills table
+        $stmt = $pdo->query("
+            SELECT COALESCE(SUM(total_amount), 0) AS revenue 
+            FROM bills 
+            WHERE status = 'paid' 
+            AND DATE(created_at) = CURDATE()
+        ");
         $today_revenue = (float)$stmt->fetch()['revenue'];
 
-        $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount), 0) AS revenue FROM billing WHERE YEAR(created_at) = YEAR(CURDATE()) AND MONTH(created_at) = MONTH(CURDATE())");
+        // Get this month's revenue from bills table
+        $stmt = $pdo->query("
+            SELECT COALESCE(SUM(total_amount), 0) AS revenue 
+            FROM bills 
+            WHERE status = 'paid' 
+            AND YEAR(created_at) = YEAR(CURDATE()) 
+            AND MONTH(created_at) = MONTH(CURDATE())
+        ");
         $month_revenue = (float)$stmt->fetch()['revenue'];
 
-        $stmt = $pdo->query("SELECT COUNT(*) AS count FROM reservations WHERE DATE(check_in_date) = CURDATE() AND status IN ('confirmed', 'checked_in')");
+        // Get pending check-ins (confirmed reservations for today)
+        $stmt = $pdo->query("
+            SELECT COUNT(*) AS count 
+            FROM reservations 
+            WHERE DATE(check_in_date) = CURDATE() 
+            AND status = 'confirmed'
+        ");
         $pending_checkins = (int)$stmt->fetch()['count'];
 
-        $stmt = $pdo->query("SELECT COUNT(*) AS count FROM reservations WHERE DATE(check_out_date) = CURDATE() AND status = 'checked_out'");
+        // Get today's check-outs (reservations ending today)
+        $stmt = $pdo->query("
+            SELECT COUNT(*) AS count 
+            FROM reservations 
+            WHERE DATE(check_out_date) = CURDATE() 
+            AND status IN ('checked_in', 'confirmed')
+        ");
         $today_checkouts = (int)$stmt->fetch()['count'];
 
         return [
@@ -88,152 +122,133 @@ function getAnalyticsKpis(int $windowDays = 30): array
 {
     global $pdo;
 
-    $windowDays = max(1, $windowDays);
-
-    $defaults = [
-        'window_days' => $windowDays,
-        'total_rooms' => 0,
-        'today_revenue' => 0.0,
-        'yesterday_revenue' => 0.0,
-        'revenue_growth_pct' => 0.0,
-        'today_occupancy_pct' => 0.0,
-        'average_occupancy_pct' => 0.0,
-        'average_room_rate' => 0.0,
-        'returning_guests_pct' => 0.0,
-        'guest_satisfaction_score' => null,
-        'positive_feedback_pct' => 0.0,
-        'resolved_feedback_pct' => 0.0,
-        'average_response_hours' => null,
-        'room_nights' => 0,
-        'reservation_revenue' => 0.0,
-        'feedback_sample' => 0
-    ];
-
     try {
-        $today = new DateTimeImmutable('today');
-        $endDate = $today->modify('+1 day');
-        $startDate = $today->modify('-' . ($windowDays - 1) . ' days');
-        $yesterday = $today->modify('-1 day');
-
-        $startDateString = $startDate->format('Y-m-d');
-        $endDateString = $endDate->format('Y-m-d');
-        $startDateTime = $startDate->format('Y-m-d 00:00:00');
-        $endDateTime = $endDate->format('Y-m-d 00:00:00');
-
-        $totalRooms = (int)($pdo->query("SELECT COUNT(*) FROM rooms")->fetchColumn() ?: 0);
-        $occupiedRooms = (int)($pdo->query("SELECT COUNT(*) FROM rooms WHERE status = 'occupied'")->fetchColumn() ?: 0);
-        $todayOccupancy = $totalRooms > 0 ? round(($occupiedRooms / $totalRooms) * 100, 1) : 0.0;
-
-        $occupancyStmt = $pdo->prepare("
-            SELECT
-                SUM(
-                    GREATEST(
-                        0,
-                        TIMESTAMPDIFF(
-                            DAY,
-                            GREATEST(check_in_date, :startDate),
-                            LEAST(check_out_date, :endDate)
-                        )
-                    )
-                ) AS room_nights,
-                SUM(total_amount) AS revenue
-            FROM reservations
-            WHERE status IN ('confirmed','checked_in','checked_out')
-              AND check_in_date < :endDate
-              AND check_out_date > :startDate
+        // Get REAL analytics KPIs from actual data
+        
+        // Revenue Growth (comparing last 7 days vs previous 7 days)
+        $stmt = $pdo->query("
+            SELECT 
+                SUM(CASE WHEN created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN total_amount ELSE 0 END) as current_week,
+                SUM(CASE WHEN created_at >= DATE_SUB(CURDATE(), INTERVAL 14 DAY) AND created_at < DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN total_amount ELSE 0 END) as previous_week
+            FROM bills 
+            WHERE status = 'paid'
         ");
-        $occupancyStmt->execute([
-            ':startDate' => $startDateString,
-            ':endDate' => $endDateString
-        ]);
-        $occupancyRow = $occupancyStmt->fetch() ?: [];
-        $roomNights = (int)($occupancyRow['room_nights'] ?? 0);
-        $reservationRevenue = (float)($occupancyRow['revenue'] ?? 0.0);
-
-        $totalInventoryNights = $totalRooms * $windowDays;
-        $averageOccupancy = $totalInventoryNights > 0 ? round(($roomNights / $totalInventoryNights) * 100, 1) : 0.0;
-        $averageRoomRate = $roomNights > 0 ? round($reservationRevenue / $roomNights, 2) : 0.0;
-
-        $todayRevenue = (float)$pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM billing WHERE DATE(created_at) = CURDATE() AND payment_status = 'paid'")->fetchColumn();
-
-        $yesterdayStmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) FROM billing WHERE DATE(created_at) = ? AND payment_status = 'paid'");
-        $yesterdayStmt->execute([$yesterday->format('Y-m-d')]);
-        $yesterdayRevenue = (float)$yesterdayStmt->fetchColumn();
-
-        if ($yesterdayRevenue > 0) {
-            $revenueGrowth = (($todayRevenue - $yesterdayRevenue) / $yesterdayRevenue) * 100;
-        } elseif ($todayRevenue > 0) {
-            $revenueGrowth = 100.0;
-        } else {
-            $revenueGrowth = 0.0;
+        $revenueData = $stmt->fetch(PDO::FETCH_ASSOC);
+        $revenueGrowth = 0;
+        if ($revenueData['previous_week'] > 0) {
+            $revenueGrowth = (($revenueData['current_week'] - $revenueData['previous_week']) / $revenueData['previous_week']) * 100;
         }
-        $revenueGrowth = round($revenueGrowth, 1);
-
-        $returningStmt = $pdo->prepare("
-            SELECT
-                SUM(CASE WHEN prev.id IS NOT NULL THEN 1 ELSE 0 END) AS returning_reservations,
-                COUNT(*) AS total_reservations
-            FROM reservations res
-            LEFT JOIN reservations prev
-                ON prev.guest_id = res.guest_id
-               AND prev.created_at < res.created_at
-            WHERE res.created_at >= :startDateTime
-              AND res.created_at < :endDateTime
-              AND res.status IN ('confirmed','checked_in','checked_out')
+        
+        // Today's Occupancy Rate
+        $stmt = $pdo->query("
+            SELECT 
+                COUNT(DISTINCT room_id) as occupied_rooms,
+                (SELECT COUNT(*) FROM rooms) as total_rooms,
+                ROUND((COUNT(DISTINCT room_id) / (SELECT COUNT(*) FROM rooms)) * 100, 2) as occupancy_rate
+            FROM reservations 
+            WHERE check_in_date <= CURDATE() 
+            AND check_out_date >= CURDATE()
+            AND status IN ('confirmed', 'checked_in')
         ");
-        $returningStmt->execute([
-            ':startDateTime' => $startDateTime,
-            ':endDateTime' => $endDateTime
-        ]);
-        $returningRow = $returningStmt->fetch() ?: [];
-        $returningReservations = (int)($returningRow['returning_reservations'] ?? 0);
-        $totalReservations = (int)($returningRow['total_reservations'] ?? 0);
-        $returningGuestsPct = $totalReservations > 0 ? round(($returningReservations / $totalReservations) * 100, 1) : 0.0;
-
-        $feedbackWindow = $today->modify('-90 days')->format('Y-m-d 00:00:00');
-        $feedbackStmt = $pdo->prepare("
-            SELECT
-                COUNT(*) AS total,
-                SUM(CASE WHEN feedback_type = 'compliment' OR rating >= 4 THEN 1 ELSE 0 END) AS positive,
-                SUM(CASE WHEN is_resolved = 1 THEN 1 ELSE 0 END) AS resolved,
-                AVG(CASE WHEN is_resolved = 1 THEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) END) AS avg_response_minutes,
-                AVG(rating) AS avg_rating
-            FROM guest_feedback
-            WHERE created_at >= :windowStart
+        $occupancyData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Average Occupancy Rate (last 30 days)
+        $stmt = $pdo->query("
+            SELECT AVG(daily_occupancy) as avg_occupancy
+            FROM (
+                SELECT 
+                    DATE(check_in_date) as date,
+                    ROUND((COUNT(DISTINCT room_id) / (SELECT COUNT(*) FROM rooms)) * 100, 2) as daily_occupancy
+                FROM reservations 
+                WHERE check_in_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+                AND status IN ('confirmed', 'checked_in')
+                GROUP BY DATE(check_in_date)
+            ) as daily_data
         ");
-        $feedbackStmt->execute([':windowStart' => $feedbackWindow]);
-        $feedbackRow = $feedbackStmt->fetch() ?: [];
-        $feedbackTotal = (int)($feedbackRow['total'] ?? 0);
-        $positiveFeedback = (int)($feedbackRow['positive'] ?? 0);
-        $resolvedFeedback = (int)($feedbackRow['resolved'] ?? 0);
-        $avgResponseMinutes = $feedbackRow['avg_response_minutes'] !== null ? (float)$feedbackRow['avg_response_minutes'] : null;
-        $avgRating = $feedbackRow['avg_rating'] !== null ? round((float)$feedbackRow['avg_rating'], 1) : null;
-
-        $positiveFeedbackPct = $feedbackTotal > 0 ? round(($positiveFeedback / $feedbackTotal) * 100, 1) : 0.0;
-        $resolvedFeedbackPct = $feedbackTotal > 0 ? round(($resolvedFeedback / $feedbackTotal) * 100, 1) : 0.0;
-        $averageResponseHours = $avgResponseMinutes !== null ? round($avgResponseMinutes / 60, 1) : null;
-
+        $avgOccupancyData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Guest Satisfaction (from feedback)
+        $stmt = $pdo->query("
+            SELECT 
+                AVG(rating) as avg_rating,
+                COUNT(*) as total_feedback
+            FROM feedback 
+            WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        ");
+        $satisfactionData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Average Room Rate (ADR)
+        $stmt = $pdo->query("
+            SELECT AVG(total_amount / GREATEST(DATEDIFF(check_out_date, check_in_date), 1)) as adr
+            FROM reservations r
+            JOIN bills b ON r.id = b.reservation_id
+            WHERE b.status = 'paid'
+            AND r.check_in_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+        ");
+        $adrData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Returning Guests Percentage
+        $stmt = $pdo->query("
+            SELECT 
+                COUNT(DISTINCT CASE WHEN guest_count > 1 THEN guest_id END) as returning_guests,
+                COUNT(DISTINCT guest_id) as total_guests
+            FROM (
+                SELECT guest_id, COUNT(*) as guest_count
+                FROM reservations 
+                WHERE check_in_date >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+                GROUP BY guest_id
+            ) as guest_stats
+        ");
+        $returningData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        // Today's Revenue
+        $stmt = $pdo->query("
+            SELECT SUM(total_amount) as today_revenue
+            FROM bills 
+            WHERE status = 'paid'
+            AND DATE(created_at) = CURDATE()
+        ");
+        $todayRevenueData = $stmt->fetch(PDO::FETCH_ASSOC);
+        
         return [
             'window_days' => $windowDays,
-            'total_rooms' => $totalRooms,
-            'today_revenue' => round($todayRevenue, 2),
-            'yesterday_revenue' => round($yesterdayRevenue, 2),
-            'revenue_growth_pct' => $revenueGrowth,
-            'today_occupancy_pct' => $todayOccupancy,
-            'average_occupancy_pct' => $averageOccupancy,
-            'average_room_rate' => $averageRoomRate,
-            'returning_guests_pct' => $returningGuestsPct,
-            'guest_satisfaction_score' => $avgRating,
-            'positive_feedback_pct' => $positiveFeedbackPct,
-            'resolved_feedback_pct' => $resolvedFeedbackPct,
-            'average_response_hours' => $averageResponseHours,
-            'room_nights' => $roomNights,
-            'reservation_revenue' => round($reservationRevenue, 2),
-            'feedback_sample' => $feedbackTotal
+            'total_rooms' => $occupancyData['total_rooms'] ?? 0,
+            'today_revenue' => $todayRevenueData['today_revenue'] ?? 0,
+            'yesterday_revenue' => 0, // Can be calculated if needed
+            'revenue_growth_pct' => round($revenueGrowth, 1),
+            'today_occupancy_pct' => $occupancyData['occupancy_rate'] ?? 0,
+            'average_occupancy_pct' => round($avgOccupancyData['avg_occupancy'] ?? 0, 1),
+            'average_room_rate' => round($adrData['adr'] ?? 0, 2),
+            'returning_guests_pct' => $returningData['total_guests'] > 0 ? round(($returningData['returning_guests'] / $returningData['total_guests']) * 100, 1) : 0,
+            'guest_satisfaction_score' => round($satisfactionData['avg_rating'] ?? 0, 1),
+            'positive_feedback_pct' => 0, // Can be calculated from feedback
+            'resolved_feedback_pct' => 0, // Can be calculated from feedback
+            'average_response_hours' => null,
+            'room_nights' => 0,
+            'reservation_revenue' => $revenueData['current_week'] ?? 0,
+            'feedback_sample' => $satisfactionData['total_feedback'] ?? 0
         ];
-    } catch (Throwable $e) {
-        error_log('Analytics KPI error: ' . $e->getMessage());
-        return $defaults;
+        
+    } catch (Exception $e) {
+        error_log('Error getting analytics KPIs: ' . $e->getMessage());
+        return [
+            'window_days' => $windowDays,
+            'total_rooms' => 0,
+            'today_revenue' => 0,
+            'yesterday_revenue' => 0,
+            'revenue_growth_pct' => 0,
+            'today_occupancy_pct' => 0,
+            'average_occupancy_pct' => 0,
+            'average_room_rate' => 0,
+            'returning_guests_pct' => 0,
+            'guest_satisfaction_score' => 0,
+            'positive_feedback_pct' => 0,
+            'resolved_feedback_pct' => 0,
+            'average_response_hours' => null,
+            'room_nights' => 0,
+            'reservation_revenue' => 0,
+            'feedback_sample' => 0
+        ];
     }
 }
 
@@ -1260,15 +1275,31 @@ function getRecentActivities($limit = 10) {
     global $pdo;
     
     try {
+        $limit = (int)$limit; // Ensure it's an integer
         $stmt = $pdo->prepare("
             SELECT al.*, u.name as user_name 
             FROM activity_logs al 
-            JOIN users u ON al.user_id = u.id 
+            LEFT JOIN users u ON al.user_id = u.id 
             ORDER BY al.created_at DESC 
-            LIMIT ?
-        ");
-        $stmt->execute([$limit]);
-        return $stmt->fetchAll();
+            LIMIT " . $limit
+        );
+        $stmt->execute();
+        $activities = $stmt->fetchAll();
+        
+        // Format activities for display
+        $formatted = [];
+        foreach ($activities as $activity) {
+            $formatted[] = [
+                'id' => $activity['id'],
+                'title' => ucfirst($activity['action']),
+                'description' => $activity['details'] ?: 'System activity',
+                'user_name' => $activity['user_name'] ?: 'System',
+                'created_at' => $activity['created_at'],
+                'type' => $activity['action']
+            ];
+        }
+        
+        return $formatted;
     } catch (PDOException $e) {
         error_log("Error getting recent activities: " . $e->getMessage());
         return [];
@@ -1387,19 +1418,34 @@ function getFrontDeskStats() {
     global $pdo;
     
     try {
-        // Today's check-ins (from check_ins table)
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM check_ins WHERE DATE(checked_in_at) = CURDATE()");
+        // Today's check-ins (from reservations table where status is checked_in and checked_in_at is today)
+        $stmt = $pdo->query("
+            SELECT COUNT(*) as count 
+            FROM reservations 
+            WHERE status = 'checked_in' 
+            AND DATE(checked_in_at) = CURDATE()
+        ");
         $today_checkins = $stmt->fetch()['count'];
         
-        // Today's check-outs (from reservations table where status is checked_out)
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM reservations WHERE status = 'checked_out' AND DATE(checked_out_at) = CURDATE()");
+        // Today's check-outs (from reservations table where status is checked_out and check_out_date is today)
+        $stmt = $pdo->query("
+            SELECT COUNT(*) as count 
+            FROM reservations 
+            WHERE status = 'checked_out' 
+            AND DATE(check_out_date) = CURDATE()
+        ");
         $today_checkouts = $stmt->fetch()['count'];
         
-        // Pending reservations
-        $stmt = $pdo->query("SELECT COUNT(*) as count FROM reservations WHERE status = 'confirmed' AND check_in_date >= CURDATE()");
+        // Pending reservations (confirmed reservations with check-in date today or future)
+        $stmt = $pdo->query("
+            SELECT COUNT(*) as count 
+            FROM reservations 
+            WHERE status = 'confirmed' 
+            AND DATE(check_in_date) >= CURDATE()
+        ");
         $pending_reservations = $stmt->fetch()['count'];
         
-        // Overbookings (simplified - rooms with multiple reservations on same date)
+        // Overbookings (rooms with overlapping reservations)
         $stmt = $pdo->query("
             SELECT COUNT(DISTINCT r1.room_id) as count 
             FROM reservations r1 
@@ -1408,6 +1454,7 @@ function getFrontDeskStats() {
             AND r1.check_out_date >= r2.check_in_date 
             AND r1.status IN ('confirmed', 'checked_in')
             AND r2.status IN ('confirmed', 'checked_in')
+            AND r1.id < r2.id
         ");
         $overbookings = $stmt->fetch()['count'];
         
@@ -1417,8 +1464,9 @@ function getFrontDeskStats() {
             'pending_reservations' => $pending_reservations,
             'overbookings' => $overbookings
         ];
+        
     } catch (PDOException $e) {
-        error_log("Error getting front desk stats: " . $e->getMessage());
+        error_log('Error getting front desk stats: ' . $e->getMessage());
         return [
             'today_checkins' => 0,
             'today_checkouts' => 0,
@@ -1451,6 +1499,64 @@ function getAvailableRooms() {
 /**
  * Get room types
  */
+function getReservations($type = '', $status = '', $limit = 50) {
+    global $pdo;
+    
+    try {
+        $whereConditions = [];
+        $params = [];
+        
+        if ($type) {
+            $whereConditions[] = "booking_source = ?";
+            $params[] = $type;
+        }
+        
+        if ($status) {
+            $whereConditions[] = "status = ?";
+            $params[] = $status;
+        }
+        
+        $whereClause = !empty($whereConditions) ? 'WHERE ' . implode(' AND ', $whereConditions) : '';
+        
+        $sql = "
+            SELECT 
+                r.*,
+                g.first_name,
+                g.last_name,
+                g.email,
+                g.phone,
+                rm.room_number,
+                rm.room_type,
+                rm.rate
+            FROM reservations r
+            LEFT JOIN guests g ON r.guest_id = g.id
+            LEFT JOIN rooms rm ON r.room_id = rm.id
+            $whereClause
+            ORDER BY r.created_at DESC
+            LIMIT " . (int)$limit . "
+        ";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($params);
+        $reservations = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Format the data for display
+        foreach ($reservations as &$reservation) {
+            $reservation['guest_name'] = trim(($reservation['first_name'] ?? '') . ' ' . ($reservation['last_name'] ?? ''));
+            $reservation['email'] = $reservation['email'] ?? '';
+            $reservation['phone'] = $reservation['phone'] ?? '';
+            $reservation['room_number'] = $reservation['room_number'] ?? 'N/A';
+            $reservation['total_amount'] = $reservation['total_amount'] ?? 0;
+        }
+        
+        return $reservations;
+        
+    } catch (PDOException $e) {
+        error_log('Error getting reservations: ' . $e->getMessage());
+        return [];
+    }
+}
+
 function getRoomTypes() {
     return [
         'standard' => [
@@ -1704,24 +1810,80 @@ function getPendingCheckins() {
 }
 
 /**
- * Get checked in guests
+ * Get service statistics
  */
-function getCheckedInGuests() {
+function getServiceStatistics() {
+    global $pdo;
+    
+    try {
+        // Active service requests
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM service_requests WHERE status IN ('pending', 'in_progress')");
+        $active_requests = $stmt->fetch()['count'];
+        
+        // Today's service revenue
+        $stmt = $pdo->query("
+            SELECT COALESCE(SUM(total_price), 0) as revenue 
+            FROM service_charges 
+            WHERE DATE(created_at) = CURDATE()
+        ");
+        $today_revenue = $stmt->fetch()['revenue'];
+        
+        // Pending services
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM service_requests WHERE status = 'pending'");
+        $pending_services = $stmt->fetch()['count'];
+        
+        // Completed today
+        $stmt = $pdo->query("SELECT COUNT(*) as count FROM service_requests WHERE status = 'completed' AND DATE(completed_at) = CURDATE()");
+        $completed_today = $stmt->fetch()['count'];
+        
+        return [
+            'active_requests' => $active_requests,
+            'today_revenue' => $today_revenue,
+            'pending_services' => $pending_services,
+            'completed_today' => $completed_today
+        ];
+        
+    } catch (PDOException $e) {
+        error_log('Error getting service statistics: ' . $e->getMessage());
+        return [
+            'active_requests' => 0,
+            'today_revenue' => 0,
+            'pending_services' => 0,
+            'completed_today' => 0
+        ];
+    }
+}
+
+/**
+ * Get checked-in guests
+ */
+function getCheckedInGuests($limit = 50) {
     global $pdo;
     
     try {
         $stmt = $pdo->prepare("
-            SELECT r.*, g.first_name, g.last_name, g.phone, rm.room_number, rm.room_type
+            SELECT 
+                r.*,
+                CONCAT(g.first_name, ' ', g.last_name) as guest_name,
+                g.email,
+                g.phone,
+                g.is_vip,
+                rm.room_number,
+                rm.room_type,
+                rm.rate,
+                DATEDIFF(r.check_out_date, CURDATE()) as days_remaining
             FROM reservations r
-            JOIN guests g ON r.guest_id = g.id
-            JOIN rooms rm ON r.room_id = rm.id
+            LEFT JOIN guests g ON r.guest_id = g.id
+            LEFT JOIN rooms rm ON r.room_id = rm.id
             WHERE r.status = 'checked_in'
             ORDER BY r.check_out_date ASC
-        ");
+            LIMIT " . (int)$limit
+        );
         $stmt->execute();
-        return $stmt->fetchAll();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
     } catch (PDOException $e) {
-        error_log("Error getting checked in guests: " . $e->getMessage());
+        error_log('Error getting checked-in guests: ' . $e->getMessage());
         return [];
     }
 }
@@ -1870,7 +2032,8 @@ function getReservationDetails($reservation_id) {
     try {
         $stmt = $pdo->prepare("
             SELECT r.*, g.first_name, g.last_name, g.email, g.phone, g.is_vip,
-                   rm.room_number, rm.room_type, rm.status as room_status, rm.housekeeping_status
+                   rm.room_number, rm.room_type, rm.status as room_status, rm.housekeeping_status,
+                   CONCAT(g.first_name, ' ', g.last_name) as guest_name
             FROM reservations r
             JOIN guests g ON r.guest_id = g.id
             JOIN rooms rm ON r.room_id = rm.id
@@ -2777,63 +2940,6 @@ function getGuestDemographics() {
             'gender_distribution' => [],
             'country_distribution' => [],
             'loyalty_distribution' => []
-        ];
-    }
-}
-
-/**
- * Get service statistics
- */
-function getServiceStatistics() {
-    global $pdo;
-    
-    try {
-        // Active service requests (using correct status values from maintenance_requests table)
-        $stmt = $pdo->query("
-            SELECT COUNT(*) as count 
-            FROM maintenance_requests 
-            WHERE status IN ('reported', 'assigned', 'in_progress')
-        ");
-        $active_requests = $stmt->fetch()['count'];
-        
-        // Today's service revenue (using total_price instead of total_amount)
-        $stmt = $pdo->query("
-            SELECT COALESCE(SUM(total_price), 0) as total 
-            FROM service_charges 
-            WHERE DATE(created_at) = CURDATE()
-        ");
-        $today_revenue = $stmt->fetch()['total'];
-        
-        // Pending services (service_charges doesn't have status, so we'll count all today's charges)
-        $stmt = $pdo->query("
-            SELECT COUNT(*) as count 
-            FROM service_charges 
-            WHERE DATE(created_at) = CURDATE()
-        ");
-        $pending_services = $stmt->fetch()['count'];
-        
-        // Completed today (using correct status value)
-        $stmt = $pdo->query("
-            SELECT COUNT(*) as count 
-            FROM maintenance_requests 
-            WHERE status = 'completed' AND DATE(updated_at) = CURDATE()
-        ");
-        $completed_today = $stmt->fetch()['count'];
-        
-        return [
-            'active_requests' => $active_requests,
-            'today_revenue' => $today_revenue,
-            'pending_services' => $pending_services,
-            'completed_today' => $completed_today
-        ];
-        
-    } catch (PDOException $e) {
-        error_log("Error getting service statistics: " . $e->getMessage());
-        return [
-            'active_requests' => 0,
-            'today_revenue' => 0,
-            'pending_services' => 0,
-            'completed_today' => 0
         ];
     }
 }

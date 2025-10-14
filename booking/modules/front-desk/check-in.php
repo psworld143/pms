@@ -1,10 +1,10 @@
 <?php
-require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
+require_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'vps_session_fix.php';
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-require_once dirname(__DIR__, 2) . '/../includes/database.php';
-require_once '../../includes/functions.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
     header('Location: ../../login.php');
@@ -61,8 +61,8 @@ $pending_checkins = getPendingCheckins();
 $page_title = 'Check In';
 
 // Include unified navigation (automatically selects based on user role)
-include '../../includes/header-unified.php';
-include '../../includes/sidebar-unified.php';
+include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'header-unified.php';
+include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'sidebar-unified.php';
 ?>
 
         <!-- Main Content -->
@@ -180,7 +180,66 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4">Pending Check-ins</h2>
                     <div id="pending-checkins" class="overflow-x-auto">
-                        <!-- Pending check-ins will be loaded here -->
+                        <?php if (!empty($pending_checkins)): ?>
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservation</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in Time</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php foreach ($pending_checkins as $reservation): ?>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                                                    <span class="text-white font-medium">
+                                                        <?php echo strtoupper(substr($reservation['first_name'], 0, 1)); ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">
+                                                    <?php echo htmlspecialchars($reservation['first_name'] . ' ' . $reservation['last_name']); ?>
+                                                </div>
+                                                <div class="text-sm text-gray-500">
+                                                    <?php echo htmlspecialchars($reservation['phone'] ?? ''); ?>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <?php echo htmlspecialchars($reservation['reservation_number']); ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        Room <?php echo htmlspecialchars($reservation['room_number']); ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <?php echo date('M j, Y g:i A', strtotime($reservation['check_in_date'])); ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onclick="startCheckIn(<?php echo $reservation['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-sign-in-alt mr-1"></i>Check In
+                                        </button>
+                                        <button onclick="viewReservationDetails(<?php echo $reservation['id']; ?>)" class="text-gray-600 hover:text-gray-900">
+                                            <i class="fas fa-eye mr-1"></i>View
+                                        </button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php else: ?>
+                        <div class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-calendar-check text-4xl mb-4"></i>
+                            <p>No pending check-ins for today</p>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -314,6 +373,16 @@ include '../../includes/sidebar-unified.php';
             }, 1000);
         }
 
+        // Load pending check-ins function
+        function loadPendingCheckins() {
+            if (window.checkInManager) {
+                window.checkInManager.loadPendingCheckins();
+            } else {
+                // Fallback: reload the page
+                location.reload();
+            }
+        }
+
         // Initialize time update
         updateDateTime();
         setInterval(updateDateTime, 1000);
@@ -346,4 +415,4 @@ include '../../includes/sidebar-unified.php';
         }, 30000);
     </script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'footer.php'; ?>

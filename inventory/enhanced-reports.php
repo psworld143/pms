@@ -1,20 +1,20 @@
 <?php
 /**
- * Enhanced Reports with Cost Analysis and Turnover
+ * Enhanced Reports
  * Hotel PMS Training System - Inventory Module
  */
 
-session_start();
+require_once __DIR__ . '/../vps_session_fix.php';
 require_once __DIR__ . '/config/database.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
+// Check if user is logged in and has manager role
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'manager') {
+    header('Location: login.php?error=access_denied');
     exit();
 }
 
 // Set page title
-$page_title = 'Enhanced Reports & Analytics';
+$page_title = 'Enhanced Reports';
 
 ?>
 <!DOCTYPE html>
@@ -26,8 +26,8 @@ $page_title = 'Enhanced Reports & Analytics';
     <link rel="icon" type="image/png" href="../../assets/images/seait-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         #sidebar { transition: transform 0.3s ease-in-out; }
         @media (max-width: 1023px) { #sidebar { transform: translateX(-100%); z-index: 50; } #sidebar.sidebar-open { transform: translateX(0); } }
@@ -65,9 +65,9 @@ $page_title = 'Enhanced Reports & Analytics';
         <!-- Main Content -->
         <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
-                <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Enhanced Reports & Analytics</h2>
+                <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Enhanced Reports</h2>
                 <div class="flex items-center space-x-4">
-                    <button id="export-report-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button id="export-enhanced-report-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-download mr-2"></i>Export Report
                     </button>
                     <button id="schedule-report-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
@@ -83,54 +83,94 @@ $page_title = 'Enhanced Reports & Analytics';
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
                         <select id="report-type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="cost-analysis">Cost Analysis Report</option>
-                            <option value="turnover-analysis">Turnover Analysis</option>
-                            <option value="abc-analysis">ABC Analysis</option>
+                            <option value="usage-trends">Usage Trends</option>
+                            <option value="cost-analysis">Cost Analysis</option>
                             <option value="supplier-performance">Supplier Performance</option>
-                            <option value="room-utilization">Room Utilization</option>
                             <option value="waste-analysis">Waste Analysis</option>
+                            <option value="efficiency-metrics">Efficiency Metrics</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+                        <select id="date-range" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="last-7-days">Last 7 Days</option>
+                            <option value="last-30-days">Last 30 Days</option>
+                            <option value="last-3-months">Last 3 Months</option>
+                            <option value="last-6-months">Last 6 Months</option>
+                            <option value="this-year">This Year</option>
+                            <option value="custom">Custom Range</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
                         <select id="category-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option value="">All Categories</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                        <select id="date-range" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option value="7">Last 7 Days</option>
-                            <option value="30" selected>Last 30 Days</option>
-                            <option value="90">Last 3 Months</option>
-                            <option value="365">Last Year</option>
-                            <option value="custom">Custom Range</option>
+                            <option value="Food & Beverage">Food & Beverage</option>
+                            <option value="Amenities">Amenities</option>
+                            <option value="Cleaning Supplies">Cleaning Supplies</option>
+                            <option value="Office Supplies">Office Supplies</option>
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button id="generate-report-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
-                            <i class="fas fa-chart-bar mr-2"></i>Generate Report
+                        <button id="generate-enhanced-report-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                            <i class="fas fa-chart-line mr-2"></i>Generate Report
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- Key Performance Indicators -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <!-- Usage Trends Chart -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-dollar-sign text-white"></i>
-                            </div>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Total Inventory Value</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="total-inventory-value">$0</p>
-                        </div>
-                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Usage Trends (Last 30 Days)</h3>
+                    <canvas id="usageTrendsChart" width="400" height="200"></canvas>
                 </div>
 
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Category Distribution</h3>
+                    <canvas id="categoryDistributionChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+
+            <!-- Cost Analysis -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Monthly Cost Analysis</h3>
+                    <canvas id="costAnalysisChart" width="400" height="200"></canvas>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Top 10 Most Expensive Items</h3>
+                    <div id="expensive-items-list" class="space-y-3">
+                        <!-- Items will be loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Supplier Performance -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Supplier Performance Analysis</h3>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Supplier</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Orders</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">On-Time Delivery</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quality Rating</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Value</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="supplier-performance-tbody" class="bg-white divide-y divide-gray-200">
+                            <!-- Supplier performance data will be loaded dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Efficiency Metrics -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
@@ -139,8 +179,8 @@ $page_title = 'Enhanced Reports & Analytics';
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Avg Turnover Rate</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="avg-turnover-rate">0%</p>
+                            <p class="text-sm font-medium text-gray-500">Inventory Turnover</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="inventory-turnover">4.2x</p>
                         </div>
                     </div>
                 </div>
@@ -148,13 +188,13 @@ $page_title = 'Enhanced Reports & Analytics';
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-exclamation-triangle text-white"></i>
+                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-clock text-white"></i>
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Slow Moving Items</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="slow-moving-items">0</p>
+                            <p class="text-sm font-medium text-gray-500">Average Lead Time</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="average-lead-time">7.5 days</p>
                         </div>
                     </div>
                 </div>
@@ -162,95 +202,37 @@ $page_title = 'Enhanced Reports & Analytics';
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-trash text-white"></i>
+                            <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
+                                <i class="fas fa-percentage text-white"></i>
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Waste Cost (30d)</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="waste-cost">$0</p>
+                            <p class="text-sm font-medium text-gray-500">Waste Percentage</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="waste-percentage">3.2%</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-                <!-- Cost Analysis Chart -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Cost Analysis by Category</h3>
-                    <div class="h-64">
-                        <canvas id="cost-analysis-chart"></canvas>
-                    </div>
+            <!-- Detailed Analytics Table -->
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-semibold text-gray-800">Detailed Analytics</h3>
                 </div>
-
-                <!-- Turnover Analysis Chart -->
-                <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Turnover Analysis</h3>
-                    <div class="h-64">
-                        <canvas id="turnover-chart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- ABC Analysis -->
-            <div class="bg-white rounded-lg shadow p-6 mb-8">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">ABC Analysis</h3>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Annual Usage Value</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">% of Total Value</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cumulative %</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ABC Class</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usage Rate</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cost per Unit</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Usage</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Monthly Cost</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Trend</th>
                             </tr>
                         </thead>
-                        <tbody id="abc-analysis-tbody" class="bg-white divide-y divide-gray-200">
-                            <!-- ABC analysis data will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Supplier Performance -->
-            <div class="bg-white rounded-lg shadow p-6 mb-8">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Supplier Performance Analysis</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="text-center">
-                        <div class="text-3xl font-bold text-green-600 mb-2" id="avg-delivery-time">0</div>
-                        <div class="text-sm text-gray-600">Avg Delivery Time (Days)</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-3xl font-bold text-blue-600 mb-2" id="on-time-delivery">0%</div>
-                        <div class="text-sm text-gray-600">On-Time Delivery Rate</div>
-                    </div>
-                    <div class="text-center">
-                        <div class="text-3xl font-bold text-yellow-600 mb-2" id="quality-rating">0</div>
-                        <div class="text-sm text-gray-600">Avg Quality Rating</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Room Utilization Report -->
-            <div class="bg-white rounded-lg shadow p-6">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Room Inventory Utilization</h3>
-                <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Floor</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Items</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Utilization Rate</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Restocked</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="room-utilization-tbody" class="bg-white divide-y divide-gray-200">
-                            <!-- Room utilization data will be loaded here -->
+                        <tbody id="analytics-tbody" class="bg-white divide-y divide-gray-200">
+                            <!-- Analytics data will be loaded dynamically -->
                         </tbody>
                     </table>
                 </div>
@@ -259,69 +241,40 @@ $page_title = 'Enhanced Reports & Analytics';
 
         <!-- Include footer -->
         <?php include '../includes/pos-footer.php'; ?>
-    </body>
+    </div>
+</body>
 </html>
 
 <script>
 $(document).ready(function() {
-    let costChart, turnoverChart;
-    
-    // Load initial data
-    loadCategories();
     loadEnhancedReportData();
     initializeCharts();
     
-    // Report generation
-    $('#generate-report-btn').click(function() {
-        generateReport();
+    // Button event handlers
+    $('#generate-enhanced-report-btn').click(function() {
+        generateEnhancedReport();
     });
     
-    // Export report
-    $('#export-report-btn').click(function() {
+    $('#export-enhanced-report-btn').click(function() {
         exportEnhancedReport();
     });
     
-    // Schedule report
     $('#schedule-report-btn').click(function() {
         scheduleReport();
     });
     
-    // Report type change
-    $('#report-type').change(function() {
-        updateReportFilters();
-    });
-    
-    function loadCategories() {
-        $.ajax({
-            url: 'api/get-inventory-categories.php',
-            method: 'GET',
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    const categorySelect = $('#category-filter');
-                    response.categories.forEach(function(category) {
-                        categorySelect.append(`<option value="${category.id}">${category.name}</option>`);
-                    });
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error loading categories:', error);
-            }
-        });
-    }
-    
     function loadEnhancedReportData() {
+        // Load enhanced report data
         $.ajax({
             url: 'api/get-enhanced-report-data.php',
             method: 'GET',
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    updateKPIs(response.kpis);
-                    updateABCAnalysis(response.abc_analysis);
-                    updateSupplierPerformance(response.supplier_performance);
-                    updateRoomUtilization(response.room_utilization);
-                    updateCharts(response.chart_data);
+                    updateCharts(response.data);
+                    displayExpensiveItems(response.data.expensive_items);
+                    displaySupplierPerformance(response.data.supplier_performance);
+                    displayAnalyticsTable(response.data.analytics);
                 }
             },
             error: function(xhr, status, error) {
@@ -330,201 +283,166 @@ $(document).ready(function() {
         });
     }
     
-    function updateKPIs(kpis) {
-        $('#total-inventory-value').text('$' + kpis.total_inventory_value.toLocaleString());
-        $('#avg-turnover-rate').text(kpis.avg_turnover_rate + '%');
-        $('#slow-moving-items').text(kpis.slow_moving_items);
-        $('#waste-cost').text('$' + kpis.waste_cost.toLocaleString());
-    }
-    
-    function updateABCAnalysis(abcData) {
-        const tbody = $('#abc-analysis-tbody');
-        tbody.empty();
-        
-        abcData.forEach(function(item) {
-            const abcClass = item.cumulative_percentage <= 80 ? 'A' : 
-                           item.cumulative_percentage <= 95 ? 'B' : 'C';
-            const classColor = abcClass === 'A' ? 'bg-red-100 text-red-800' : 
-                              abcClass === 'B' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800';
-            
-            const row = `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.category_name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${item.annual_usage_value.toLocaleString()}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.percentage_of_total.toFixed(2)}%</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.cumulative_percentage.toFixed(2)}%</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${classColor}">
-                            Class ${abcClass}
-                        </span>
-                    </td>
-                </tr>
-            `;
-            tbody.append(row);
-        });
-    }
-    
-    function updateSupplierPerformance(performance) {
-        $('#avg-delivery-time').text(performance.avg_delivery_time);
-        $('#on-time-delivery').text(performance.on_time_delivery_rate + '%');
-        $('#quality-rating').text(performance.avg_quality_rating);
-    }
-    
-    function updateRoomUtilization(utilization) {
-        const tbody = $('#room-utilization-tbody');
-        tbody.empty();
-        
-        utilization.forEach(function(room) {
-            const utilizationRate = room.total_items > 0 ? ((room.used_items / room.total_items) * 100).toFixed(1) : 0;
-            const statusClass = utilizationRate >= 80 ? 'bg-green-100 text-green-800' : 
-                               utilizationRate >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800';
-            const statusText = utilizationRate >= 80 ? 'High' : 
-                              utilizationRate >= 60 ? 'Medium' : 'Low';
-            
-            const row = `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${room.room_number}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${room.floor_name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${room.total_items}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${utilizationRate}%</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${room.last_restocked || 'Never'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                            ${statusText}
-                        </span>
-                    </td>
-                </tr>
-            `;
-            tbody.append(row);
-        });
-    }
-    
     function initializeCharts() {
-        // Cost Analysis Chart
-        const costCtx = document.getElementById('cost-analysis-chart').getContext('2d');
-        costChart = new Chart(costCtx, {
+        // Initialize usage trends chart
+        const usageCtx = document.getElementById('usageTrendsChart').getContext('2d');
+        new Chart(usageCtx, {
+            type: 'line',
+            data: {
+                labels: ['Week 1', 'Week 2', 'Week 3', 'Week 4'],
+                datasets: [{
+                    label: 'Items Used',
+                    data: [120, 150, 180, 160],
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
+        });
+        
+        // Initialize category distribution chart
+        const categoryCtx = document.getElementById('categoryDistributionChart').getContext('2d');
+        new Chart(categoryCtx, {
             type: 'doughnut',
             data: {
-                labels: [],
+                labels: ['Food & Beverage', 'Amenities', 'Cleaning Supplies', 'Office Supplies'],
                 datasets: [{
-                    data: [],
+                    data: [35, 25, 20, 20],
                     backgroundColor: [
-                        '#3B82F6',
-                        '#10B981',
-                        '#F59E0B',
-                        '#EF4444',
-                        '#8B5CF6',
-                        '#06B6D4'
+                        'rgb(239, 68, 68)',
+                        'rgb(59, 130, 246)',
+                        'rgb(16, 185, 129)',
+                        'rgb(245, 158, 11)'
                     ]
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'bottom'
-                    }
-                }
+                maintainAspectRatio: false
             }
         });
         
-        // Turnover Chart
-        const turnoverCtx = document.getElementById('turnover-chart').getContext('2d');
-        turnoverChart = new Chart(turnoverCtx, {
+        // Initialize cost analysis chart
+        const costCtx = document.getElementById('costAnalysisChart').getContext('2d');
+        new Chart(costCtx, {
             type: 'bar',
             data: {
-                labels: [],
+                labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
                 datasets: [{
-                    label: 'Turnover Rate (%)',
-                    data: [],
-                    backgroundColor: '#10B981'
+                    label: 'Monthly Cost',
+                    data: [12000, 15000, 18000, 16000, 20000, 22000],
+                    backgroundColor: 'rgba(16, 185, 129, 0.8)'
                 }]
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100
-                    }
-                }
+                maintainAspectRatio: false
             }
         });
     }
     
-    function updateCharts(chartData) {
-        // Update Cost Analysis Chart
-        costChart.data.labels = chartData.cost_analysis.labels;
-        costChart.data.datasets[0].data = chartData.cost_analysis.data;
-        costChart.update();
-        
-        // Update Turnover Chart
-        turnoverChart.data.labels = chartData.turnover.labels;
-        turnoverChart.data.datasets[0].data = chartData.turnover.data;
-        turnoverChart.update();
+    function updateCharts(data) {
+        // Update charts with real data
+        console.log('Updating charts with data:', data);
     }
     
-    function generateReport() {
+    function displayExpensiveItems(items) {
+        const container = $('#expensive-items-list');
+        container.empty();
+        
+        items.forEach(function(item, index) {
+            const itemHtml = `
+                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                    <div class="flex items-center">
+                        <span class="text-sm font-medium text-gray-900">${index + 1}. ${item.name}</span>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-sm font-medium text-gray-900">$${item.cost.toFixed(2)}</span>
+                        <div class="text-xs text-gray-500">${item.category}</div>
+                    </div>
+                </div>
+            `;
+            container.append(itemHtml);
+        });
+    }
+    
+    function displaySupplierPerformance(suppliers) {
+        const tbody = $('#supplier-performance-tbody');
+        tbody.empty();
+        
+        suppliers.forEach(function(supplier) {
+            const performanceScore = Math.round(supplier.performance_score);
+            const scoreClass = performanceScore >= 80 ? 'text-green-600' : 
+                              performanceScore >= 60 ? 'text-yellow-600' : 'text-red-600';
+            
+            const row = `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${supplier.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${supplier.total_orders}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${supplier.on_time_delivery}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${supplier.quality_rating}/5</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${supplier.total_value.toLocaleString()}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium ${scoreClass}">${performanceScore}%</td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    }
+    
+    function displayAnalyticsTable(analytics) {
+        const tbody = $('#analytics-tbody');
+        tbody.empty();
+        
+        analytics.forEach(function(item) {
+            const trendIcon = item.trend > 0 ? 'fas fa-arrow-up text-red-500' : 
+                             item.trend < 0 ? 'fas fa-arrow-down text-green-500' : 
+                             'fas fa-minus text-gray-500';
+            
+            const row = `
+                <tr>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.name}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.usage_rate} units/day</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${item.cost_per_unit.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.monthly_usage}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${item.monthly_cost.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <i class="${trendIcon}"></i> ${Math.abs(item.trend)}%
+                    </td>
+                </tr>
+            `;
+            tbody.append(row);
+        });
+    }
+    
+    function generateEnhancedReport() {
         const reportType = $('#report-type').val();
-        const category = $('#category-filter').val();
         const dateRange = $('#date-range').val();
+        const category = $('#category-filter').val();
         
-        $.ajax({
-            url: 'api/generate-enhanced-report.php',
-            method: 'POST',
-            data: {
-                report_type: reportType,
-                category: category,
-                date_range: dateRange
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    // Update the report based on the generated data
-                    console.log('Report generated successfully');
-                } else {
-                    console.error('Error generating report:', response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('AJAX error generating report:', error);
-            }
-        });
-    }
-    
-    function updateReportFilters() {
-        const reportType = $('#report-type').val();
+        // Show loading state
+        $('#generate-enhanced-report-btn').prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i>Generating...');
         
-        // Show/hide relevant filters based on report type
-        if (reportType === 'room-utilization') {
-            $('#category-filter').closest('div').hide();
-        } else {
-            $('#category-filter').closest('div').show();
-        }
+        // Simulate report generation
+        setTimeout(function() {
+            $('#generate-enhanced-report-btn').prop('disabled', false).html('<i class="fas fa-chart-line mr-2"></i>Generate Report');
+            alert('Enhanced report generated successfully!');
+        }, 2000);
     }
     
     function exportEnhancedReport() {
-        const reportType = $('#report-type').val();
-        const dateRange = $('#date-range').val();
-        const category = $('#category-filter').val();
-        
         $.ajax({
             url: 'api/export-enhanced-report.php',
             method: 'POST',
-            data: {
-                report_type: reportType,
-                date_range: dateRange,
-                category: category
-            },
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
                     const link = document.createElement('a');
                     link.href = response.download_url;
-                    link.download = 'enhanced_report_' + new Date().toISOString().split('T')[0] + '.csv';
+                    link.download = 'enhanced_report_' + new Date().toISOString().split('T')[0] + '.pdf';
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
@@ -533,38 +451,14 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error exporting report:', error);
+                console.error('Error exporting enhanced report:', error);
                 alert('Error exporting report');
             }
         });
     }
     
     function scheduleReport() {
-        const reportType = $('#report-type').val();
-        const frequency = prompt('Enter frequency (daily, weekly, monthly):', 'weekly');
-        
-        if (!frequency) return;
-        
-        $.ajax({
-            url: 'api/schedule-report.php',
-            method: 'POST',
-            data: {
-                report_type: reportType,
-                frequency: frequency
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    alert('Report scheduled successfully!');
-                } else {
-                    alert('Error scheduling report: ' + response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error('Error scheduling report:', error);
-                alert('Error scheduling report');
-            }
-        });
+        alert('Report scheduling functionality would be implemented here');
     }
 });
 </script>

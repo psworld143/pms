@@ -4,8 +4,8 @@
  * Hotel PMS Training System for Students
  */
 
-session_start();
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../vps_session_fix.php';
+require_once __DIR__ . '/../includes/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -13,24 +13,32 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-$inventory_db = new InventoryDatabase();
 $user_id = $_SESSION['user_id'];
+
+// Get user role and information
+$user_role = $_SESSION['user_role'] ?? 'housekeeping'; // Default to housekeeping if not set
+$user_name = $_SESSION['user_name'] ?? 'Unknown User';
 
 // Handle form submissions
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
     
     if ($action === 'create_request') {
-        try {
-            $inventory_db->getConnection()->beginTransaction();
+        // Only housekeeping role can create requests
+        if ($user_role !== 'housekeeping') {
+            $error_message = "Access denied. Only housekeeping staff can create requests.";
+        } else {
+            try {
+                global $pdo;
+                $pdo->beginTransaction();
             
             // Generate request number
             $request_number = 'REQ-' . date('Ymd') . '-' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
             
             // Create request
-            $stmt = $inventory_db->getConnection()->prepare("
-                INSERT INTO inventory_requests (request_number, requested_by, department, priority, required_date, notes)
-                VALUES (?, ?, ?, ?, ?, ?)
+            $stmt = $pdo->prepare("
+                INSERT INTO inventory_requests (request_number, requested_by, department, priority, required_date, notes, status, request_date)
+                VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW())
             ");
             
             $stmt->execute([
@@ -42,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $_POST['notes']
             ]);
             
-            $request_id = $inventory_db->getConnection()->lastInsertId();
+            $request_id = $pdo->lastInsertId();
             
             // Add request items
             $item_ids = $_POST['item_id'] ?? [];
@@ -50,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
             for ($i = 0; $i < count($item_ids); $i++) {
                 if (!empty($item_ids[$i]) && !empty($quantities[$i])) {
-                    $stmt = $inventory_db->getConnection()->prepare("
+                    $stmt = $pdo->prepare("
                         INSERT INTO inventory_request_items (request_id, item_id, quantity_requested)
                         VALUES (?, ?, ?)
                     ");
@@ -58,48 +66,161 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 }
             }
             
-            $inventory_db->getConnection()->commit();
-            $success_message = "Request created successfully! Request #: " . $request_number;
-            
-        } catch (PDOException $e) {
-            $inventory_db->getConnection()->rollBack();
-            $error_message = "Error creating request: " . $e->getMessage();
+                $pdo->commit();
+                $success_message = "Request created successfully! Request #: " . $request_number;
+                
+            } catch (PDOException $e) {
+                $pdo->rollBack();
+                $error_message = "Error creating request: " . $e->getMessage();
+            }
         }
     }
     
     if ($action === 'approve_request') {
-        try {
-            $request_id = $_POST['request_id'];
-            
-            $stmt = $inventory_db->getConnection()->prepare("
-                UPDATE inventory_requests 
-                SET status = 'approved', approved_by = ?, approved_at = NOW()
-                WHERE id = ?
-            ");
-            $stmt->execute([$user_id, $request_id]);
-            
-            $success_message = "Request approved successfully!";
-            
-        } catch (PDOException $e) {
-            $error_message = "Error approving request: " . $e->getMessage();
+        // Only manager role can approve requests
+        if ($user_role !== 'manager') {
+            $error_message = "Access denied. Only managers can approve requests.";
+        } else {
+            try {
+                global $pdo;
+                $request_id = $_POST['request_id'];
+                
+                $stmt = $pdo->prepare("
+                    UPDATE inventory_requests 
+                    SET status = 'approved', approved_by = ?, approved_at = NOW()
+                    WHERE id = ?
+                ");
+                $stmt->execute([$user_id, $request_id]);
+                
+                $success_message = "Request approved successfully!";
+                
+            } catch (PDOException $e) {
+                $error_message = "Error approving request: " . $e->getMessage();
+            }
         }
     }
     
     if ($action === 'reject_request') {
-        try {
-            $request_id = $_POST['request_id'];
-            
-            $stmt = $inventory_db->getConnection()->prepare("
-                UPDATE inventory_requests 
-                SET status = 'rejected', approved_by = ?, approved_at = NOW()
-                WHERE id = ?
-            ");
-            $stmt->execute([$user_id, $request_id]);
-            
-            $success_message = "Request rejected successfully!";
-            
-        } catch (PDOException $e) {
-            $error_message = "Error rejecting request: " . $e->getMessage();
+        // Only manager role can reject requests
+        if ($user_role !== 'manager') {
+            $error_message = "Access denied. Only managers can reject requests.";
+        } else {
+            try {
+                global $pdo;
+                $request_id = $_POST['request_id'];
+                
+                $stmt = $pdo->prepare("
+                    UPDATE inventory_requests 
+                    SET status = 'rejected', approved_by = ?, approved_at = NOW()
+                    WHERE id = ?
+                ");
+                $stmt->execute([$user_id, $request_id]);
+                
+                $success_message = "Request rejected successfully!";
+                
+            } catch (PDOException $e) {
+                $error_message = "Error rejecting request: " . $e->getMessage();
+            }
+        }
+    }
+    
+    if ($action === 'edit_request') {
+        // Only housekeeping role can edit requests, and only their own
+        if ($user_role !== 'housekeeping') {
+            $error_message = "Access denied. Only housekeeping staff can edit requests.";
+        } else {
+            try {
+                global $pdo;
+                $request_id = $_POST['request_id'];
+                
+                // Check if the request belongs to the current user
+                $stmt = $pdo->prepare("SELECT requested_by FROM inventory_requests WHERE id = ?");
+                $stmt->execute([$request_id]);
+                $request = $stmt->fetch();
+                
+                if (!$request || $request['requested_by'] != $user_id) {
+                    $error_message = "Access denied. You can only edit your own requests.";
+                } else {
+                    $pdo->beginTransaction();
+                    
+                    // Update request details
+                    $stmt = $pdo->prepare("
+                        UPDATE inventory_requests 
+                        SET department = ?, priority = ?, required_date = ?, notes = ?, last_updated = NOW()
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([
+                        $_POST['department'],
+                        $_POST['priority'],
+                        $_POST['required_date'],
+                        $_POST['notes'],
+                        $request_id
+                    ]);
+                    
+                    // Delete existing request items
+                    $stmt = $pdo->prepare("DELETE FROM inventory_request_items WHERE request_id = ?");
+                    $stmt->execute([$request_id]);
+                    
+                    // Add updated request items
+                    $item_ids = $_POST['item_id'] ?? [];
+                    $quantities = $_POST['quantity'] ?? [];
+                    
+                    for ($i = 0; $i < count($item_ids); $i++) {
+                        if (!empty($item_ids[$i]) && !empty($quantities[$i])) {
+                            $stmt = $pdo->prepare("
+                                INSERT INTO inventory_request_items (request_id, item_id, quantity_requested)
+                                VALUES (?, ?, ?)
+                            ");
+                            $stmt->execute([$request_id, $item_ids[$i], $quantities[$i]]);
+                        }
+                    }
+                    
+                    $pdo->commit();
+                    $success_message = "Request updated successfully!";
+                }
+                
+            } catch (PDOException $e) {
+                $pdo->rollBack();
+                $error_message = "Error updating request: " . $e->getMessage();
+            }
+        }
+    }
+    
+    if ($action === 'delete_request') {
+        // Only housekeeping role can delete requests, and only their own
+        if ($user_role !== 'housekeeping') {
+            $error_message = "Access denied. Only housekeeping staff can delete requests.";
+        } else {
+            try {
+                global $pdo;
+                $request_id = $_POST['request_id'];
+                
+                // Check if the request belongs to the current user
+                $stmt = $pdo->prepare("SELECT requested_by FROM inventory_requests WHERE id = ?");
+                $stmt->execute([$request_id]);
+                $request = $stmt->fetch();
+                
+                if (!$request || $request['requested_by'] != $user_id) {
+                    $error_message = "Access denied. You can only delete your own requests.";
+                } else {
+                    $pdo->beginTransaction();
+                    
+                    // Delete request items first
+                    $stmt = $pdo->prepare("DELETE FROM inventory_request_items WHERE request_id = ?");
+                    $stmt->execute([$request_id]);
+                    
+                    // Delete request
+                    $stmt = $pdo->prepare("DELETE FROM inventory_requests WHERE id = ?");
+                    $stmt->execute([$request_id]);
+                    
+                    $pdo->commit();
+                    $success_message = "Request deleted successfully!";
+                }
+                
+            } catch (PDOException $e) {
+                $pdo->rollBack();
+                $error_message = "Error deleting request: " . $e->getMessage();
+            }
         }
     }
 }
@@ -112,6 +233,7 @@ $priority_filter = $_GET['priority'] ?? '';
 // Get requests with filters
 $requests = [];
 try {
+    global $pdo;
     $sql = "
         SELECT ir.*, u.name as requested_by_name,
                COUNT(iri.id) as item_count
@@ -139,7 +261,7 @@ try {
     
     $sql .= " GROUP BY ir.id ORDER BY ir.request_date DESC";
     
-    $stmt = $inventory_db->getConnection()->prepare($sql);
+    $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
     $requests = $stmt->fetchAll();
     
@@ -150,7 +272,8 @@ try {
 // Get items for request creation
 $items = [];
 try {
-    $stmt = $inventory_db->getConnection()->query("SELECT id, name, quantity, unit FROM inventory_items WHERE status = 'active' ORDER BY name");
+    global $pdo;
+    $stmt = $pdo->query("SELECT id, item_name as name, current_stock as quantity, unit FROM inventory_items WHERE status = 'active' ORDER BY item_name");
     $items = $stmt->fetchAll();
 } catch (PDOException $e) {
     error_log("Error getting items: " . $e->getMessage());
@@ -160,7 +283,8 @@ try {
 $request_details = null;
 if (isset($_GET['view'])) {
     try {
-        $stmt = $inventory_db->getConnection()->prepare("
+        global $pdo;
+        $stmt = $pdo->prepare("
             SELECT ir.*, u.name as requested_by_name, a.name as approved_by_name
             FROM inventory_requests ir
             JOIN users u ON ir.requested_by = u.id
@@ -172,8 +296,8 @@ if (isset($_GET['view'])) {
         
         if ($request_details) {
             // Get request items
-            $stmt = $inventory_db->getConnection()->prepare("
-                SELECT iri.*, ii.name as item_name, ii.unit
+            $stmt = $pdo->prepare("
+                SELECT iri.*, ii.item_name as item_name, ii.unit
                 FROM inventory_request_items iri
                 JOIN inventory_items ii ON iri.item_id = ii.id
                 WHERE iri.request_id = ?
@@ -218,9 +342,18 @@ if (isset($_GET['view'])) {
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
             <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Inventory Requests</h2>
             <div class="flex items-center space-x-4">
-                <button onclick="openCreateModal()" class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg">
-                    <i class="fas fa-plus mr-2"></i>Create Request
-                </button>
+                <?php if ($user_role === 'housekeeping'): ?>
+                    <button onclick="openCreateModal()" class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>Create Request
+                    </button>
+                <?php endif; ?>
+                <div class="text-sm text-gray-600">
+                    <i class="fas fa-user-tag mr-1"></i>
+                    Logged in as: <span class="font-semibold"><?php echo htmlspecialchars($user_name); ?></span> 
+                    <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs ml-2">
+                        <?php echo ucfirst($user_role); ?>
+                    </span>
+                </div>
             </div>
         </div>
 
@@ -348,20 +481,64 @@ if (isset($_GET['view'])) {
                                     <?php echo date('M j, Y', strtotime($request['request_date'])); ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <a href="?view=<?php echo $request['id']; ?>" 
-                                       class="text-primary hover:text-secondary mr-3">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <?php if ($request['status'] === 'pending'): ?>
-                                        <button onclick="approveRequest(<?php echo $request['id']; ?>)" 
-                                                class="text-green-600 hover:text-green-800 mr-3">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        <button onclick="rejectRequest(<?php echo $request['id']; ?>)" 
-                                                class="text-red-600 hover:text-red-800">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    <?php endif; ?>
+                                    <div class="flex space-x-2">
+                                        <?php if ($user_role === 'manager'): ?>
+                                            <!-- Manager can view, approve, and reject -->
+                                            <button onclick="viewRequest(<?php echo $request['id']; ?>)" 
+                                                    class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md" 
+                                                    title="View Request Details">
+                                                <i class="fas fa-eye mr-1.5"></i>
+                                                <span class="hidden sm:inline">View</span>
+                                            </button>
+                                            
+                                            <?php if ($request['status'] === 'pending'): ?>
+                                                <button onclick="approveRequest(<?php echo $request['id']; ?>)" 
+                                                        class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-sm hover:shadow-md" 
+                                                        title="Approve Request">
+                                                    <i class="fas fa-check mr-1.5"></i>
+                                                    <span class="hidden sm:inline">Approve</span>
+                                                </button>
+                                                
+                                                <button onclick="rejectRequest(<?php echo $request['id']; ?>)" 
+                                                        class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-sm hover:shadow-md" 
+                                                        title="Reject Request">
+                                                    <i class="fas fa-times mr-1.5"></i>
+                                                    <span class="hidden sm:inline">Reject</span>
+                                                </button>
+                                            <?php endif; ?>
+                                            
+                                        <?php elseif ($user_role === 'housekeeping'): ?>
+                                            <!-- Housekeeping can view, edit, and delete their own requests -->
+                                            <button onclick="viewRequest(<?php echo $request['id']; ?>)" 
+                                                    class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md" 
+                                                    title="View Request Details">
+                                                <i class="fas fa-eye mr-1.5"></i>
+                                                <span class="hidden sm:inline">View</span>
+                                            </button>
+                                            
+                                            <?php if ($request['requested_by'] == $user_id): ?>
+                                                <!-- Only show edit/delete for own requests -->
+                                                <button onclick="editRequest(<?php echo $request['id']; ?>)" 
+                                                        class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-yellow-600 hover:bg-yellow-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-yellow-500 transition-all duration-200 shadow-sm hover:shadow-md" 
+                                                        title="Edit Request">
+                                                    <i class="fas fa-edit mr-1.5"></i>
+                                                    <span class="hidden sm:inline">Edit</span>
+                                                </button>
+                                                
+                                                <button onclick="deleteRequest(<?php echo $request['id']; ?>)" 
+                                                        class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-all duration-200 shadow-sm hover:shadow-md" 
+                                                        title="Delete Request">
+                                                    <i class="fas fa-trash-alt mr-1.5"></i>
+                                                    <span class="hidden sm:inline">Delete</span>
+                                                </button>
+                                            <?php else: ?>
+                                                <!-- Show read-only indicator for other users' requests -->
+                                                <span class="px-2 py-1 text-xs text-gray-500 bg-gray-100 rounded">
+                                                    <i class="fas fa-lock mr-1"></i>Read Only
+                                                </span>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
@@ -371,7 +548,8 @@ if (isset($_GET['view'])) {
         </div>
     </main>
 
-    <!-- Create Request Modal -->
+    <!-- Create Request Modal (Only for Housekeeping) -->
+    <?php if ($user_role === 'housekeeping'): ?>
     <div id="createModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
         <div class="flex items-center justify-center min-h-screen p-4">
             <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
@@ -463,6 +641,103 @@ if (isset($_GET['view'])) {
             </div>
         </div>
     </div>
+    <?php endif; ?>
+
+    <!-- Edit Request Modal (Only for Housekeeping) -->
+    <?php if ($user_role === 'housekeeping'): ?>
+    <div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-screen overflow-y-auto">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">Edit Request</h3>
+                </div>
+                <form method="POST" class="p-6">
+                    <input type="hidden" name="action" value="edit_request">
+                    <input type="hidden" name="request_id" id="edit_request_id">
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Department *</label>
+                            <select name="department" required 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="">Select Department</option>
+                                <option value="housekeeping">Housekeeping</option>
+                                <option value="maintenance">Maintenance</option>
+                                <option value="front-desk">Front Desk</option>
+                                <option value="restaurant">Restaurant</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Priority *</label>
+                            <select name="priority" required 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="">Select Priority</option>
+                                <option value="low">Low</option>
+                                <option value="medium">Medium</option>
+                                <option value="high">High</option>
+                                <option value="urgent">Urgent</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Required Date</label>
+                            <input type="date" name="required_date" id="edit_required_date"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                            <input type="text" name="notes" id="edit_notes"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-6">
+                        <h4 class="text-lg font-medium text-gray-900 mb-4">Request Items</h4>
+                        <div id="editItemsContainer">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Item</label>
+                                    <select name="item_id[]" 
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        <option value="">Select Item</option>
+                                        <?php foreach ($items as $item): ?>
+                                            <option value="<?php echo $item['id']; ?>"><?php echo htmlspecialchars($item['name']); ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                                    <input type="number" name="quantity[]" min="1" 
+                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                                </div>
+                                <div class="flex items-end">
+                                    <button type="button" onclick="removeEditItem(this)" 
+                                            class="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" onclick="addEditItem()" 
+                                class="bg-primary hover:bg-secondary text-white px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-2"></i>Add Item
+                        </button>
+                    </div>
+                    
+                    <div class="flex justify-end space-x-3">
+                        <button type="button" onclick="closeEditModal()" 
+                                class="px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-lg">
+                            Cancel
+                        </button>
+                        <button type="submit" 
+                                class="px-4 py-2 bg-primary hover:bg-secondary text-white rounded-lg">
+                            Update Request
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <!-- View Request Modal -->
     <?php if ($request_details): ?>
@@ -520,11 +795,19 @@ if (isset($_GET['view'])) {
 
     <script>
         function openCreateModal() {
-            document.getElementById('createModal').classList.remove('hidden');
+            <?php if ($user_role === 'housekeeping'): ?>
+                document.getElementById('createModal').classList.remove('hidden');
+            <?php else: ?>
+                alert('Access denied. Only housekeeping staff can create requests.');
+            <?php endif; ?>
         }
         
         function closeCreateModal() {
             document.getElementById('createModal').classList.add('hidden');
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').classList.add('hidden');
         }
         
         function addItem() {
@@ -558,36 +841,146 @@ if (isset($_GET['view'])) {
             button.closest('.grid').remove();
         }
         
+        function addEditItem(itemId = '', quantity = '') {
+            const container = document.getElementById('editItemsContainer');
+            const newItem = document.createElement('div');
+            newItem.className = 'grid grid-cols-1 md:grid-cols-3 gap-4 mb-4';
+            newItem.innerHTML = `
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Item</label>
+                    <select name="item_id[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                        <option value="">Select Item</option>
+                        <?php foreach ($items as $item): ?>
+                            <option value="<?php echo $item['id']; ?>" ${itemId == <?php echo $item['id']; ?> ? 'selected' : ''}><?php echo htmlspecialchars($item['name']); ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                    <input type="number" name="quantity[]" min="1" value="${quantity}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
+                </div>
+                <div class="flex items-end">
+                    <button type="button" onclick="removeEditItem(this)" class="w-full bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(newItem);
+        }
+        
+        function removeEditItem(button) {
+            button.closest('.grid').remove();
+        }
+        
         function approveRequest(requestId) {
-            if (confirm('Are you sure you want to approve this request?')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="approve_request">
-                    <input type="hidden" name="request_id" value="${requestId}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
+            <?php if ($user_role === 'manager'): ?>
+                if (confirm('Are you sure you want to approve this request?')) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.innerHTML = `
+                        <input type="hidden" name="action" value="approve_request">
+                        <input type="hidden" name="request_id" value="${requestId}">
+                    `;
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            <?php else: ?>
+                alert('Access denied. Only managers can approve requests.');
+            <?php endif; ?>
         }
         
         function rejectRequest(requestId) {
-            if (confirm('Are you sure you want to reject this request?')) {
-                const form = document.createElement('form');
-                form.method = 'POST';
-                form.innerHTML = `
-                    <input type="hidden" name="action" value="reject_request">
-                    <input type="hidden" name="request_id" value="${requestId}">
-                `;
-                document.body.appendChild(form);
-                form.submit();
-            }
+            <?php if ($user_role === 'manager'): ?>
+                if (confirm('Are you sure you want to reject this request?')) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.innerHTML = `
+                        <input type="hidden" name="action" value="reject_request">
+                        <input type="hidden" name="request_id" value="${requestId}">
+                    `;
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            <?php else: ?>
+                alert('Access denied. Only managers can reject requests.');
+            <?php endif; ?>
+        }
+        
+        function viewRequest(requestId) {
+            window.location.href = `?view=${requestId}`;
+        }
+        
+        function editRequest(requestId) {
+            <?php if ($user_role === 'housekeeping'): ?>
+                // Fetch request details and populate edit modal
+                fetch(`api/get-request-details.php?id=${requestId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            // Populate form fields
+                            document.getElementById('edit_request_id').value = data.request.id;
+                            document.querySelector('select[name="department"]').value = data.request.department;
+                            document.querySelector('select[name="priority"]').value = data.request.priority;
+                            document.getElementById('edit_required_date').value = data.request.required_date;
+                            document.getElementById('edit_notes').value = data.request.notes;
+                            
+                            // Clear existing items
+                            const container = document.getElementById('editItemsContainer');
+                            container.innerHTML = '';
+                            
+                            // Add request items
+                            data.request.items.forEach((item, index) => {
+                                addEditItem(item.item_id, item.quantity_requested);
+                            });
+                            
+                            // If no items, add one empty row
+                            if (data.request.items.length === 0) {
+                                addEditItem();
+                            }
+                            
+                            // Show modal
+                            document.getElementById('editModal').classList.remove('hidden');
+                        } else {
+                            alert('Error loading request details: ' + data.message);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error loading request details');
+                    });
+            <?php else: ?>
+                alert('Access denied. Only housekeeping staff can edit requests.');
+            <?php endif; ?>
+        }
+        
+        function deleteRequest(requestId) {
+            <?php if ($user_role === 'housekeeping'): ?>
+                if (confirm('Are you sure you want to delete this request? This action cannot be undone.')) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.innerHTML = `
+                        <input type="hidden" name="action" value="delete_request">
+                        <input type="hidden" name="request_id" value="${requestId}">
+                    `;
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            <?php else: ?>
+                alert('Access denied. Only housekeeping staff can delete requests.');
+            <?php endif; ?>
         }
         
         // Close modal when clicking outside
         document.getElementById('createModal').addEventListener('click', function(e) {
             if (e.target === this) {
                 closeCreateModal();
+            }
+        });
+        
+        // Close edit modal when clicking outside
+        document.getElementById('editModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeEditModal();
             }
         });
     </script>

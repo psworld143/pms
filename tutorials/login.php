@@ -4,8 +4,8 @@ require_once '../vps_session_fix.php';
 
 require_once '../includes/database.php';
 
-// Redirect if already logged in
-if (isset($_SESSION['user_id']) && isset($_SESSION['user_role']) && $_SESSION['user_role'] === 'student') {
+// Redirect if already logged in (allow all roles to access tutorials)
+if (isset($_SESSION['user_id']) && isset($_SESSION['user_role'])) {
     header('Location: index.php');
     exit();
 }
@@ -21,7 +21,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Please fill in all fields.';
     } else {
         try {
-            $stmt = $pdo->prepare("SELECT id, name, email, password, role FROM users WHERE email = ? AND role = 'student' AND is_active = 1");
+            // Allow all user roles to access tutorials (manager, front_desk, housekeeping, student)
+            $stmt = $pdo->prepare("SELECT id, name, email, password, role FROM users WHERE email = ? AND is_active = 1");
             $stmt->execute([$email]);
             $user = $stmt->fetch();
             
@@ -49,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Student Login - Hotel PMS Training</title>
+    <title>User Login - Hotel PMS Training</title>
     <link rel="icon" type="image/png" href="../assets/images/seait-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -144,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <p class="text-gray-600 mt-2 text-sm font-medium">Interactive Hotel PMS Learning</p>
                     <div class="flex items-center justify-center mt-3 space-x-2">
                         <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                        <span class="text-xs text-gray-500 font-medium">Student Portal Active</span>
+                        <span class="text-xs text-gray-500 font-medium">Training Portal Active</span>
                     </div>
                 </div>
 
@@ -167,7 +168,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </label>
                             <input type="email" name="email" required 
                                    class="input-focus w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:border-primary transition-all duration-300 bg-gray-50 focus:bg-white"
-                                   placeholder="student@example.com"
+                                   placeholder="user@hotel.com"
                                    value="<?php echo htmlspecialchars($_POST['email'] ?? ''); ?>">
                         </div>
                         
@@ -194,11 +195,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <i class="fas fa-info-circle text-blue-600 text-sm"></i>
                         </div>
                         <div>
-                            <h3 class="text-blue-800 font-semibold text-sm mb-1">Demo Account Available</h3>
+                            <h3 class="text-blue-800 font-semibold text-sm mb-1">Demo Accounts Available</h3>
                             <p class="text-blue-600 text-xs mb-2">For testing purposes:</p>
                             <div class="text-blue-700 text-xs space-y-1">
-                                <p><strong>Email:</strong> demo@student.com</p>
-                                <p><strong>Password:</strong> demo123</p>
+                                <p><strong>Manager:</strong> david@hotel.com / password</p>
+                                <p><strong>Front Desk:</strong> john@hotel.com / password</p>
+                                <p><strong>Housekeeping:</strong> carlos@hotel.com / password</p>
+                                <p><strong>Student:</strong> demo@student.com / demo123</p>
                             </div>
                         </div>
                     </div>
