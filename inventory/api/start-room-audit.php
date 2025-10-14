@@ -20,16 +20,18 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 try {
     global $pdo;
     
-    // Update last audited timestamp for all rooms
-    $stmt = $pdo->prepare("
-        UPDATE rooms 
-        SET last_audited = NOW() 
-        WHERE id IN (
-            SELECT DISTINCT room_id 
-            FROM room_inventory_items
-        )
-    ");
-    $stmt->execute();
+    // Determine correct rooms table in this environment
+    $roomsTable = 'hotel_rooms';
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'hotel_rooms'");
+    if ($tableCheck->rowCount() === 0) {
+        $roomsTable = 'rooms';
+    }
+
+    // Only set last_audited if the column exists (production may not have it)
+    $colCheck = $pdo->query("SHOW COLUMNS FROM `{$roomsTable}` LIKE 'last_audited'");
+    if ($colCheck->rowCount() > 0) {
+        $pdo->exec("UPDATE `{$roomsTable}` SET last_audited = NOW() WHERE id IN (SELECT DISTINCT room_id FROM room_inventory_items)");
+    }
     
     // Log audit activity
     $stmt = $pdo->prepare("
