@@ -648,6 +648,22 @@ $(document).ready(function() {
                         ${room.inventory_items ? room.inventory_items.length : 0} Items
                     </span>
                 </div>
+
+                <!-- Assign Item (always available) -->
+                <div class="mb-6">
+                    <button id="toggle-assign-form" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-plus-circle mr-1"></i>Add Item to Room
+                    </button>
+                    <div id="assign-item-panel" class="mt-3 hidden bg-gray-50 border border-gray-200 rounded p-4">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                            <select id="assign-item-select" class="border border-gray-300 rounded px-2 py-2 md:col-span-2"></select>
+                            <input id="assign-allocated" type="number" min="0" placeholder="Allocated" class="border border-gray-300 rounded px-2 py-2" />
+                            <input id="assign-current" type="number" min="0" placeholder="Current" class="border border-gray-300 rounded px-2 py-2" />
+                            <input id="assign-par" type="number" min="0" placeholder="Par" class="border border-gray-300 rounded px-2 py-2" />
+                            <button id="assign-item-btn" data-room-id="${room.id}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"><i class="fas fa-check mr-1"></i>Assign</button>
+                        </div>
+                    </div>
+                </div>
                 
                 ${room.inventory_items && room.inventory_items.length > 0 ? `
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -701,18 +717,77 @@ $(document).ready(function() {
                             <i class="fas fa-box-open text-gray-400 text-3xl"></i>
                         </div>
                         <h5 class="text-lg font-semibold text-gray-600 mb-2">No Inventory Items</h5>
-                        <p class="text-gray-500">This room doesn't have any inventory items assigned yet.</p>
+                        <p class="text-gray-500 mb-4">This room doesn't have any inventory items assigned yet.</p>
                     </div>
                 `}
             </div>
         `;
         
         $('#room-details-content').html(content);
+        // Load items and bind handlers for assign panel
+        if ($('#assign-item-select').length) {
+            loadAssignableItems();
+            $('#assign-item-btn').off('click').on('click', function() {
+                const roomId = $(this).data('room-id');
+                const itemId = $('#assign-item-select').val();
+                const allocated = parseInt($('#assign-allocated').val() || '0', 10);
+                const current = parseInt($('#assign-current').val() || '0', 10);
+                const par = parseInt($('#assign-par').val() || '0', 10);
+                if (!itemId) { alert('Please select an item'); return; }
+                $.ajax({
+                    url: 'api/assign-room-item.php',
+                    method: 'POST',
+                    dataType: 'json',
+                    data: { room_id: roomId, item_id: itemId, allocated, current, par },
+                    xhrFields: { withCredentials: true },
+                    success: function(res){
+                        if (res.success) {
+                            alert('Item assigned successfully');
+                            showRoomDetails(roomId);
+                        } else {
+                            alert('Error: ' + res.message);
+                        }
+                    },
+                    error: function(xhr){
+                        alert('Error: ' + xhr.responseText);
+                    }
+                });
+            });
+            $('#toggle-assign-form').off('click').on('click', function(){
+                $('#assign-item-panel').toggleClass('hidden');
+            });
+        }
         
         // Add animation to modal
         setTimeout(() => {
             $('#modal-content').removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
         }, 10);
+    }
+
+    function loadAssignableItems(){
+        // Load a compact list of items for the select (schema-adaptive)
+        $.ajax({
+            url: 'api/list-items-simple.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function(resp){
+                const sel = $('#assign-item-select');
+                if (!sel.length) return;
+                sel.empty();
+                const items = resp.items || resp.data || [];
+                sel.append('<option value="">Select Item</option>');
+                items.slice(0, 200).forEach(function(it){
+                    const id = it.id || it.item_id;
+                    const name = it.label || it.item_name || it.name || ('Item #' + id);
+                    sel.append(`<option value="${id}">${name}</option>`);
+                });
+            },
+            error: function(){
+                // Graceful fallback: minimal select
+                const sel = $('#assign-item-select');
+                if (sel.length) sel.html('<option value="">Unable to load items</option>');
+            }
+        });
     }
     
     function startRoomAudit() {
