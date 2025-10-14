@@ -16,6 +16,10 @@ if (!in_array($user_role, ['housekeeping', 'manager'])) {
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $current_url = $_SERVER['REQUEST_URI'];
 
+// Resolve base paths for localhost (/pms/inventory/) and production (/inventory/)
+$isPmsPrefixed = strpos($current_url, '/pms/inventory/') !== false;
+$BASE_INV = $isPmsPrefixed ? '/pms/inventory/' : '/inventory/';
+
 // Function to check if a URL is active
 function isActiveUrl($url, $current_url) {
     $clean_url = strtok($url, '?');
@@ -36,16 +40,16 @@ function isActiveUrl($url, $current_url) {
 $navigation_items = [
     // 🧹 HOUSEKEEPING MODULES
     'dashboard' => [
-        'url' => '/pms/inventory/index.php',
+        'url' => $BASE_INV . 'index.php',
         'icon' => 'fas fa-tachometer-alt',
         'label' => 'Inventory Dashboard',
         'description' => 'Limited View - Available items & low-stock alerts',
         'roles' => ['housekeeping', 'manager'],
         'access_level' => ['housekeeping' => 'limited', 'manager' => 'full'],
-        'active' => isActiveUrl('/pms/inventory/index.php', $current_url)
+        'active' => isActiveUrl($BASE_INV . 'index.php', $current_url)
     ],
     'requests' => [
-        'url' => '/pms/inventory/requests.php',
+        'url' => $BASE_INV . 'requests.php',
         'icon' => 'fas fa-clipboard-list',
         'label' => 'Requests',
         'description' => 'Create requests for cleaning supplies, linens, amenities',
@@ -54,7 +58,7 @@ $navigation_items = [
         'active' => strpos($current_url, 'requests') !== false
     ],
     'room-inventory' => [
-        'url' => '/pms/inventory/room-inventory.php',
+        'url' => $BASE_INV . 'room-inventory.php',
         'icon' => 'fas fa-bed',
         'label' => 'Room Inventory',
         'description' => 'View and update item usage per room',
@@ -63,7 +67,7 @@ $navigation_items = [
         'active' => strpos($current_url, 'room-inventory') !== false
     ],
     'transactions' => [
-        'url' => '/pms/inventory/transactions.php',
+        'url' => $BASE_INV . 'transactions.php',
         'icon' => 'fas fa-exchange-alt',
         'label' => 'Transactions',
         'description' => 'Record usage (e.g., "5 soaps used in Room 203")',
@@ -72,7 +76,7 @@ $navigation_items = [
         'active' => strpos($current_url, 'transactions') !== false
     ],
     'training' => [
-        'url' => '/pms/inventory/training.php',
+        'url' => $BASE_INV . 'training.php',
         'icon' => 'fas fa-graduation-cap',
         'label' => 'Training',
         'description' => 'Access training simulations for inventory handling',
@@ -81,7 +85,7 @@ $navigation_items = [
         'active' => strpos($current_url, 'training') !== false
     ],
     'mobile' => [
-        'url' => '/pms/inventory/mobile.php',
+        'url' => $BASE_INV . 'mobile.php',
         'icon' => 'fas fa-mobile-alt',
         'label' => 'Mobile Interface',
         'description' => 'Quick updates via mobile while cleaning rooms',
@@ -92,7 +96,7 @@ $navigation_items = [
     
     // 👨‍💼 MANAGER-ONLY MODULES
     'items' => [
-        'url' => '/pms/inventory/items.php',
+        'url' => $BASE_INV . 'items.php',
         'icon' => 'fas fa-box',
         'label' => 'Inventory Items',
         'description' => 'Add, edit, or remove items',
@@ -101,7 +105,7 @@ $navigation_items = [
         'active' => strpos($current_url, 'items') !== false
     ],
     'reports' => [
-        'url' => '/pms/inventory/reports.php',
+        'url' => $BASE_INV . 'reports.php',
         'icon' => 'fas fa-chart-bar',
         'label' => 'Reports',
         'description' => 'Generate and export monthly/weekly inventory reports',
@@ -110,7 +114,7 @@ $navigation_items = [
         'active' => strpos($current_url, 'reports') !== false
     ],
     'enhanced-reports' => [
-        'url' => '/pms/inventory/enhanced-reports.php',
+        'url' => $BASE_INV . 'enhanced-reports.php',
         'icon' => 'fas fa-chart-line',
         'label' => 'Enhanced Reports',
         'description' => 'View detailed usage trends and cost analysis',
@@ -119,7 +123,7 @@ $navigation_items = [
         'active' => strpos($current_url, 'enhanced-reports') !== false
     ],
     'automated-reordering' => [
-        'url' => '/pms/inventory/automated-reordering.php',
+        'url' => $BASE_INV . 'automated-reordering.php',
         'icon' => 'fas fa-robot',
         'label' => 'Auto Reordering',
         'description' => 'Set reorder thresholds and supplier automation',
@@ -128,7 +132,7 @@ $navigation_items = [
         'active' => strpos($current_url, 'automated-reordering') !== false
     ],
     'barcode-scanner' => [
-        'url' => '/pms/inventory/barcode-scanner.php',
+        'url' => $BASE_INV . 'barcode-scanner.php',
         'icon' => 'fas fa-barcode',
         'label' => 'Barcode Scanner',
         'description' => 'Manage item scanning for faster stock updates',
@@ -137,7 +141,7 @@ $navigation_items = [
         'active' => strpos($current_url, 'barcode-scanner') !== false
     ],
     'accounting-integration' => [
-        'url' => '/pms/inventory/accounting-integration.php',
+        'url' => $BASE_INV . 'accounting-integration.php',
         'icon' => 'fas fa-calculator',
         'label' => 'Accounting',
         'description' => 'Link inventory costs to overall hotel expenses',
@@ -205,39 +209,39 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
         <div class="space-y-2">
             <?php if ($user_role === 'housekeeping'): ?>
                 <!-- Housekeeping Quick Actions -->
-                <a href="/pms/inventory/requests.php?action=create" 
+                <a href="<?php echo $BASE_INV; ?>requests.php?action=create" 
                    class="flex items-center px-3 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors">
                     <i class="fas fa-plus-circle mr-2"></i>
                     Create Request
                 </a>
-                <a href="/pms/inventory/room-inventory.php" 
+                <a href="<?php echo $BASE_INV; ?>room-inventory.php" 
                    class="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors">
                     <i class="fas fa-bed mr-2"></i>
                     Update Room Items
                 </a>
-                <a href="/pms/inventory/transactions.php?action=record" 
+                <a href="<?php echo $BASE_INV; ?>transactions.php?action=record" 
                    class="flex items-center px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors">
                     <i class="fas fa-clipboard-check mr-2"></i>
                     Record Usage
                 </a>
             <?php elseif ($user_role === 'manager'): ?>
                 <!-- Manager Quick Actions -->
-                <a href="/pms/inventory/items.php?action=add" 
+                <a href="<?php echo $BASE_INV; ?>items.php?action=add" 
                    class="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors">
                     <i class="fas fa-plus-circle mr-2"></i>
                     Add Item
                 </a>
-                <a href="/pms/inventory/requests.php?status=pending" 
+                <a href="<?php echo $BASE_INV; ?>requests.php?status=pending" 
                    class="flex items-center px-3 py-2 text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors">
                     <i class="fas fa-clock mr-2"></i>
                     Pending Requests
                 </a>
-                <a href="/pms/inventory/items.php?filter=low_stock" 
+                <a href="<?php echo $BASE_INV; ?>items.php?filter=low_stock" 
                    class="flex items-center px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
                     Low Stock Items
                 </a>
-                <a href="/pms/inventory/reports.php" 
+                <a href="<?php echo $BASE_INV; ?>reports.php" 
                    class="flex items-center px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors">
                     <i class="fas fa-chart-bar mr-2"></i>
                     Generate Report

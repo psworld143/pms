@@ -67,12 +67,12 @@ $school_abbreviation = 'Hotel PMS'; // Default abbreviation
                     </div>
                 </div>
                 <div class="py-2">
-                    <a href="/pms/booking/profile.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="../booking/profile.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-user-circle mr-3"></i>
                         Profile
                     </a>
                     <hr class="my-2">
-                    <a href="/pms/inventory/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <a href="logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                         <i class="fas fa-sign-out-alt mr-3"></i>
                         Logout
                     </a>
