@@ -52,12 +52,28 @@ try {
         throw new Exception('Room not found');
     }
     
-    // Log audit activity
-    $stmt = $pdo->prepare("
-        INSERT INTO inventory_transactions (item_id, transaction_type, quantity, reason, user_id, performed_by, created_at)
-        VALUES (NULL, 'adjustment', 0, 'Room audit completed for Room {$room['room_number']}', ?, ?, NOW())
-    ");
-    $stmt->execute([$_SESSION['user_id'], $_SESSION['user_id']]);
+    // Schema-adaptive insert into inventory_transactions
+    $colsStmt = $pdo->query("SHOW COLUMNS FROM inventory_transactions");
+    $available = $colsStmt->fetchAll(PDO::FETCH_COLUMN, 0);
+    $available = array_flip($available);
+
+    $fields = [];
+    $values = [];
+
+    if (isset($available['item_id'])) { $fields[] = 'item_id'; $values[] = null; }
+    if (isset($available['transaction_type'])) { $fields[] = 'transaction_type'; $values[] = 'adjustment'; }
+    if (isset($available['quantity'])) { $fields[] = 'quantity'; $values[] = 0; }
+    if (isset($available['reason'])) { $fields[] = 'reason'; $values[] = 'Room audit completed for Room ' . $room['room_number']; }
+    if (isset($available['user_id'])) { $fields[] = 'user_id'; $values[] = $_SESSION['user_id']; }
+    if (isset($available['performed_by'])) { $fields[] = 'performed_by'; $values[] = $_SESSION['user_id']; }
+    if (isset($available['created_at'])) { $fields[] = 'created_at'; $values[] = date('Y-m-d H:i:s'); }
+
+    if (!empty($fields)) {
+        $placeholders = implode(',', array_fill(0, count($fields), '?'));
+        $sql = 'INSERT INTO inventory_transactions (' . implode(',', $fields) . ') VALUES (' . $placeholders . ')';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($values);
+    }
     
     // Get room inventory items for summary
     $stmt = $pdo->prepare("
@@ -73,7 +89,7 @@ try {
     
     echo json_encode([
         'success' => true,
-        'message' => "Room {$room['room_number']} audit completed successfully",
+        'message' => 'Room ' . $room['room_number'] . ' audit completed successfully',
         'room_number' => $room['room_number'],
         'items_audited' => count($inventory_items)
     ]);
