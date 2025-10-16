@@ -158,21 +158,21 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
 ?>
 
 <!-- Inventory Management Sidebar -->
-<nav id="sidebar" class="fixed left-0 top-16 w-64 h-[calc(100vh-4rem)] bg-white shadow-lg overflow-y-auto z-40 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
-    <div class="p-4 border-b border-gray-200">
+<nav id="sidebar" class="fixed left-0 top-16 w-64 sm:w-72 lg:w-64 h-[calc(100vh-4rem)] bg-white shadow-lg overflow-y-auto z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+    <div class="p-3 sm:p-4 border-b border-gray-200">
         <div class="flex items-center">
-            <div class="w-8 h-8 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mr-3">
-                <i class="fas fa-boxes text-white text-sm"></i>
+            <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mr-3 flex-shrink-0">
+                <i class="fas fa-boxes text-white text-sm sm:text-base"></i>
             </div>
-            <div>
-                <div class="text-sm font-medium text-gray-800"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></div>
-                <div class="text-xs text-gray-500"><?php echo ucfirst(str_replace('_', ' ', $user_role)); ?></div>
+            <div class="min-w-0 flex-1">
+                <div class="text-sm sm:text-base font-medium text-gray-800 truncate"><?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></div>
+                <div class="text-xs sm:text-sm text-gray-500 truncate"><?php echo ucfirst(str_replace('_', ' ', $user_role)); ?></div>
             </div>
         </div>
     </div>
     
-    <div class="p-4 border-b border-gray-200">
-        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+    <div class="p-3 sm:p-4 border-b border-gray-200">
+        <h3 class="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider">
             <?php if ($user_role === 'housekeeping'): ?>
                 🧹 Housekeeping Modules
             <?php elseif ($user_role === 'manager'): ?>
@@ -184,17 +184,17 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
     </div>
     
     <!-- Role-based Module List -->
-    <div class="py-4">
+    <div class="py-2 sm:py-4">
         <ul>
             <?php foreach ($user_navigation as $key => $item): ?>
                 <li class="mb-1">
                     <a href="<?php echo $item['url']; ?>" 
-                       class="flex items-center px-6 py-3 text-gray-600 hover:text-green-600 hover:bg-green-50 border-l-4 <?php echo $item['active'] ? 'border-green-500 bg-green-50 text-green-600' : 'border-transparent'; ?> transition-colors group">
-                        <i class="<?php echo $item['icon']; ?> w-5 mr-3"></i>
-                        <div class="flex-1">
-                            <div class="font-medium"><?php echo $item['label']; ?></div>
+                       class="flex items-center px-4 sm:px-6 py-3 text-gray-600 hover:text-green-600 hover:bg-green-50 border-l-4 <?php echo $item['active'] ? 'border-green-500 bg-green-50 text-green-600' : 'border-transparent'; ?> transition-colors group">
+                        <i class="<?php echo $item['icon']; ?> w-5 mr-3 flex-shrink-0"></i>
+                        <div class="flex-1 min-w-0">
+                            <div class="font-medium text-sm sm:text-base truncate"><?php echo $item['label']; ?></div>
                             <?php if (!empty($item['description'])): ?>
-                                <div class="text-xs text-gray-500 group-hover:text-green-600"><?php echo $item['description']; ?></div>
+                                <div class="text-xs sm:text-sm text-gray-500 group-hover:text-green-600 truncate"><?php echo $item['description']; ?></div>
                             <?php endif; ?>
                         </div>
                     </a>
@@ -204,52 +204,52 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
     </div>
     
     <!-- Role-Based Quick Actions Section -->
-    <div class="p-4 border-t border-gray-200">
-        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h3>
-        <div class="space-y-2">
+    <div class="p-3 sm:p-4 border-t border-gray-200">
+        <h3 class="text-xs sm:text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2 sm:mb-3">Quick Actions</h3>
+        <div class="space-y-1 sm:space-y-2">
             <?php if ($user_role === 'housekeeping'): ?>
                 <!-- Housekeeping Quick Actions -->
                 <a href="<?php echo $BASE_INV; ?>requests.php" 
                    onclick="handleQuickAction('requests', 'create')"
-                   class="flex items-center px-3 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors cursor-pointer">
-                    <i class="fas fa-plus-circle mr-2"></i>
-                    Create Request
+                   class="flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors cursor-pointer">
+                    <i class="fas fa-plus-circle mr-2 flex-shrink-0"></i>
+                    <span class="truncate">Create Request</span>
                 </a>
                 <a href="<?php echo $BASE_INV; ?>room-inventory.php" 
-                   class="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors">
-                    <i class="fas fa-bed mr-2"></i>
-                    Update Room Items
+                   class="flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors">
+                    <i class="fas fa-bed mr-2 flex-shrink-0"></i>
+                    <span class="truncate">Update Room Items</span>
                 </a>
                 <a href="<?php echo $BASE_INV; ?>transactions.php" 
                    onclick="handleQuickAction('transactions', 'record')"
-                   class="flex items-center px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors cursor-pointer">
-                    <i class="fas fa-clipboard-check mr-2"></i>
-                    Record Usage
+                   class="flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors cursor-pointer">
+                    <i class="fas fa-clipboard-check mr-2 flex-shrink-0"></i>
+                    <span class="truncate">Record Usage</span>
                 </a>
             <?php elseif ($user_role === 'manager'): ?>
                 <!-- Manager Quick Actions -->
                 <a href="<?php echo $BASE_INV; ?>items.php" 
                    onclick="handleQuickAction('items', 'add')"
-                   class="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors cursor-pointer">
-                    <i class="fas fa-plus-circle mr-2"></i>
-                    Add Item
+                   class="flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors cursor-pointer">
+                    <i class="fas fa-plus-circle mr-2 flex-shrink-0"></i>
+                    <span class="truncate">Add Item</span>
                 </a>
                 <a href="<?php echo $BASE_INV; ?>requests.php" 
                    onclick="handleQuickAction('requests', 'pending')"
-                   class="flex items-center px-3 py-2 text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors cursor-pointer">
-                    <i class="fas fa-clock mr-2"></i>
-                    Pending Requests
+                   class="flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors cursor-pointer">
+                    <i class="fas fa-clock mr-2 flex-shrink-0"></i>
+                    <span class="truncate">Pending Requests</span>
                 </a>
                 <a href="<?php echo $BASE_INV; ?>items.php" 
                    onclick="handleQuickAction('items', 'low_stock')"
-                   class="flex items-center px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors cursor-pointer">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                    Low Stock Items
+                   class="flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors cursor-pointer">
+                    <i class="fas fa-exclamation-triangle mr-2 flex-shrink-0"></i>
+                    <span class="truncate">Low Stock Items</span>
                 </a>
                 <a href="<?php echo $BASE_INV; ?>reports.php" 
-                   class="flex items-center px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors">
-                    <i class="fas fa-chart-bar mr-2"></i>
-                    Generate Report
+                   class="flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors">
+                    <i class="fas fa-chart-bar mr-2 flex-shrink-0"></i>
+                    <span class="truncate">Generate Report</span>
                 </a>
             <?php endif; ?>
         </div>
@@ -267,4 +267,4 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
 </nav>
 
 <!-- Sidebar Overlay for Mobile -->
-<div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden" onclick="closeSidebar()"></div>
+<div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
