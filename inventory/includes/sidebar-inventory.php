@@ -158,7 +158,7 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
 ?>
 
 <!-- Inventory Management Sidebar -->
-<nav id="sidebar" class="fixed left-0 top-16 w-64 sm:w-72 lg:w-64 h-[calc(100vh-4rem)] bg-white shadow-lg overflow-y-auto z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+<nav id="sidebar" class="fixed left-0 top-16 w-64 sm:w-72 lg:w-64 h-[calc(100vh-4rem)] bg-white shadow-lg overflow-y-auto z-50">
     <div class="p-3 sm:p-4 border-b border-gray-200">
         <div class="flex items-center">
             <div class="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mr-3 flex-shrink-0">

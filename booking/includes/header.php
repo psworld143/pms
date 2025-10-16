@@ -63,6 +63,31 @@ $school_abbreviation = get_school_abbreviation($conn);
             }
         }
     </script>
+    
+    <!-- Mobile Sidebar CSS -->
+    <style>
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        @media (max-width: 1023px) {
+            #sidebar {
+                transform: translateX(-100%);
+                z-index: 50;
+            }
+            #sidebar.sidebar-open {
+                transform: translateX(0);
+            }
+        }
+        @media (min-width: 1024px) {
+            #sidebar {
+                transform: translateX(0) !important;
+            }
+        }
+        #sidebar-overlay {
+            transition: opacity 0.3s ease-in-out;
+            z-index: 40;
+        }
+    </style>
     <?php if (isset($additional_css)): ?>
         <?php echo $additional_css; ?>
     <?php endif; ?>
@@ -140,3 +165,103 @@ $school_abbreviation = get_school_abbreviation($conn);
                 </span>
             </div>
         </header>
+        
+        <!-- Sidebar Overlay for Mobile -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
+        
+        <!-- JavaScript for sidebar functionality -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // User dropdown functionality
+            const userMenuToggle = document.getElementById('user-menu-toggle');
+            const userDropdown = document.getElementById('user-dropdown');
+            
+            if (userMenuToggle && userDropdown) {
+                userMenuToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!event.target.closest('#user-menu-toggle') && !event.target.closest('#user-dropdown')) {
+                        userDropdown.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Sidebar toggle functionality
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Sidebar toggle clicked');
+                    sidebar.classList.toggle('sidebar-open');
+                    if (sidebarOverlay) {
+                        sidebarOverlay.classList.toggle('hidden');
+                    }
+                });
+            }
+            
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function() {
+                    console.log('Sidebar overlay clicked');
+                    sidebar.classList.remove('sidebar-open');
+                    sidebarOverlay.classList.add('hidden');
+                });
+            }
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth < 1024) {
+                    if (!event.target.closest('#sidebar') && !event.target.closest('#sidebar-toggle')) {
+                        if (sidebar && sidebar.classList.contains('sidebar-open')) {
+                            sidebar.classList.remove('sidebar-open');
+                            if (sidebarOverlay) {
+                                sidebarOverlay.classList.add('hidden');
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Close sidebar on escape key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    if (sidebar && sidebar.classList.contains('sidebar-open')) {
+                        sidebar.classList.remove('sidebar-open');
+                        if (sidebarOverlay) {
+                            sidebarOverlay.classList.add('hidden');
+                        }
+                    }
+                }
+            });
+        });
+
+        // Global functions for sidebar control
+        function openSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            if (sidebar) {
+                sidebar.classList.add('sidebar-open');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('hidden');
+                }
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            if (sidebar) {
+                sidebar.classList.remove('sidebar-open');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.add('hidden');
+                }
+            }
+        }
+        </script>

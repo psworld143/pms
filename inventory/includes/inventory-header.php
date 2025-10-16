@@ -17,6 +17,31 @@ $school_logo = null; // Will be set later if needed
 $school_abbreviation = 'Hotel PMS'; // Default abbreviation
 ?>
 
+<!-- Mobile Sidebar CSS -->
+<style>
+    #sidebar {
+        transition: transform 0.3s ease-in-out;
+    }
+    @media (max-width: 1023px) {
+        #sidebar {
+            transform: translateX(-100%);
+            z-index: 50;
+        }
+        #sidebar.sidebar-open {
+            transform: translateX(0);
+        }
+    }
+    @media (min-width: 1024px) {
+        #sidebar {
+            transform: translateX(0) !important;
+        }
+    }
+    #sidebar-overlay {
+        transition: opacity 0.3s ease-in-out;
+        z-index: 40;
+    }
+</style>
+
 <!-- Header/Navbar - Matching POS and Booking systems -->
 <header class="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-primary to-secondary text-white flex justify-between items-center px-4 sm:px-6 z-50 shadow-lg">
     <div class="flex items-center min-w-0 flex-1">
@@ -127,18 +152,50 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarOverlay = document.getElementById('sidebar-overlay');
     
     if (sidebarToggle && sidebar) {
-        sidebarToggle.addEventListener('click', function() {
+        sidebarToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Sidebar toggle clicked');
             sidebar.classList.toggle('sidebar-open');
-            sidebarOverlay.classList.toggle('hidden');
+            if (sidebarOverlay) {
+                sidebarOverlay.classList.toggle('hidden');
+            }
         });
     }
     
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener('click', function() {
+            console.log('Sidebar overlay clicked');
             sidebar.classList.remove('sidebar-open');
             sidebarOverlay.classList.add('hidden');
         });
     }
+    
+    // Close sidebar when clicking outside on mobile
+    document.addEventListener('click', function(event) {
+        if (window.innerWidth < 1024) {
+            if (!event.target.closest('#sidebar') && !event.target.closest('#sidebar-toggle')) {
+                if (sidebar && sidebar.classList.contains('sidebar-open')) {
+                    sidebar.classList.remove('sidebar-open');
+                    if (sidebarOverlay) {
+                        sidebarOverlay.classList.add('hidden');
+                    }
+                }
+            }
+        }
+    });
+    
+    // Close sidebar on escape key
+    document.addEventListener('keydown', function(event) {
+        if (event.key === 'Escape') {
+            if (sidebar && sidebar.classList.contains('sidebar-open')) {
+                sidebar.classList.remove('sidebar-open');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.add('hidden');
+                }
+            }
+        }
+    });
 });
 
 function closeSidebar() {
@@ -148,3 +205,4 @@ function closeSidebar() {
     if (sidebarOverlay) sidebarOverlay.classList.add('hidden');
 }
 </script>
+
