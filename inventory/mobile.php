@@ -5,7 +5,7 @@
  */
 
 require_once __DIR__ . '/../vps_session_fix.php';
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../includes/database.php';
 
 // Check if user is logged in and has appropriate role
 if (!isset($_SESSION['user_id'])) {

@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Modal</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 p-8">
+    <h1 class="text-2xl font-bold mb-4">Test Account Mapping Modal</h1>
+    
+    <button onclick="testModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+        Test Modal
+    </button>
+
+    <script>
+        function testModal() {
+            console.log('Opening test modal');
+            const modal = `
+                <div id="account-mapping-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-lg rounded-md bg-white">
+                        <div class="mt-3">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-medium text-gray-900">Test Account Mapping Editor</h3>
+                                <button onclick="closeAccountMappingModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="space-y-6">
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="text-md font-semibold text-gray-800 mb-4">Test Section</h4>
+                                    <div class="space-y-3">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm text-gray-600">Test Field</span>
+                                            <input type="text" value="1200" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-6 flex justify-end space-x-3">
+                                <button onclick="closeAccountMappingModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                    Cancel
+                                </button>
+                                <button onclick="saveAccountMapping()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('body').append(modal);
+            
+            // Add click outside to close functionality
+            $('#account-mapping-modal').on('click', function(e) {
+                if (e.target === this) {
+                    closeAccountMappingModal();
+                }
+            });
+            
+            // Add escape key to close functionality
+            $(document).on('keydown', function(e) {
+                if (e.key === 'Escape' && $('#account-mapping-modal').length > 0) {
+                    closeAccountMappingModal();
+                }
+            });
+        }
+        
+        function closeAccountMappingModal() {
+            console.log('Closing account mapping modal');
+            // Remove event handlers before removing modal
+            $(document).off('keydown');
+            $('#account-mapping-modal').off('click');
+            $('#account-mapping-modal').remove();
+        }
+        
+        function saveAccountMapping() {
+            console.log('Save account mapping clicked');
+            alert('Save functionality works!');
+            closeAccountMappingModal();
+        }
+    </script>
+</body>
+</html>

@@ -1496,5 +1496,25 @@ $(document).ready(function() {
             }, 300);
         }, 5000);
     }
+    
+    // Handle URL parameters for quick actions
+    function handleUrlParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        const filter = urlParams.get('filter');
+        
+        if (action === 'add') {
+            // Open add item modal
+            openAddItemModal();
+        } else if (filter === 'low_stock') {
+            // Filter to show low stock items
+            filterItems('low_stock');
+        }
+    }
+    
+    // Call on page load
+    $(document).ready(function() {
+        handleUrlParameters();
+    });
 });
 </script>

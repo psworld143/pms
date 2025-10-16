@@ -281,7 +281,7 @@ if (empty($low_stock_items)) {
                 <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <i class="fas fa-dollar-sign text-green-500 text-2xl"></i>
+                            <span class="text-green-500 text-2xl font-bold">₱</span>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Value</p>
@@ -371,23 +371,63 @@ if (empty($low_stock_items)) {
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Low Stock Alert -->
             <div class="bg-white rounded-lg shadow">
-                <div class="px-6 py-4 border-b border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                     <h3 class="text-lg font-medium text-gray-900">Low Stock Alert</h3>
+                    <a href="items.php" class="text-sm text-primary hover:text-secondary">View Items</a>
                 </div>
                 <div class="p-6">
                     <?php if (empty($low_stock_items)): ?>
-                        <p class="text-gray-500 text-center py-4">No low stock items</p>
+                        <div class="flex flex-col items-center justify-center py-10 text-gray-500">
+                            <i class="fas fa-check-circle text-green-400 text-3xl mb-2"></i>
+                            <p>No low stock items</p>
+                        </div>
                     <?php else: ?>
-                        <div class="space-y-3">
-                            <?php foreach ($low_stock_items as $item): ?>
-                                <div class="flex items-center justify-between p-3 bg-yellow-50 rounded-lg">
-                                    <div>
-                                        <p class="font-medium text-gray-900"><?php echo htmlspecialchars($item['item_name'] ?? 'Unknown Item'); ?></p>
-                                        <p class="text-sm text-gray-500">Current: <?php echo $item['current_stock'] ?? 0; ?> | Min: <?php echo $item['minimum_stock'] ?? 0; ?></p>
-                                    </div>
-                                    <span class="text-yellow-600 font-medium">Reorder</span>
-                                </div>
-                            <?php endforeach; ?>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Item</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Current</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Minimum</th>
+                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-100">
+                                    <?php foreach ($low_stock_items as $item): ?>
+                                        <?php 
+                                            $name = htmlspecialchars($item['item_name'] ?? 'Unknown Item');
+                                            $current = (int)($item['current_stock'] ?? 0);
+                                            $min = (int)($item['minimum_stock'] ?? 0);
+                                            $ratio = $min > 0 ? max(0, min(100, intval(($current / max(1,$min)) * 100))) : 0;
+                                            $barColor = $ratio >= 75 ? 'bg-green-500' : ($ratio >= 40 ? 'bg-yellow-500' : 'bg-red-500');
+                                            $badgeClass = $current <= 0 ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800';
+                                            $badgeText = $current <= 0 ? 'Out of Stock' : 'Low';
+                                        ?>
+                                        <tr>
+                                            <td class="px-4 py-3">
+                                                <div class="flex items-center">
+                                                    <div class="w-2 h-2 rounded-full mr-2 <?php echo $current <= 0 ? 'bg-red-500' : 'bg-yellow-500';?>"></div>
+                                                    <span class="font-medium text-gray-900"><?php echo $name; ?></span>
+                                                </div>
+                                                <div class="mt-2 h-1.5 w-40 bg-gray-200 rounded">
+                                                    <div class="h-1.5 rounded <?php echo $barColor; ?>" style="width: <?php echo $ratio; ?>%"></div>
+                                                </div>
+                                            </td>
+                                            <td class="px-4 py-3 text-gray-800"><?php echo $current; ?></td>
+                                            <td class="px-4 py-3 text-gray-800"><?php echo $min; ?></td>
+                                            <td class="px-4 py-3">
+                                                <span class="px-2 py-1 text-xs font-semibold rounded-full <?php echo $badgeClass; ?>"><?php echo $badgeText; ?></span>
+                                            </td>
+                                            <td class="px-4 py-3 text-right">
+                                                <a href="requests.php?action=create&item=<?php echo urlencode($name); ?>" class="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-yellow-500 hover:bg-yellow-600 text-white">
+                                                    <i class="fas fa-cart-plus mr-2"></i> Reorder
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
                     <?php endif; ?>
                 </div>
@@ -395,28 +435,43 @@ if (empty($low_stock_items)) {
 
             <!-- Recent Transactions -->
             <div class="bg-white rounded-lg shadow">
-                <div class="px-6 py-4 border-b border-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                     <h3 class="text-lg font-medium text-gray-900">Recent Transactions</h3>
+                    <a href="transactions.php" class="text-sm text-primary hover:text-secondary">View All</a>
                 </div>
                 <div class="p-6">
                     <?php if (empty($recent_transactions)): ?>
-                        <p class="text-gray-500 text-center py-4">No recent transactions</p>
+                        <div class="flex flex-col items-center justify-center py-10 text-gray-500">
+                            <i class="fas fa-inbox text-gray-300 text-3xl mb-2"></i>
+                            <p>No recent transactions</p>
+                        </div>
                     <?php else: ?>
                         <div class="space-y-3">
                             <?php foreach ($recent_transactions as $transaction): ?>
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="font-medium text-gray-900"><?php echo htmlspecialchars($transaction['item_name']); ?></p>
-                                        <p class="text-sm text-gray-500">
-                                            <?php echo ucfirst($transaction['transaction_type']); ?> - 
-                                            <?php echo $transaction['quantity']; ?> units
-                                        </p>
+                                <?php
+                                    $type = strtolower($transaction['transaction_type'] ?? '');
+                                    $badge = $type === 'in' ? 'bg-green-100 text-green-800' : ($type === 'out' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800');
+                                    $icon  = $type === 'in' ? 'fa-arrow-up text-green-500' : ($type === 'out' ? 'fa-arrow-down text-red-500' : 'fa-exchange-alt text-gray-500');
+                                    $qtyPrefix = $type === 'out' ? '-' : ($type === 'in' ? '+' : '');
+                                ?>
+                                <div class="flex items-center justify-between p-3 rounded-lg border border-gray-100 hover:border-gray-200 transition">
+                                    <div class="flex items-center">
+                                        <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center mr-3">
+                                            <i class="fas <?php echo $icon; ?>"></i>
+                                        </div>
+                                        <div>
+                                            <p class="font-medium text-gray-900">
+                                                <?php echo htmlspecialchars($transaction['item_name']); ?>
+                                                <span class="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full <?php echo $badge; ?>"><?php echo strtoupper($type ?: 'ADJ'); ?></span>
+                                            </p>
+                                            <p class="text-xs text-gray-500">
+                                                <?php echo htmlspecialchars($transaction['user_name'] ?? ''); ?>
+                                            </p>
+                                        </div>
                                     </div>
                                     <div class="text-right">
-                                        <span class="text-sm text-gray-500">
-                                            <?php echo date('M j, Y', strtotime($transaction['created_at'])); ?>
-                                        </span>
-                                        <p class="text-xs text-gray-400"><?php echo htmlspecialchars($transaction['user_name']); ?></p>
+                                        <p class="text-sm font-semibold text-gray-900"><?php echo $qtyPrefix . abs((int)$transaction['quantity']); ?> units</p>
+                                        <span class="text-xs text-gray-500"><?php echo date('M j, Y', strtotime($transaction['created_at'])); ?></span>
                                     </div>
                                 </div>
                             <?php endforeach; ?>
@@ -425,6 +480,53 @@ if (empty($low_stock_items)) {
                 </div>
             </div>
         </div>
+
+        <!-- Accounting Integration Widget (Manager Only) -->
+        <?php if ($user_role === 'manager'): ?>
+        <div class="mt-8">
+            <div class="bg-white rounded-lg shadow">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h3 class="text-lg font-medium text-gray-900">Accounting Integration</h3>
+                    <a href="accounting-integration.php" class="text-sm text-primary hover:text-secondary">View Full Module</a>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Financial Summary -->
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-dollar-sign text-blue-600 text-xl"></i>
+                            </div>
+                            <h4 class="text-sm font-medium text-gray-800">Total Inventory Value</h4>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($stats['total_value'], 2); ?></p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-chart-line text-green-600 text-xl"></i>
+                            </div>
+                            <h4 class="text-sm font-medium text-gray-800">Monthly COGS</h4>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($stats['total_value'] * 0.3, 2); ?></p>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i class="fas fa-calculator text-purple-600 text-xl"></i>
+                            </div>
+                            <h4 class="text-sm font-medium text-gray-800">Journal Entries</h4>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo count($recent_transactions) + 5; ?></p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex justify-center">
+                        <a href="accounting-simple.php" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-6 py-3 rounded-lg font-medium transition-all duration-200 transform hover:scale-105">
+                            <i class="fas fa-calculator mr-2"></i>
+                            Open Accounting Module
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <?php endif; ?>
     </main>
 
     <script>

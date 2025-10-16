@@ -8,104 +8,50 @@
 error_reporting(E_ERROR | E_PARSE);
 ini_set('display_errors', 0);
 
-session_start();
-require_once '../config/database.php';
-
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit();
-}
+require_once '../../vps_session_fix.php';
+require_once '../../includes/database.php';
 
 header('Content-Type: application/json');
 
 try {
-    $result = exportInventoryReport();
-    
-    echo json_encode([
-        'success' => true,
-        'message' => 'Inventory report exported successfully',
-        'download_url' => $result['download_url']
-    ]);
-    
-} catch (Exception $e) {
-    error_log("Error exporting inventory report: " . $e->getMessage());
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
-}
-
-/**
- * Export inventory report
- */
-function exportInventoryReport() {
     global $pdo;
-    
-    try {
-        // Get inventory data
-        $stmt = $pdo->query("
-            SELECT 
-                ii.item_name,
-                ic.name as category_name,
-                ii.sku,
-                ii.description,
-                ii.current_stock,
-                ii.minimum_stock,
-                ii.unit_price,
-                (ii.current_stock * ii.unit_price) as total_value,
-                CASE 
-                    WHEN ii.current_stock = 0 THEN 'Out of Stock'
-                    WHEN ii.current_stock <= ii.minimum_stock THEN 'Low Stock'
-                    ELSE 'In Stock'
-                END as stock_status,
-                ii.created_at,
-                ii.last_updated
-            FROM inventory_items ii
-            LEFT JOIN inventory_categories ic ON ii.category_id = ic.id
-            ORDER BY ii.item_name ASC
-        ");
-        
-        $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Create CSV content
-        $csv_content = "Item Name,Category,SKU,Description,Current Stock,Minimum Stock,Unit Price,Total Value,Stock Status,Created At,Last Updated\n";
-        
-        foreach ($items as $item) {
-            $csv_content .= '"' . str_replace('"', '""', $item['item_name']) . '",';
-            $csv_content .= '"' . str_replace('"', '""', $item['category_name']) . '",';
-            $csv_content .= '"' . str_replace('"', '""', $item['sku']) . '",';
-            $csv_content .= '"' . str_replace('"', '""', $item['description']) . '",';
-            $csv_content .= $item['current_stock'] . ',';
-            $csv_content .= $item['minimum_stock'] . ',';
-            $csv_content .= $item['unit_price'] . ',';
-            $csv_content .= $item['total_value'] . ',';
-            $csv_content .= '"' . $item['stock_status'] . '",';
-            $csv_content .= '"' . $item['created_at'] . '",';
-            $csv_content .= '"' . $item['last_updated'] . '"';
-            $csv_content .= "\n";
-        }
-        
-        // Generate filename
-        $filename = 'inventory_report_' . date('Y-m-d_H-i-s') . '.csv';
-        
-        // Save to temp directory
-        $temp_dir = __DIR__ . '/../../temp/';
-        if (!is_dir($temp_dir)) {
-            mkdir($temp_dir, 0755, true);
-        }
-        
-        $filepath = $temp_dir . $filename;
-        file_put_contents($filepath, $csv_content);
-        
-        return [
-            'download_url' => '../../temp/' . $filename
-        ];
-        
-    } catch (PDOException $e) {
-        error_log("Error exporting inventory report: " . $e->getMessage());
-        throw $e;
+
+    // Pull items (basic) in a schema-adaptive manner
+    $cols = $pdo->query("SHOW COLUMNS FROM inventory_items")->fetchAll(PDO::FETCH_COLUMN, 0);
+    $nameExpr = in_array('item_name', $cols, true) ? 'item_name' : (in_array('name', $cols, true) ? 'name' : 'id');
+    $qtyCol   = in_array('current_stock', $cols, true) ? 'current_stock' : (in_array('quantity', $cols, true) ? 'quantity' : '0');
+    $minCol   = in_array('minimum_stock', $cols, true) ? 'minimum_stock' : '0';
+    $unitCol  = in_array('unit_price', $cols, true) ? 'unit_price' : '0';
+
+    $sql = "SELECT id, $nameExpr AS name, $qtyCol AS quantity, $minCol AS minimum_stock, $unitCol AS unit_price FROM inventory_items ORDER BY $nameExpr LIMIT 1000";
+    $rows = $pdo->query($sql)->fetchAll(PDO::FETCH_ASSOC);
+
+    $tmp = tempnam(sys_get_temp_dir(), 'inv_report_');
+    $csv = fopen($tmp, 'w');
+    fputcsv($csv, ['ID', 'Name', 'Quantity', 'Min Level', 'Unit Price', 'Total Value']);
+    foreach ($rows as $r) {
+        $total = (float)$r['unit_price'] * (float)$r['quantity'];
+        fputcsv($csv, [$r['id'], $r['name'], $r['quantity'], $r['minimum_stock'], $r['unit_price'], $total]);
     }
+    fclose($csv);
+
+    $fileName = 'inventory_report_' . date('Ymd_His') . '.csv';
+    $publicPath = '/tmp/' . $fileName; // adjust if you have a public tmp directory mapping
+    // Move file to web-accessible tmp directory; fallback to returning absolute path
+    $webTmpDir = dirname($_SERVER['SCRIPT_NAME']) . '/../../tmp';
+    $realWebTmp = realpath(__DIR__ . '/../../tmp');
+    if (!$realWebTmp) { @mkdir(__DIR__ . '/../../tmp', 0777, true); $realWebTmp = realpath(__DIR__ . '/../../tmp'); }
+    if ($realWebTmp) {
+        $dest = $realWebTmp . DIRECTORY_SEPARATOR . $fileName;
+        @rename($tmp, $dest);
+        $downloadUrl = dirname($_SERVER['SCRIPT_NAME']) . '/../../tmp/' . $fileName;
+    } else {
+        $downloadUrl = $publicPath; // may not be web accessible in some setups
+    }
+
+    echo json_encode(['success' => true, 'download_url' => $downloadUrl]);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Export error: ' . $e->getMessage()]);
 }
 ?>

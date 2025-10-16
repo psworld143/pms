@@ -122,14 +122,14 @@ $navigation_items = [
         'access_level' => ['manager' => 'full'],
         'active' => strpos($current_url, 'enhanced-reports') !== false
     ],
-    'automated-reordering' => [
-        'url' => $BASE_INV . 'automated-reordering.php',
+    'auto-reordering' => [
+        'url' => $BASE_INV . 'auto-reordering.php',
         'icon' => 'fas fa-robot',
         'label' => 'Auto Reordering',
         'description' => 'Set reorder thresholds and supplier automation',
         'roles' => ['manager'],
         'access_level' => ['manager' => 'full'],
-        'active' => strpos($current_url, 'automated-reordering') !== false
+        'active' => strpos($current_url, 'auto-reordering') !== false
     ],
     'barcode-scanner' => [
         'url' => $BASE_INV . 'barcode-scanner.php',
@@ -141,13 +141,22 @@ $navigation_items = [
         'active' => strpos($current_url, 'barcode-scanner') !== false
     ],
     'accounting-integration' => [
-        'url' => $BASE_INV . 'accounting-integration.php',
+        'url' => $BASE_INV . 'accounting-simple.php',
         'icon' => 'fas fa-calculator',
         'label' => 'Accounting',
         'description' => 'Link inventory costs to overall hotel expenses',
         'roles' => ['manager'],
         'access_level' => ['manager' => 'optional'],
-        'active' => strpos($current_url, 'accounting-integration') !== false
+        'active' => strpos($current_url, 'accounting') !== false
+    ],
+    'profile' => [
+        'url' => $BASE_INV . 'profile.php',
+        'icon' => 'fas fa-user-circle',
+        'label' => 'Profile',
+        'description' => 'Manage your account settings and view statistics',
+        'roles' => ['manager'],
+        'access_level' => ['manager' => 'full'],
+        'active' => strpos($current_url, 'profile') !== false
     ]
 ];
 
@@ -209,8 +218,9 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
         <div class="space-y-2">
             <?php if ($user_role === 'housekeeping'): ?>
                 <!-- Housekeeping Quick Actions -->
-                <a href="<?php echo $BASE_INV; ?>requests.php?action=create" 
-                   class="flex items-center px-3 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors">
+                <a href="<?php echo $BASE_INV; ?>requests.php" 
+                   onclick="handleQuickAction('requests', 'create')"
+                   class="flex items-center px-3 py-2 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded transition-colors cursor-pointer">
                     <i class="fas fa-plus-circle mr-2"></i>
                     Create Request
                 </a>
@@ -219,25 +229,29 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
                     <i class="fas fa-bed mr-2"></i>
                     Update Room Items
                 </a>
-                <a href="<?php echo $BASE_INV; ?>transactions.php?action=record" 
-                   class="flex items-center px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors">
+                <a href="<?php echo $BASE_INV; ?>transactions.php" 
+                   onclick="handleQuickAction('transactions', 'record')"
+                   class="flex items-center px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors cursor-pointer">
                     <i class="fas fa-clipboard-check mr-2"></i>
                     Record Usage
                 </a>
             <?php elseif ($user_role === 'manager'): ?>
                 <!-- Manager Quick Actions -->
-                <a href="<?php echo $BASE_INV; ?>items.php?action=add" 
-                   class="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors">
+                <a href="<?php echo $BASE_INV; ?>items.php" 
+                   onclick="handleQuickAction('items', 'add')"
+                   class="flex items-center px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors cursor-pointer">
                     <i class="fas fa-plus-circle mr-2"></i>
                     Add Item
                 </a>
-                <a href="<?php echo $BASE_INV; ?>requests.php?status=pending" 
-                   class="flex items-center px-3 py-2 text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors">
+                <a href="<?php echo $BASE_INV; ?>requests.php" 
+                   onclick="handleQuickAction('requests', 'pending')"
+                   class="flex items-center px-3 py-2 text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors cursor-pointer">
                     <i class="fas fa-clock mr-2"></i>
                     Pending Requests
                 </a>
-                <a href="<?php echo $BASE_INV; ?>items.php?filter=low_stock" 
-                   class="flex items-center px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors">
+                <a href="<?php echo $BASE_INV; ?>items.php" 
+                   onclick="handleQuickAction('items', 'low_stock')"
+                   class="flex items-center px-3 py-2 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded transition-colors cursor-pointer">
                     <i class="fas fa-exclamation-triangle mr-2"></i>
                     Low Stock Items
                 </a>
@@ -249,6 +263,15 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
             <?php endif; ?>
         </div>
     </div>
+    
+    <script>
+    function handleQuickAction(page, action) {
+        // Navigate to the page with the action parameter
+        const url = new URL(window.location.origin + '<?php echo $BASE_INV; ?>' + page + '.php');
+        url.searchParams.set('action', action);
+        window.location.href = url.toString();
+    }
+    </script>
     
 </nav>
 

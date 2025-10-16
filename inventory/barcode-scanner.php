@@ -5,7 +5,7 @@
  */
 
 require_once __DIR__ . '/../vps_session_fix.php';
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../includes/database.php';
 
 // Check if user is logged in and has manager role
 if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'manager') {
@@ -112,24 +112,70 @@ $page_title = 'Barcode Scanner';
 
                 <!-- Manual Input -->
                 <div class="bg-white rounded-lg shadow p-6">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Manual Input</h3>
-                    <div class="space-y-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Barcode/SKU</label>
-                            <input type="text" id="manual-barcode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter barcode or SKU">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Add New Inventory Item</h3>
+                    <form class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
+                                <input type="text" id="manual-item-name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter item name" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                                <select id="manual-category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Select Category</option>
+                                    <option value="Food & Beverage">Food & Beverage</option>
+                                    <option value="Amenities">Amenities</option>
+                                    <option value="Cleaning Supplies">Cleaning Supplies</option>
+                                    <option value="Office Supplies">Office Supplies</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">SKU/Barcode</label>
+                                <input type="text" id="manual-barcode" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter SKU or barcode">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Unit</label>
+                                <select id="manual-unit" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                    <option value="">Select Unit</option>
+                                    <option value="Piece">Piece</option>
+                                    <option value="Box">Box</option>
+                                    <option value="Bottle">Bottle</option>
+                                    <option value="Pack">Pack</option>
+                                    <option value="Liter">Liter</option>
+                                    <option value="Kilogram">Kilogram</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Current Stock</label>
+                                <input type="number" id="manual-current-stock" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter current stock" value="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Minimum Stock Level</label>
+                                <input type="number" id="manual-min-level" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter minimum level" value="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Unit Cost</label>
+                                <input type="number" id="manual-unit-cost" step="0.01" min="0" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter unit cost" value="0">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Supplier</label>
+                                <input type="text" id="manual-supplier" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter supplier name">
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Item Name</label>
-                            <input type="text" id="manual-item-name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter item name">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <textarea id="manual-description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Enter item description"></textarea>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-                            <input type="number" id="manual-quantity" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter quantity" value="1">
+                        <div class="flex justify-end space-x-4">
+                            <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                Cancel
+                            </button>
+                            <button type="submit" id="add-manual-item-btn" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                                Add Item
+                            </button>
                         </div>
-                        <button id="add-manual-item-btn" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                            <i class="fas fa-plus mr-2"></i>Add Item
-                        </button>
-                    </div>
+                    </form>
                 </div>
             </div>
 
@@ -152,9 +198,12 @@ $page_title = 'Barcode Scanner';
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barcode/SKU</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Current Stock</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Min Level</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Cost</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
@@ -192,7 +241,14 @@ $(document).ready(function() {
         switchCamera();
     });
     
-    $('#add-manual-item-btn').click(function() {
+    $('#add-manual-item-btn').click(function(e) {
+        e.preventDefault();
+        addManualItem();
+    });
+    
+    // Form submission handler
+    $('#add-manual-item-btn').closest('form').submit(function(e) {
+        e.preventDefault();
         addManualItem();
     });
     
@@ -268,12 +324,13 @@ $(document).ready(function() {
     }
     
     function lookupItem(barcode) {
-        // Simulate item lookup
+        // Look up item by barcode
         $.ajax({
             url: 'api/lookup-item-by-barcode.php',
             method: 'GET',
             data: { barcode: barcode },
             dataType: 'json',
+            xhrFields: { withCredentials: true },
             success: function(response) {
                 if (response.success && response.item) {
                     addScannedItem(response.item, 1);
@@ -287,7 +344,8 @@ $(document).ready(function() {
                     }, 1);
                 }
             },
-            error: function() {
+            error: function(xhr, status, error) {
+                console.error('Lookup Error:', status, error);
                 // Add item with barcode only
                 addScannedItem({
                     barcode: barcode,
@@ -300,27 +358,47 @@ $(document).ready(function() {
     }
     
     function addManualItem() {
-        const barcode = $('#manual-barcode').val().trim();
         const name = $('#manual-item-name').val().trim();
-        const quantity = parseInt($('#manual-quantity').val()) || 1;
+        const category = $('#manual-category').val();
+        const barcode = $('#manual-barcode').val().trim();
+        const unit = $('#manual-unit').val();
+        const currentStock = parseInt($('#manual-current-stock').val()) || 0;
+        const minLevel = parseInt($('#manual-min-level').val()) || 0;
+        const unitCost = parseFloat($('#manual-unit-cost').val()) || 0;
+        const supplier = $('#manual-supplier').val().trim();
+        const description = $('#manual-description').val().trim();
         
-        if (!barcode && !name) {
-            alert('Please enter either a barcode/SKU or item name');
+        // Debug logging
+        console.log('Form data captured:', {
+            name, category, barcode, unit, currentStock, minLevel, unitCost, supplier, description
+        });
+        
+        // Validate required fields (matching items.php validation)
+        if (!name || !category || !unit) {
+            alert('Please fill in all required fields (Name, Category, Unit)');
             return;
         }
         
         const item = {
             barcode: barcode || 'MANUAL-' + Date.now(),
-            name: name || 'Manual Item',
-            quantity: quantity,
+            name: name,
+            category: category,
+            unit: unit,
+            description: description || '',
+            current_stock: currentStock,
+            min_level: minLevel,
+            unit_cost: unitCost,
+            supplier: supplier || '',
+            quantity: 1, // Default quantity for scanned items
             status: 'manual'
         };
         
-        addScannedItem(item, quantity);
+        console.log('Item object created:', item);
+        addScannedItem(item, 1);
         
         // Clear form
-        $('#manual-barcode, #manual-item-name, #manual-quantity').val('');
-        $('#manual-quantity').val('1');
+        $('#manual-item-name, #manual-category, #manual-barcode, #manual-unit, #manual-current-stock, #manual-min-level, #manual-unit-cost, #manual-supplier, #manual-description').val('');
+        $('#manual-current-stock, #manual-min-level, #manual-unit-cost').val('0');
     }
     
     function addScannedItem(item, quantity) {
@@ -349,7 +427,7 @@ $(document).ready(function() {
         if (scannedItems.length === 0) {
             tbody.append(`
                 <tr>
-                    <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                    <td colspan="8" class="px-6 py-4 text-center text-gray-500">
                         No items scanned yet
                     </td>
                 </tr>
@@ -362,18 +440,45 @@ $(document).ready(function() {
             const statusText = getStatusText(item.status);
             
             const row = `
-                <tr>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${item.barcode}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.name}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.quantity}</td>
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0 h-8 w-8">
+                                <div class="h-8 w-8 rounded-full flex items-center justify-center bg-blue-500">
+                                    <i class="fas fa-box text-white text-xs"></i>
+                                </div>
+                            </div>
+                            <div class="ml-3">
+                                <div class="text-sm font-medium text-gray-900 truncate max-w-xs">${item.name}</div>
+                                <div class="text-xs text-gray-500 truncate max-w-xs">${item.description || 'No description'}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900">
+                        <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            ${item.category || 'Uncategorized'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 font-mono">${item.barcode || 'N/A'}</td>
+                    <td class="px-6 py-4 text-sm text-gray-900">
+                        <div class="font-medium">${item.current_stock || 0}</div>
+                        <div class="text-xs text-gray-500">${item.unit || ''}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900">
+                        <div class="font-medium">${item.min_level || 0}</div>
+                        <div class="text-xs text-gray-500">${item.unit || ''}</div>
+                    </td>
+                    <td class="px-6 py-4 text-sm text-gray-900 font-medium">₱${(item.unit_cost || 0).toFixed(2)}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
                             ${statusText}
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="editItem(${index})">Edit</button>
-                        <button class="text-red-600 hover:text-red-900" onclick="removeItem(${index})">Remove</button>
+                        <div class="flex space-x-1">
+                            <button class="text-blue-600 hover:text-blue-900 text-xs font-medium" onclick="editItem(${index})">Edit</button>
+                            <button class="text-red-600 hover:text-red-900 text-xs font-medium" onclick="removeItem(${index})">Remove</button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -434,22 +539,28 @@ $(document).ready(function() {
             return;
         }
         
+        console.log('Processing items:', scannedItems);
+        
         // Process items (update inventory, create transactions, etc.)
         $.ajax({
             url: 'api/process-scanned-items.php',
             method: 'POST',
             data: { items: scannedItems },
             dataType: 'json',
+            xhrFields: { withCredentials: true },
             success: function(response) {
+                console.log('Process response:', response);
                 if (response.success) {
-                    alert('Items processed successfully!');
+                    alert('Items processed successfully! Processed ' + response.processed_count + ' items.');
                     clearAllItems();
                 } else {
-                    alert('Error processing items: ' + response.message);
+                    alert('Error processing items: ' + (response.message || 'Unknown error'));
                 }
             },
-            error: function() {
-                alert('Error processing items');
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', status, error);
+                console.error('Response:', xhr.responseText);
+                alert('Error processing items: ' + error);
             }
         });
     }
@@ -457,12 +568,33 @@ $(document).ready(function() {
     // Global functions for inline onclick handlers
     window.editItem = function(index) {
         const item = scannedItems[index];
-        const newQuantity = prompt('Enter new quantity:', item.quantity);
         
+        const newQuantity = prompt('Enter new quantity:', item.quantity);
         if (newQuantity !== null && !isNaN(newQuantity) && newQuantity > 0) {
             scannedItems[index].quantity = parseInt(newQuantity);
-            displayScannedItems();
         }
+        
+        const newCurrentStock = prompt('Enter current stock:', item.current_stock || 0);
+        if (newCurrentStock !== null && !isNaN(newCurrentStock) && newCurrentStock >= 0) {
+            scannedItems[index].current_stock = parseInt(newCurrentStock);
+        }
+        
+        const newMinLevel = prompt('Enter min level:', item.min_level || 0);
+        if (newMinLevel !== null && !isNaN(newMinLevel) && newMinLevel >= 0) {
+            scannedItems[index].min_level = parseInt(newMinLevel);
+        }
+        
+        const newUnitCost = prompt('Enter unit cost (₱):', item.unit_cost || 0);
+        if (newUnitCost !== null && !isNaN(newUnitCost) && newUnitCost >= 0) {
+            scannedItems[index].unit_cost = parseFloat(newUnitCost);
+        }
+        
+        const newDescription = prompt('Enter description:', item.description || '');
+        if (newDescription !== null) {
+            scannedItems[index].description = newDescription;
+        }
+        
+        displayScannedItems();
     };
     
     window.removeItem = function(index) {
@@ -472,4 +604,5 @@ $(document).ready(function() {
         }
     };
 });
+</script>
 </script>

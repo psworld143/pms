@@ -58,7 +58,7 @@ function exportEnhancedReport($report_type, $category, $date_range) {
         
         // Get transaction data
         $base_sql = "
-            SELECT 
+        SELECT 
                 it.item_id,
                 ii.item_name,
                 ii.unit,
@@ -72,12 +72,12 @@ function exportEnhancedReport($report_type, $category, $date_range) {
             WHERE it.created_at >= ? AND it.transaction_type = 'out'
         ";
         $params = [$start_date];
-        
-        if (!empty($category)) {
+    
+    if (!empty($category)) {
             $base_sql .= " AND ic.name = ?";
-            $params[] = $category;
-        }
-        
+        $params[] = $category;
+    }
+    
         $stmt = $pdo->prepare($base_sql . " ORDER BY it.created_at ASC");
         $stmt->execute($params);
         $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);

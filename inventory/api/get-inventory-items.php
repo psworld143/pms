@@ -9,7 +9,7 @@ error_reporting(E_ERROR | E_PARSE);
 ini_set('display_errors', 0);
 
 session_start();
-require_once '../config/database.php';
+require_once '../../includes/database.php';
 
 // Check if user is logged in - TEMPORARILY DISABLED FOR DEBUGGING
 // if (!isset($_SESSION['user_id'])) {
@@ -134,10 +134,13 @@ function getInventoryItemsWithFilters($category = '', $search = '', $status = 'a
             $select_fields[] = "'active' as status";
         }
 
-        if (isset($columns['cost_price'])) {
+        // Always prioritize unit_price over cost_price for display
+        if (isset($columns['unit_price'])) {
+            $select_fields[] = 'i.unit_price as cost_price';
+        } elseif (isset($columns['cost_price'])) {
             $select_fields[] = 'i.cost_price';
         } else {
-            $select_fields[] = 'i.unit_price as cost_price';
+            $select_fields[] = '0.00 as cost_price';
         }
 
         if (isset($columns['maximum_stock'])) {

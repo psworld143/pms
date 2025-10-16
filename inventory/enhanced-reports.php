@@ -5,7 +5,7 @@
  */
 
 require_once __DIR__ . '/../vps_session_fix.php';
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../includes/database.php';
 
 // Check if user is logged in and has manager role
 if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'manager') {
@@ -123,12 +123,12 @@ $page_title = 'Enhanced Reports';
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Usage Trends (Last 30 Days)</h3>
-                    <canvas id="usageTrendsChart" width="400" height="200"></canvas>
+                    <div class="h-72"><canvas id="usageTrendsChart"></canvas></div>
                 </div>
 
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Category Distribution</h3>
-                    <canvas id="categoryDistributionChart" width="400" height="200"></canvas>
+                    <div class="h-72"><canvas id="categoryDistributionChart"></canvas></div>
                 </div>
             </div>
 
@@ -136,7 +136,7 @@ $page_title = 'Enhanced Reports';
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Monthly Cost Analysis</h3>
-                    <canvas id="costAnalysisChart" width="400" height="200"></canvas>
+                    <div class="h-72"><canvas id="costAnalysisChart"></canvas></div>
                 </div>
 
                 <div class="bg-white rounded-lg shadow p-6">
@@ -300,7 +300,8 @@ $(document).ready(function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
             }
         });
         
@@ -340,7 +341,8 @@ $(document).ready(function() {
             },
             options: {
                 responsive: true,
-                maintainAspectRatio: false
+                maintainAspectRatio: false,
+                scales: { y: { beginAtZero: true } }
             }
         });
     }

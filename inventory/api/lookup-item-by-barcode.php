@@ -4,12 +4,11 @@
  * Hotel PMS Training System - Inventory Module
  */
 
-// Suppress warnings and notices for clean JSON output
-error_reporting(E_ERROR | E_PARSE);
-ini_set('display_errors', 0);
+@error_reporting(E_ERROR | E_PARSE);
+@ini_set('display_errors', 0);
 
-session_start();
-require_once '../config/database.php';
+require_once '../../vps_session_fix.php';
+require_once '../../includes/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -24,16 +23,64 @@ try {
     $barcode = $_GET['barcode'] ?? '';
     
     if (empty($barcode)) {
-        echo json_encode(['success' => false, 'message' => 'Barcode is required']);
+        echo json_encode(['success' => false, 'message' => 'Barcode required']);
         exit();
     }
     
-    $item = lookupItemByBarcode($barcode);
+    global $pdo;
+    
+    // Detect available columns
+    $name_col = 'item_name';
+    $sku_col = 'sku';
+    $stock_col = 'current_stock';
+    $price_col = 'unit_price';
+    
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM inventory_items LIKE 'name'");
+        if ($stmt->fetch()) $name_col = 'name';
+    } catch (PDOException $e) {}
+    
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM inventory_items LIKE 'barcode'");
+        if ($stmt->fetch()) $sku_col = 'barcode';
+    } catch (PDOException $e) {}
+    
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM inventory_items LIKE 'quantity'");
+        if ($stmt->fetch()) $stock_col = 'quantity';
+    } catch (PDOException $e) {}
+    
+    try {
+        $stmt = $pdo->query("SHOW COLUMNS FROM inventory_items LIKE 'price'");
+        if ($stmt->fetch()) $price_col = 'price';
+    } catch (PDOException $e) {}
+    
+    // Try to find item by barcode/SKU
+    $stmt = $pdo->prepare("
+        SELECT 
+            id, 
+            $name_col as name, 
+            $sku_col as sku,
+            $stock_col as current_stock,
+            $price_col as unit_price
+        FROM inventory_items 
+        WHERE $sku_col = ? 
+        LIMIT 1
+    ");
+    $stmt->execute([$barcode]);
+    $item = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if ($item) {
         echo json_encode([
             'success' => true,
-            'item' => $item
+            'item' => [
+                'id' => $item['id'],
+                'name' => $item['name'],
+                'barcode' => $item['sku'],
+                'current_stock' => (int)$item['current_stock'],
+                'unit_price' => (float)$item['unit_price'],
+                'status' => 'found'
+            ]
         ]);
     } else {
         echo json_encode([
@@ -46,68 +93,7 @@ try {
     error_log("Error looking up item by barcode: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => 'Server error: ' . $e->getMessage()
     ]);
-}
-
-/**
- * Lookup item by barcode
- */
-function lookupItemByBarcode($barcode) {
-    global $pdo;
-    
-    try {
-        // Check if barcode column exists
-        $stmt = $pdo->query("SHOW COLUMNS FROM inventory_items LIKE 'barcode'");
-        $has_barcode = $stmt->rowCount() > 0;
-        
-        if ($has_barcode) {
-            // Search by barcode column
-            $stmt = $pdo->prepare("
-                SELECT 
-                    id,
-                    item_name as name,
-                    barcode,
-                    current_stock,
-                    unit_price,
-                    unit,
-                    description
-                FROM inventory_items 
-                WHERE barcode = ?
-            ");
-            $stmt->execute([$barcode]);
-        } else {
-            // Search by SKU or item name
-            $stmt = $pdo->prepare("
-                SELECT 
-                    id,
-                    item_name as name,
-                    sku as barcode,
-                    current_stock,
-                    unit_price,
-                    unit,
-                    description
-                FROM inventory_items 
-                WHERE sku = ? OR item_name LIKE ?
-            ");
-            $stmt->execute([$barcode, "%$barcode%"]);
-        }
-        
-        $item = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if ($item) {
-            // Add additional fields for barcode scanner
-            $item['quantity'] = 1;
-            $item['action'] = 'usage';
-            $item['location'] = '';
-            $item['notes'] = '';
-        }
-        
-        return $item;
-        
-    } catch (PDOException $e) {
-        error_log("Error looking up item by barcode: " . $e->getMessage());
-        return false;
-    }
 }
 ?>

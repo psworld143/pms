@@ -1005,6 +1005,28 @@ if (isset($_GET['view'])) {
                 closeEditModal();
             }
         });
+        
+        // Handle URL parameters for quick actions
+        function handleUrlParameters() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const action = urlParams.get('action');
+            const status = urlParams.get('status');
+            
+            if (action === 'create') {
+                // Open create modal for housekeeping
+                <?php if ($user_role === 'housekeeping'): ?>
+                    openCreateModal();
+                <?php endif; ?>
+            } else if (status === 'pending') {
+                // Filter to show pending requests
+                filterRequests('pending');
+            }
+        }
+        
+        // Call on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            handleUrlParameters();
+        });
     </script>
 </body>
 </html>
