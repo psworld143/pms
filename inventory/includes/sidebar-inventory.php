@@ -84,15 +84,6 @@ $navigation_items = [
         'access_level' => ['housekeeping' => 'access'],
         'active' => strpos($current_url, 'training') !== false
     ],
-    'mobile' => [
-        'url' => $BASE_INV . 'mobile.php',
-        'icon' => 'fas fa-mobile-alt',
-        'label' => 'Mobile Interface',
-        'description' => 'Quick updates via mobile while cleaning rooms',
-        'roles' => ['housekeeping', 'manager'],
-        'access_level' => ['housekeeping' => 'mobile', 'manager' => 'mobile'],
-        'active' => strpos($current_url, 'mobile') !== false
-    ],
     
     // 👨‍💼 MANAGER-ONLY MODULES
     'items' => [

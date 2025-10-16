@@ -259,7 +259,7 @@ $page_title = 'Inventory Items';
             </div>
 
             <!-- Enhanced Inventory Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <!-- Total Items Card -->
                 <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-blue-200 group">
                     <div class="flex items-center justify-between">
@@ -362,7 +362,7 @@ $page_title = 'Inventory Items';
             </div>
 
             <!-- Item Categories -->
-            <div id="categories-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div id="categories-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <!-- Categories will be loaded dynamically -->
             </div>
 
@@ -487,7 +487,7 @@ $page_title = 'Inventory Items';
                 
                 <!-- Card View -->
                 <div id="card-view" class="hidden p-6">
-                    <div id="inventory-items-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div id="inventory-items-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         <!-- Cards will be loaded dynamically -->
                     </div>
                 </div>

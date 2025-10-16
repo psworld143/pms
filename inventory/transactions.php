@@ -100,7 +100,7 @@ $page_title = $user_role === 'housekeeping' ? 'Inventory Transactions' : 'Invent
             </div>
 
             <!-- Role-based Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <?php if ($user_role === 'housekeeping'): ?>
                     <!-- Housekeeping Statistics -->
                     <div class="bg-white rounded-lg shadow p-6">
@@ -219,7 +219,7 @@ $page_title = $user_role === 'housekeeping' ? 'Inventory Transactions' : 'Invent
             </div>
 
             <!-- Role-based Action Cards -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <?php if ($user_role === 'housekeeping'): ?>
                     <!-- Housekeeping Action Cards -->
                     <div class="bg-white rounded-lg shadow p-6">

@@ -201,7 +201,7 @@ if (empty($low_stock_items)) {
         </div>
 
         <!-- Role-Based Statistics Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <?php if ($user_role === 'housekeeping'): ?>
                 <!-- Housekeeping Limited View Cards -->
                 <div class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
@@ -318,7 +318,7 @@ if (empty($low_stock_items)) {
                 </h3>
             </div>
             <div class="p-6">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <?php if ($user_role === 'housekeeping'): ?>
                         <!-- Housekeeping Actions -->
                         <a href="requests.php?action=create" class="bg-purple-500 hover:bg-purple-600 text-white p-4 rounded-lg text-center transition-colors">
@@ -368,29 +368,29 @@ if (empty($low_stock_items)) {
             </div>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6 lg:gap-8">
             <!-- Low Stock Alert -->
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
                     <h3 class="text-lg font-medium text-gray-900">Low Stock Alert</h3>
                     <a href="items.php" class="text-sm text-primary hover:text-secondary">View Items</a>
                 </div>
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <?php if (empty($low_stock_items)): ?>
                         <div class="flex flex-col items-center justify-center py-10 text-gray-500">
                             <i class="fas fa-check-circle text-green-400 text-3xl mb-2"></i>
                             <p>No low stock items</p>
                         </div>
                     <?php else: ?>
-                        <div class="overflow-x-auto">
+                        <div class="overflow-x-auto -mx-4 sm:mx-0">
                             <table class="min-w-full divide-y divide-gray-200">
                                 <thead class="bg-gray-50">
                                     <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Item</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Current</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Minimum</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
-                                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
+                                        <th class="px-2 sm:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Item</th>
+                                        <th class="px-2 sm:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Current</th>
+                                        <th class="px-2 sm:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Min</th>
+                                        <th class="px-2 sm:px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Status</th>
+                                        <th class="px-2 sm:px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody class="bg-white divide-y divide-gray-100">
@@ -405,23 +405,23 @@ if (empty($low_stock_items)) {
                                             $badgeText = $current <= 0 ? 'Out of Stock' : 'Low';
                                         ?>
                                         <tr>
-                                            <td class="px-4 py-3">
+                                            <td class="px-2 sm:px-4 py-3">
                                                 <div class="flex items-center">
                                                     <div class="w-2 h-2 rounded-full mr-2 <?php echo $current <= 0 ? 'bg-red-500' : 'bg-yellow-500';?>"></div>
-                                                    <span class="font-medium text-gray-900"><?php echo $name; ?></span>
+                                                    <span class="font-medium text-gray-900 text-sm sm:text-base"><?php echo $name; ?></span>
                                                 </div>
-                                                <div class="mt-2 h-1.5 w-40 bg-gray-200 rounded">
+                                                <div class="mt-2 h-1.5 w-32 sm:w-40 bg-gray-200 rounded">
                                                     <div class="h-1.5 rounded <?php echo $barColor; ?>" style="width: <?php echo $ratio; ?>%"></div>
                                                 </div>
                                             </td>
-                                            <td class="px-4 py-3 text-gray-800"><?php echo $current; ?></td>
-                                            <td class="px-4 py-3 text-gray-800"><?php echo $min; ?></td>
-                                            <td class="px-4 py-3">
+                                            <td class="px-2 sm:px-4 py-3 text-gray-800 text-sm sm:text-base"><?php echo $current; ?></td>
+                                            <td class="px-2 sm:px-4 py-3 text-gray-800 text-sm sm:text-base"><?php echo $min; ?></td>
+                                            <td class="px-2 sm:px-4 py-3">
                                                 <span class="px-2 py-1 text-xs font-semibold rounded-full <?php echo $badgeClass; ?>"><?php echo $badgeText; ?></span>
                                             </td>
-                                            <td class="px-4 py-3 text-right">
-                                                <a href="requests.php?action=create&item=<?php echo urlencode($name); ?>" class="inline-flex items-center px-3 py-1.5 text-sm rounded-md bg-yellow-500 hover:bg-yellow-600 text-white">
-                                                    <i class="fas fa-cart-plus mr-2"></i> Reorder
+                                            <td class="px-2 sm:px-4 py-3 text-right">
+                                                <a href="requests.php?action=create&item=<?php echo urlencode($name); ?>" class="inline-flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-md bg-yellow-500 hover:bg-yellow-600 text-white">
+                                                    <i class="fas fa-cart-plus mr-1 sm:mr-2"></i> <span class="hidden sm:inline">Reorder</span>
                                                 </a>
                                             </td>
                                         </tr>
@@ -439,7 +439,7 @@ if (empty($low_stock_items)) {
                     <h3 class="text-lg font-medium text-gray-900">Recent Transactions</h3>
                     <a href="transactions.php" class="text-sm text-primary hover:text-secondary">View All</a>
                 </div>
-                <div class="p-6">
+                <div class="p-4 sm:p-6">
                     <?php if (empty($recent_transactions)): ?>
                         <div class="flex flex-col items-center justify-center py-10 text-gray-500">
                             <i class="fas fa-inbox text-gray-300 text-3xl mb-2"></i>
@@ -459,17 +459,19 @@ if (empty($low_stock_items)) {
                                         <div class="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center mr-3">
                                             <i class="fas <?php echo $icon; ?>"></i>
                                         </div>
-                                        <div>
-                                            <p class="font-medium text-gray-900">
+                                        <div class="flex-1 min-w-0">
+                                            <p class="font-medium text-gray-900 text-sm sm:text-base truncate">
                                                 <?php echo htmlspecialchars($transaction['item_name']); ?>
-                                                <span class="ml-2 px-2 py-0.5 text-xs font-semibold rounded-full <?php echo $badge; ?>"><?php echo strtoupper($type ?: 'ADJ'); ?></span>
                                             </p>
-                                            <p class="text-xs text-gray-500">
-                                                <?php echo htmlspecialchars($transaction['user_name'] ?? ''); ?>
-                                            </p>
+                                            <div class="flex items-center mt-1">
+                                                <span class="px-2 py-0.5 text-xs font-semibold rounded-full <?php echo $badge; ?>"><?php echo strtoupper($type ?: 'ADJ'); ?></span>
+                                                <span class="ml-2 text-xs text-gray-500 truncate">
+                                                    <?php echo htmlspecialchars($transaction['user_name'] ?? ''); ?>
+                                                </span>
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="text-right">
+                                    <div class="text-right flex-shrink-0 ml-2">
                                         <p class="text-sm font-semibold text-gray-900"><?php echo $qtyPrefix . abs((int)$transaction['quantity']); ?> units</p>
                                         <span class="text-xs text-gray-500"><?php echo date('M j, Y', strtotime($transaction['created_at'])); ?></span>
                                     </div>

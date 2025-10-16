@@ -396,7 +396,7 @@ if (isset($_GET['view'])) {
         <!-- Filters -->
         <div class="bg-white rounded-lg shadow mb-6">
             <div class="p-6">
-                <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <form method="GET" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                         <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent">
@@ -581,7 +581,7 @@ if (isset($_GET['view'])) {
                 <form method="POST" class="p-6">
                     <input type="hidden" name="action" value="create_request">
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Department *</label>
                             <select name="department" required 
@@ -619,7 +619,7 @@ if (isset($_GET['view'])) {
                     <div class="mb-6">
                         <h4 class="text-lg font-medium text-gray-900 mb-4">Request Items</h4>
                         <div id="itemsContainer">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Item</label>
                                     <select name="item_id[]" 
@@ -677,7 +677,7 @@ if (isset($_GET['view'])) {
                     <input type="hidden" name="action" value="edit_request">
                     <input type="hidden" name="request_id" id="edit_request_id">
                     
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Department *</label>
                             <select name="department" required 
@@ -715,7 +715,7 @@ if (isset($_GET['view'])) {
                     <div class="mb-6">
                         <h4 class="text-lg font-medium text-gray-900 mb-4">Request Items</h4>
                         <div id="editItemsContainer">
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4">
                                 <div>
                                     <label class="block text-sm font-medium text-gray-700 mb-2">Item</label>
                                     <select name="item_id[]" 
@@ -769,8 +769,8 @@ if (isset($_GET['view'])) {
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">Request Details - <?php echo htmlspecialchars($request_details['request_number']); ?></h3>
                 </div>
-                <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="p-4 sm:p-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
                         <div>
                             <h4 class="font-medium text-gray-900 mb-2">Request Information</h4>
                             <div class="space-y-2 text-sm">
@@ -835,7 +835,7 @@ if (isset($_GET['view'])) {
         function addItem() {
             const container = document.getElementById('itemsContainer');
             const newItem = document.createElement('div');
-            newItem.className = 'grid grid-cols-1 md:grid-cols-3 gap-4 mb-4';
+            newItem.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4';
             newItem.innerHTML = `
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Item</label>
@@ -866,7 +866,7 @@ if (isset($_GET['view'])) {
         function addEditItem(itemId = '', quantity = '') {
             const container = document.getElementById('editItemsContainer');
             const newItem = document.createElement('div');
-            newItem.className = 'grid grid-cols-1 md:grid-cols-3 gap-4 mb-4';
+            newItem.className = 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-4';
             newItem.innerHTML = `
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Item</label>
