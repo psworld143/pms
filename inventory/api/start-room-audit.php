@@ -1,83 +1,70 @@
 <?php
 /**
- * Start Room Audit
- * Hotel PMS Training System - Inventory Module
+ * Start room audit process
  */
 
-session_start();
-require_once '../config/database.php';
+require_once '../../vps_session_fix.php';
+require_once '../../includes/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
-header('Content-Type: application/json');
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    exit();
+}
 
 try {
-    $result = startRoomAudit();
+    global $pdo;
+    
+    // Determine correct rooms table in this environment
+    $roomsTable = 'hotel_rooms';
+    $tableCheck = $pdo->query("SHOW TABLES LIKE 'hotel_rooms'");
+    if ($tableCheck->rowCount() === 0) {
+        $roomsTable = 'rooms';
+    }
+
+    // Only set last_audited if the column exists (production may not have it)
+    $colCheck = $pdo->query("SHOW COLUMNS FROM `{$roomsTable}` LIKE 'last_audited'");
+    if ($colCheck->rowCount() > 0) {
+        $pdo->exec("UPDATE `{$roomsTable}` SET last_audited = NOW() WHERE id IN (SELECT DISTINCT room_id FROM room_inventory_items)");
+    }
+    
+    // Log audit activity (schema-adaptive insert)
+    $colsStmt = $pdo->query("SHOW COLUMNS FROM inventory_transactions");
+    $available = $colsStmt->fetchAll(PDO::FETCH_COLUMN, 0);
+    $available = array_flip($available);
+
+    $fields = [];
+    $values = [];
+
+    if (isset($available['item_id'])) { $fields[] = 'item_id'; $values[] = null; }
+    if (isset($available['transaction_type'])) { $fields[] = 'transaction_type'; $values[] = 'adjustment'; }
+    if (isset($available['quantity'])) { $fields[] = 'quantity'; $values[] = 0; }
+    if (isset($available['reason'])) { $fields[] = 'reason'; $values[] = 'Room audit completed for all rooms'; }
+    if (isset($available['user_id'])) { $fields[] = 'user_id'; $values[] = $_SESSION['user_id']; }
+    if (isset($available['performed_by'])) { $fields[] = 'performed_by'; $values[] = $_SESSION['user_id']; }
+    if (isset($available['created_at'])) { $fields[] = 'created_at'; $values[] = date('Y-m-d H:i:s'); }
+
+    if (!empty($fields)) {
+        $placeholders = implode(',', array_fill(0, count($fields), '?'));
+        $sql = 'INSERT INTO inventory_transactions (' . implode(',', $fields) . ') VALUES (' . $placeholders . ')';
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute($values);
+    }
     
     echo json_encode([
         'success' => true,
-        'message' => 'Room audit started successfully',
-        'rooms_audited' => $result['rooms_audited']
+        'message' => 'Room audit completed successfully'
     ]);
     
-} catch (Exception $e) {
-    error_log("Error starting room audit: " . $e->getMessage());
+} catch (PDOException $e) {
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => 'Database error: ' . $e->getMessage()
     ]);
-}
-
-/**
- * Start room audit process
- */
-function startRoomAudit() {
-    global $pdo;
-    
-    try {
-        // Get all active rooms
-        $stmt = $pdo->query("
-            SELECT r.id, r.room_number, f.floor_name
-            FROM hotel_rooms r
-            LEFT JOIN hotel_floors f ON r.floor_id = f.id
-            WHERE r.active = 1
-        ");
-        $rooms = $stmt->fetchAll();
-        
-        $rooms_audited = 0;
-        
-        foreach ($rooms as $room) {
-            // Update last audited timestamp for room inventory items
-            $stmt = $pdo->prepare("
-                UPDATE room_inventory_items 
-                SET last_audited = NOW() 
-                WHERE room_id = ?
-            ");
-            $stmt->execute([$room['id']]);
-            
-            // Create audit transaction record
-            $stmt = $pdo->prepare("
-                INSERT INTO room_inventory_transactions 
-                (room_id, transaction_type, reason, created_by, created_at) 
-                VALUES (?, 'audit', 'Room audit completed', ?, NOW())
-            ");
-            $stmt->execute([$room['id'], $_SESSION['user_id']]);
-            
-            $rooms_audited++;
-        }
-        
-        return [
-            'rooms_audited' => $rooms_audited
-        ];
-        
-    } catch (PDOException $e) {
-        error_log("Error starting room audit: " . $e->getMessage());
-        throw new Exception("Database error during room audit");
-    }
 }
 ?>

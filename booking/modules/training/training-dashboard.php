@@ -21,6 +21,59 @@ if (!isset($_SESSION['user_id'])) {
 // Get training statistics
 $training_stats = getTrainingStatistics();
 
+// Additional dynamic metrics for dashboard
+$user_id = $_SESSION['user_id'];
+
+// Current streak (consecutive days with a completed attempt ending today)
+$current_streak = 0;
+try {
+    $stmt = $pdo->prepare("SELECT DISTINCT DATE(created_at) AS d FROM training_attempts WHERE user_id = ? AND status = 'completed' ORDER BY d DESC");
+    $stmt->execute([$user_id]);
+    $dates = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    $cursor = new DateTime('today');
+    foreach ($dates as $d) {
+        if ($d === $cursor->format('Y-m-d')) { $current_streak++; $cursor->modify('-1 day'); } else { break; }
+    }
+} catch (Exception $e) { $current_streak = 0; }
+
+// Achievement points (sum of scores over completed attempts)
+$achievement_points = 0;
+try {
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(score),0) FROM training_attempts WHERE user_id = ? AND status = 'completed'");
+    $stmt->execute([$user_id]);
+    $achievement_points = (int)round($stmt->fetchColumn());
+} catch (Exception $e) { $achievement_points = 0; }
+
+// Team rank: position among users by total score (1 = best)
+$team_rank = null;
+try {
+    // MySQL 8+ window function; fallback if unavailable below
+    $stmt = $pdo->query("SELECT user_id, DENSE_RANK() OVER (ORDER BY SUM(score) DESC) AS rnk FROM training_attempts WHERE status='completed' GROUP BY user_id");
+    $ranks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    foreach ($ranks as $r) { if ((int)$r['user_id'] === (int)$user_id) { $team_rank = (int)$r['rnk']; break; } }
+    if ($team_rank === null) { $team_rank = 0; }
+} catch (Exception $e) {
+    // Fallback: count users with higher total
+    try {
+        $stmt = $pdo->query("SELECT user_id, COALESCE(SUM(score),0) AS total FROM training_attempts WHERE status='completed' GROUP BY user_id");
+        $totals = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
+        $me = $totals[$user_id] ?? 0;
+        $better = 0; foreach ($totals as $uid=>$t) { if ($t > $me) $better++; }
+        $team_rank = $better + 1;
+    } catch (Exception $e2) { $team_rank = 0; }
+}
+
+// This week's performance (last 7 days)
+$week_completed = 0; $week_avg = 0; $week_minutes = 0;
+try {
+    $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt, COALESCE(AVG(score),0) AS avg_score, COALESCE(SUM(duration_minutes),0) AS minutes FROM training_attempts WHERE user_id=? AND status='completed' AND created_at >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)");
+    $stmt->execute([$user_id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    $week_completed = (int)$row['cnt'];
+    $week_avg = round((float)$row['avg_score']);
+    $week_minutes = (int)$row['minutes'];
+} catch (Exception $e) {}
+
 // Set page title
 $page_title = 'Training Dashboard';
 
@@ -113,7 +166,7 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4 flex-1">
                         <p class="text-sm font-medium text-indigo-700">Current Streak</p>
-                        <p class="text-3xl font-bold text-indigo-900"><?php echo rand(3, 15); ?> days</p>
+                        <p class="text-3xl font-bold text-indigo-900"><?php echo number_format($current_streak); ?> days</p>
                         <p class="text-xs text-indigo-600 mt-1">Consistent training</p>
                     </div>
                 </div>
@@ -129,7 +182,7 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4 flex-1">
                         <p class="text-sm font-medium text-pink-700">Achievement Points</p>
-                        <p class="text-3xl font-bold text-pink-900"><?php echo number_format(rand(500, 2500)); ?></p>
+                        <p class="text-3xl font-bold text-pink-900"><?php echo number_format($achievement_points); ?></p>
                         <p class="text-xs text-pink-600 mt-1">Total earned</p>
                     </div>
                 </div>
@@ -145,7 +198,7 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4 flex-1">
                         <p class="text-sm font-medium text-teal-700">Team Rank</p>
-                        <p class="text-3xl font-bold text-teal-900">#<?php echo rand(1, 25); ?></p>
+                        <p class="text-3xl font-bold text-teal-900">#<?php echo number_format($team_rank); ?></p>
                         <p class="text-xs text-teal-600 mt-1">Among colleagues</p>
                     </div>
                 </div>
@@ -229,19 +282,19 @@ include '../../includes/sidebar-unified.php';
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Scenarios Completed</span>
-                        <span class="font-semibold text-green-600">+<?php echo rand(2, 8); ?></span>
+                        <span class="font-semibold text-green-600"><?php echo number_format($week_completed); ?></span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Average Score</span>
-                        <span class="font-semibold text-blue-600"><?php echo rand(75, 95); ?>%</span>
+                        <span class="font-semibold text-blue-600"><?php echo number_format($week_avg); ?>%</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Time Spent</span>
-                        <span class="font-semibold text-purple-600"><?php echo rand(2, 8); ?>h <?php echo rand(0, 59); ?>m</span>
+                        <span class="font-semibold text-purple-600"><?php echo number_format(round($week_minutes/60,1),1); ?>h</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Streak Days</span>
-                        <span class="font-semibold text-orange-600"><?php echo rand(3, 15); ?> days</span>
+                        <span class="font-semibold text-orange-600"><?php echo number_format($current_streak); ?> days</span>
                     </div>
                 </div>
             </div>

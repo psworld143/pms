@@ -1,18 +1,20 @@
 <?php
-session_start();
-require_once "../config/database.php";
-require_once '../includes/functions.php';
+/**
+ * Delete Guest API
+ * Hotel PMS - Guest Management Module
+ */
 
-// Check if user is logged in and has manager access
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['manager', 'front_desk'])) {
+require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+require_once dirname(__DIR__, 2) . '/includes/database.php';
+
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
-header('Content-Type: application/json');
-
-// Only allow POST requests
+// Check if request method is POST
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     echo json_encode(['success' => false, 'message' => 'Method not allowed']);
@@ -24,57 +26,61 @@ try {
     $input = json_decode(file_get_contents('php://input'), true);
     
     if (!$input) {
-        throw new Exception('Invalid input data');
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+        exit();
     }
     
-    // Validate required fields
-    if (empty($input['guest_id'])) {
-        throw new Exception('Guest ID is required');
-    }
+    $guestId = $input['id'] ?? null;
     
-    $guest_id = intval($input['guest_id']);
+    if (!$guestId) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Guest ID is required']);
+        exit();
+    }
     
     // Check if guest has active reservations
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) as active_count
+    $activeReservationsSql = "
+        SELECT COUNT(*) as count 
         FROM reservations 
         WHERE guest_id = ? AND status IN ('confirmed', 'checked_in')
-    ");
-    $stmt->execute([$guest_id]);
-    $active_reservations = $stmt->fetch()['active_count'];
+    ";
     
-    if ($active_reservations > 0) {
-        throw new Exception('Cannot delete guest with active reservations');
+    $activeStmt = $pdo->prepare($activeReservationsSql);
+    $activeStmt->execute([$guestId]);
+    $activeCount = $activeStmt->fetch()['count'];
+    
+    if ($activeCount > 0) {
+        http_response_code(400);
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Cannot delete guest with active reservations'
+        ]);
+        exit();
     }
     
-    // Delete guest (soft delete - set as inactive)
-    $stmt = $pdo->prepare("
-        UPDATE guests 
-        SET email = CONCAT('deleted_', UNIX_TIMESTAMP(), '_', email),
-            phone = CONCAT('deleted_', UNIX_TIMESTAMP(), '_', phone),
-            is_vip = FALSE,
-            updated_at = NOW()
-        WHERE id = ?
-    ");
-    $stmt->execute([$guest_id]);
+    // Delete guest
+    $deleteSql = "DELETE FROM guests WHERE id = ?";
+    $deleteStmt = $pdo->prepare($deleteSql);
+    $deleteStmt->execute([$guestId]);
     
-    if ($stmt->rowCount() === 0) {
-        throw new Exception('Guest not found');
+    if ($deleteStmt->rowCount() === 0) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Guest not found']);
+        exit();
     }
-    
-    // Log activity
-    logActivity($_SESSION['user_id'], 'guest_deleted', "Deleted guest ID: {$guest_id}");
     
     echo json_encode([
         'success' => true,
         'message' => 'Guest deleted successfully'
     ]);
     
-} catch (Exception $e) {
+} catch (PDOException $e) {
     error_log("Error deleting guest: " . $e->getMessage());
+    http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => 'Database error occurred'
     ]);
 }
 ?>

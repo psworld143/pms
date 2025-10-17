@@ -4,8 +4,8 @@
  * Hotel PMS Training System for Students
  */
 
-session_start();
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../vps_session_fix.php';
+require_once __DIR__ . '/../includes/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -26,6 +26,7 @@ $page_title = 'Inventory Reports';
     <link rel="icon" type="image/png" href="../../assets/images/seait-logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
         #sidebar { transition: transform 0.3s ease-in-out; }
@@ -76,7 +77,7 @@ $page_title = 'Inventory Reports';
             </div>
 
             <!-- Report Summary -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div class="bg-white rounded-lg shadow p-6">
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
@@ -86,7 +87,7 @@ $page_title = 'Inventory Reports';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Total Items</p>
-                            <p class="text-2xl font-semibold text-gray-900">1,247</p>
+                            <p id="rp-total-items" class="text-2xl font-semibold text-gray-900">0</p>
                         </div>
                 </div>
             </div>
@@ -95,12 +96,12 @@ $page_title = 'Inventory Reports';
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                             <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-dollar-sign text-white"></i>
+                                <i class="fas fa-peso-sign text-white"></i>
                             </div>
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Total Value</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="total-inventory-value">$0</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="total-inventory-value">₱0</p>
                         </div>
                 </div>
             </div>
@@ -114,7 +115,7 @@ $page_title = 'Inventory Reports';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Low Stock Items</p>
-                            <p class="text-2xl font-semibold text-gray-900">67</p>
+                            <p id="rp-low-items" class="text-2xl font-semibold text-gray-900">0</p>
                         </div>
                 </div>
             </div>
@@ -128,7 +129,7 @@ $page_title = 'Inventory Reports';
                     </div>
                     <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Out of Stock</p>
-                            <p class="text-2xl font-semibold text-gray-900">24</p>
+                            <p id="rp-out-items" class="text-2xl font-semibold text-gray-900">0</p>
                         </div>
                     </div>
                 </div>
@@ -137,10 +138,10 @@ $page_title = 'Inventory Reports';
             <!-- Report Filters -->
             <div class="bg-white rounded-lg shadow p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Filters</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
-                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="report-type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option>Stock Level Report</option>
                             <option>Transaction Report</option>
                             <option>Value Report</option>
@@ -151,7 +152,7 @@ $page_title = 'Inventory Reports';
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
-                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="report-category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option>All Categories</option>
                             <option>Food & Beverage</option>
                             <option>Amenities</option>
@@ -161,7 +162,7 @@ $page_title = 'Inventory Reports';
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <select id="date-range" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <option>Last 7 Days</option>
                             <option>Last 30 Days</option>
                             <option>Last 3 Months</option>
@@ -179,16 +180,12 @@ $page_title = 'Inventory Reports';
             </div>
 
             <!-- Report Charts -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+            <div class="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <!-- Stock Level Chart -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Stock Level Distribution</h3>
-                    <div class="h-64 flex items-center justify-center bg-gray-50 rounded-lg">
-                        <div class="text-center">
-                            <i class="fas fa-chart-pie text-4xl text-gray-400 mb-4"></i>
-                            <p class="text-gray-600">Stock level chart would be displayed here</p>
-                            <p class="text-sm text-gray-500">Integration with chart library needed</p>
-                        </div>
+                    <div class="h-64 bg-gray-50 rounded-lg p-4">
+                        <canvas id="stockLevelChart" class="w-full h-full"></canvas>
                     </div>
                 </div>
 
@@ -249,7 +246,7 @@ $page_title = 'Inventory Reports';
             </div>
 
             <!-- Quick Reports -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-lg font-semibold text-gray-800">Low Stock Alert</h3>
@@ -332,6 +329,7 @@ $(document).ready(function() {
             success: function(response) {
                 if (response.success) {
                     updateReportStats(response.statistics);
+                    drawStockLevelChart(response.statistics);
                 }
             },
             error: function(xhr, status, error) {
@@ -356,18 +354,44 @@ $(document).ready(function() {
     }
     
     function updateReportStats(stats) {
-        // Calculate total inventory value
-        let totalValue = 0;
-        stats.category_stats.forEach(function(category) {
-            // This is a simplified calculation - in a real system, you'd get this from the API
-            totalValue += category.item_count * 50; // Estimated average value per item
+        // Stats from API
+        const totals = stats || {};
+        $('#rp-total-items').text((totals.total_items || 0).toLocaleString());
+        $('#rp-low-items').text((totals.low_stock || 0).toLocaleString());
+        $('#rp-out-items').text((totals.out_of_stock || 0).toLocaleString());
+        $('#total-inventory-value').text('₱' + (totals.total_value || 0).toLocaleString());
+        $('#high-value-items').text('₱' + (totals.high_value_total || 0).toLocaleString());
+    }
+
+    let stockChartInstance = null;
+    function drawStockLevelChart(stats){
+        const data = stats || {};
+        const ctxNode = document.getElementById('stockLevelChart');
+        if (!ctxNode) return;
+        const ctx = ctxNode.getContext('2d');
+        const values = [data.in_stock || 0, data.low_stock || 0, data.out_of_stock || 0];
+        const labels = ['In Stock','Low Stock','Out of Stock'];
+        const colors = ['#10B981','#F59E0B','#EF4444'];
+        if (stockChartInstance) { stockChartInstance.destroy(); }
+        stockChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Items',
+                    data: values,
+                    backgroundColor: colors,
+                    borderRadius: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, ticks: { precision:0 } }
+                }
+            }
         });
-        
-        $('#total-inventory-value').text('$' + totalValue.toLocaleString());
-        
-        // Calculate high value items (top 10%)
-        const highValueItems = Math.round(totalValue * 0.1);
-        $('#high-value-items').text('$' + highValueItems.toLocaleString());
     }
     
     function displayInventoryReport(items) {
@@ -411,8 +435,8 @@ $(document).ready(function() {
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.category_name}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.quantity}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.minimum_stock}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${parseFloat(item.unit_price).toFixed(2)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$${totalValue.toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(item.unit_price).toFixed(2)}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${totalValue.toFixed(2)}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
                             ${statusText}
@@ -420,7 +444,7 @@ $(document).ready(function() {
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewItem(${item.id})">View</button>
-                        <button class="text-green-600 hover:text-green-900" onclick="exportItem(${item.id})">Export</button>
+                       
                     </td>
                 </tr>
             `;
@@ -510,15 +534,23 @@ $(document).ready(function() {
     function generateCustomReport() {
         const reportType = $('#report-type').val();
         const dateRange = $('#date-range').val();
-        
-        if (!reportType) {
-            alert('Please select a report type');
-            return;
-        }
-        
-        // Reload data with filters
-        loadReportsData();
-        alert('Custom report generated successfully!');
+        const category = $('#report-category').val();
+        $.ajax({
+            url: 'api/generate-inventory-report.php',
+            method: 'GET',
+            data: { report_type: reportType, date_range: dateRange, category: category },
+            dataType: 'json',
+            success: function(resp){
+                if (resp.success){
+                    updateReportStats(resp.summary || {});
+                    displayInventoryReport(resp.items || []);
+                    drawStockLevelChart(resp.summary || {});
+                } else {
+                    alert('Error generating report: ' + (resp.message||'Unknown error'));
+                }
+            },
+            error: function(xhr){ alert('Error generating report: ' + xhr.responseText); }
+        });
     }
     
     function viewLowStockItems() {

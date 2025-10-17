@@ -1,5 +1,7 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once '../vps_session_fix.php';
+
 require_once '../includes/database.php';
 
 // Redirect if already logged in
@@ -20,26 +22,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
         
         if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['user_name'] = $user['name'];
-            $_SESSION['user_role'] = $user['role'];
-            
-            // Log the login activity (if activity_log table exists)
-            try {
-                $stmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, description, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
-                $stmt->execute([
-                    $user['id'], 
-                    'login', 
-                    'User logged into Inventory system', 
-                    $_SERVER['REMOTE_ADDR'] ?? 'unknown'
-                ]);
-            } catch (PDOException $e) {
-                // Activity log table might not exist, continue with login
-                error_log("Activity logging failed: " . $e->getMessage());
+            // Check if user role is allowed (only manager and housekeeping)
+            if (!in_array($user['role'], ['manager', 'housekeeping'])) {
+                $error = 'Access denied. Only Manager and Housekeeping roles can access the Inventory system.';
+            } else {
+                $_SESSION['user_id'] = $user['id'];
+                $_SESSION['user_name'] = $user['name'];
+                $_SESSION['user_role'] = $user['role'];
+                
+                // Log the login activity (if activity_log table exists)
+                try {
+                    $stmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, description, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
+                    $stmt->execute([
+                        $user['id'], 
+                        'login', 
+                        'User logged into Inventory system', 
+                        $_SERVER['REMOTE_ADDR'] ?? 'unknown'
+                    ]);
+                } catch (PDOException $e) {
+                    // Activity log table might not exist, continue with login
+                    error_log("Activity logging failed: " . $e->getMessage());
+                }
+                
+                header('Location: index.php');
+                exit();
             }
-            
-            header('Location: index.php');
-            exit();
         } else {
             $error = 'Invalid username or password';
         }
@@ -213,9 +220,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </h4>
                     <div class="text-xs text-purple-700 space-y-1">
                         <div><strong>Manager:</strong> manager1 / password</div>
-                        <div><strong>Front Desk:</strong> frontdesk1 / password</div>
                         <div><strong>Housekeeping:</strong> housekeeping1 / password</div>
-                        <div class="text-purple-600 font-medium mt-2">All roles have access to inventory system</div>
+                        <div class="text-purple-600 font-medium mt-2">Manager and Housekeeping roles have access to inventory system</div>
                     </div>
                 </div>
 

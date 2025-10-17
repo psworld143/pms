@@ -1,7 +1,12 @@
 <?php
-session_start();
-require_once "../config/database.php";
-require_once '../includes/functions.php';
+/**
+ * Get Guest Details API
+ * Hotel PMS - Guest Management Module
+ */
+
+require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+require_once dirname(__DIR__, 2) . '/includes/database.php';
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     http_response_code(401);
@@ -9,100 +14,98 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-header('Content-Type: application/json');
-
 try {
-    $guest_id = $_GET['id'] ?? null;
+    $guestId = $_GET['id'] ?? null;
     
-    if (!$guest_id) {
-        throw new Exception('Guest ID is required');
+    if (!$guestId) {
+        http_response_code(400);
+        echo json_encode(['success' => false, 'message' => 'Guest ID is required']);
+        exit();
     }
     
-    $guest_details = getGuestDetails($guest_id);
+    // Get guest details
+    $sql = "
+        SELECT 
+            g.*,
+            COUNT(r.id) as total_stays,
+            MAX(r.check_out_date) as last_visit,
+            COALESCE(SUM(r.total_amount), 0) as total_spent,
+            AVG(r.total_amount) as average_spent
+        FROM guests g
+        LEFT JOIN reservations r ON g.id = r.guest_id
+        WHERE g.id = ?
+        GROUP BY g.id
+    ";
     
-    if (!$guest_details) {
-        throw new Exception('Guest not found');
+    $stmt = $pdo->prepare($sql);
+    $stmt->execute([$guestId]);
+    $guest = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$guest) {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Guest not found']);
+        exit();
     }
+    
+    // Get recent reservations
+    $reservationsSql = "
+        SELECT 
+            r.id,
+            r.check_in_date,
+            r.check_out_date,
+            r.status,
+            r.total_amount,
+            rm.room_number,
+            rt.name as room_type
+        FROM reservations r
+        LEFT JOIN rooms rm ON r.room_id = rm.id
+        LEFT JOIN room_types rt ON rm.room_type_id = rt.id
+        WHERE r.guest_id = ?
+        ORDER BY r.check_in_date DESC
+        LIMIT 10
+    ";
+    
+    $reservationsStmt = $pdo->prepare($reservationsSql);
+    $reservationsStmt->execute([$guestId]);
+    $reservations = $reservationsStmt->fetchAll(PDO::FETCH_ASSOC);
+    
+    // Format the data
+    $formattedGuest = [
+        'id' => $guest['id'],
+        'first_name' => $guest['first_name'],
+        'last_name' => $guest['last_name'],
+        'email' => $guest['email'],
+        'phone' => $guest['phone'],
+        'is_vip' => (bool)$guest['is_vip'],
+        'id_number' => $guest['id_number'],
+        'address' => $guest['address'],
+        'city' => $guest['city'],
+        'state' => $guest['state'],
+        'country' => $guest['country'],
+        'postal_code' => $guest['postal_code'],
+        'date_of_birth' => $guest['date_of_birth'],
+        'nationality' => $guest['nationality'],
+        'preferences' => $guest['preferences'],
+        'notes' => $guest['notes'],
+        'created_at' => $guest['created_at'],
+        'total_stays' => (int)$guest['total_stays'],
+        'last_visit' => $guest['last_visit'],
+        'total_spent' => (float)$guest['total_spent'],
+        'average_spent' => (float)$guest['average_spent'],
+        'recent_reservations' => $reservations
+    ];
     
     echo json_encode([
         'success' => true,
-        'guest' => $guest_details
+        'guest' => $formattedGuest
     ]);
     
-} catch (Exception $e) {
+} catch (PDOException $e) {
     error_log("Error getting guest details: " . $e->getMessage());
+    http_response_code(500);
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => 'Database error occurred'
     ]);
-}
-
-/**
- * Get detailed guest information
- */
-function getGuestDetails($guest_id) {
-    global $pdo;
-    
-    try {
-        // Get basic guest information with stay statistics
-        $stmt = $pdo->prepare("
-            SELECT g.*, 
-                   COUNT(DISTINCT r.id) as total_stays,
-                   MAX(r.check_out_date) as last_stay,
-                   SUM(r.total_amount) as total_spent,
-                   AVG(r.total_amount) as avg_stay_amount
-            FROM guests g
-            LEFT JOIN reservations r ON g.id = r.guest_id
-            WHERE g.id = ?
-            GROUP BY g.id
-        ");
-        $stmt->execute([$guest_id]);
-        $guest = $stmt->fetch();
-        
-        if (!$guest) {
-            return null;
-        }
-        
-        // Get recent reservations
-        $stmt = $pdo->prepare("
-            SELECT r.*, rm.room_number, rm.room_type
-            FROM reservations r
-            JOIN rooms rm ON r.room_id = rm.id
-            WHERE r.guest_id = ?
-            ORDER BY r.created_at DESC
-            LIMIT 10
-        ");
-        $stmt->execute([$guest_id]);
-        $guest['recent_reservations'] = $stmt->fetchAll();
-        
-        // Get feedback history
-        $stmt = $pdo->prepare("
-            SELECT gf.*, r.reservation_number
-            FROM guest_feedback gf
-            LEFT JOIN reservations r ON gf.reservation_id = r.id
-            WHERE gf.guest_id = ?
-            ORDER BY gf.created_at DESC
-            LIMIT 10
-        ");
-        $stmt->execute([$guest_id]);
-        $guest['feedback_history'] = $stmt->fetchAll();
-        
-        // Get service notes history (from special_requests in reservations)
-        $stmt = $pdo->prepare("
-            SELECT r.reservation_number, r.special_requests, r.created_at
-            FROM reservations r
-            WHERE r.guest_id = ? AND r.special_requests IS NOT NULL AND r.special_requests != ''
-            ORDER BY r.created_at DESC
-            LIMIT 10
-        ");
-        $stmt->execute([$guest_id]);
-        $guest['service_notes_history'] = $stmt->fetchAll();
-        
-        return $guest;
-        
-    } catch (PDOException $e) {
-        error_log("Error getting guest details: " . $e->getMessage());
-        return null;
-    }
 }
 ?>

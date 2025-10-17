@@ -7,12 +7,11 @@
 session_start();
 require_once __DIR__ . '/config/database.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    // For testing purposes, set a default user ID
-    $_SESSION['user_id'] = 1;
-    // header('Location: login.php');
-    // exit();
+require_once __DIR__ . '/../vps_session_fix.php';
+// Only manager can manage items
+if (!isset($_SESSION['user_id']) || ($_SESSION['user_role'] ?? '') !== 'manager') {
+    header('Location: index.php?error=access_denied');
+    exit();
 }
 
 // Set page title
@@ -129,83 +128,241 @@ $page_title = 'Inventory Items';
                         <i class="fas fa-upload mr-2"></i>Import Items
                     </button>
                 </div>
+
+                <!-- Edit Item Modal -->
+                <div id="edit-item-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 backdrop-blur-sm">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-4 transform transition-all duration-300 scale-95 opacity-0" id="edit-modal-content">
+                        <div class="px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-xl flex justify-between items-center">
+                            <div class="flex items-center">
+                                <i class="fas fa-edit mr-3 text-xl"></i>
+                                <h4 class="text-xl font-bold">Edit Inventory Item</h4>
+                            </div>
+                            <button class="text-white hover:text-gray-200 transition-colors duration-200 p-2 hover:bg-white hover:bg-opacity-20 rounded-full" onclick="closeEditModal()">
+                                <i class="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <input type="hidden" id="edit-item-id">
+                            
+                            <!-- Item Name -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-semibold text-gray-700">
+                                    <i class="fas fa-tag mr-2 text-blue-500"></i>Item Name
+                                </label>
+                                <input id="edit-item-name" type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md" placeholder="Enter item name">
+                            </div>
+                            
+                            <!-- SKU and Cost -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-semibold text-gray-700">
+                                        <i class="fas fa-barcode mr-2 text-green-500"></i>SKU
+                                    </label>
+                                    <input id="edit-item-sku" type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md" placeholder="Enter SKU">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-semibold text-gray-700">
+                                        <i class="fas fa-dollar-sign mr-2 text-yellow-500"></i>Unit Cost (₱)
+                                    </label>
+                                    <input id="edit-item-cost" type="number" step="0.01" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md" placeholder="0.00">
+                                </div>
+                            </div>
+                            
+                            <!-- Stock Information -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-semibold text-gray-700">
+                                        <i class="fas fa-boxes mr-2 text-purple-500"></i>Current Stock
+                                    </label>
+                                    <input id="edit-item-qty" type="number" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md" placeholder="0">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-semibold text-gray-700">
+                                        <i class="fas fa-exclamation-triangle mr-2 text-orange-500"></i>Minimum Stock
+                                    </label>
+                                    <input id="edit-item-min" type="number" min="0" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md" placeholder="0">
+                                </div>
+                            </div>
+                            
+                            <!-- Description -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-semibold text-gray-700">
+                                    <i class="fas fa-align-left mr-2 text-indigo-500"></i>Description
+                                </label>
+                                <textarea id="edit-item-description" rows="3" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md resize-none" placeholder="Enter item description"></textarea>
+                            </div>
+                        </div>
+                        
+                        <!-- Modal Footer -->
+                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex justify-end space-x-3">
+                            <button class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500" onclick="closeEditModal()">
+                                <i class="fas fa-times mr-2"></i>Cancel
+                            </button>
+                            <button class="px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-lg hover:shadow-xl" onclick="submitEditItem()">
+                                <i class="fas fa-save mr-2"></i>Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Restock Modal -->
+                <div id="restock-item-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 backdrop-blur-sm">
+                    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 transform transition-all duration-300 scale-95 opacity-0" id="restock-modal-content">
+                        <div class="px-6 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-t-xl flex justify-between items-center">
+                            <div class="flex items-center">
+                                <i class="fas fa-plus-circle mr-3 text-xl"></i>
+                                <h4 class="text-xl font-bold">Restock Item</h4>
+                            </div>
+                            <button class="text-white hover:text-gray-200 transition-colors duration-200 p-2 hover:bg-white hover:bg-opacity-20 rounded-full" onclick="closeRestockModal()">
+                                <i class="fas fa-times text-lg"></i>
+                            </button>
+                        </div>
+                        <div class="p-6 space-y-6">
+                            <input type="hidden" id="restock-item-id">
+                            
+                            <!-- Item Information -->
+                            <div class="space-y-2">
+                                <label class="block text-sm font-semibold text-gray-700">
+                                    <i class="fas fa-tag mr-2 text-blue-500"></i>Item
+                                </label>
+                                <input id="restock-item-name" type="text" class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700 font-medium" readonly>
+                            </div>
+                            
+                            <!-- Quantity and Unit -->
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-semibold text-gray-700">
+                                        <i class="fas fa-plus mr-2 text-green-500"></i>Add Quantity
+                                    </label>
+                                    <input id="restock-add-qty" type="number" min="1" value="10" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md">
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-semibold text-gray-700">
+                                        <i class="fas fa-ruler mr-2 text-purple-500"></i>Unit
+                                    </label>
+                                    <input id="restock-unit" type="text" class="w-full px-4 py-3 border border-gray-200 rounded-lg bg-gray-50 text-gray-700" readonly>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Modal Footer -->
+                        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex justify-end space-x-3">
+                            <button class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg text-sm font-semibold hover:bg-gray-50 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-gray-500" onclick="closeRestockModal()">
+                                <i class="fas fa-times mr-2"></i>Cancel
+                            </button>
+                            <button class="px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white rounded-lg text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-green-500 shadow-lg hover:shadow-xl" onclick="submitRestockItem()">
+                                <i class="fas fa-plus-circle mr-2"></i>Restock Item
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- Inventory Statistics -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-boxes text-white"></i>
+            <!-- Enhanced Inventory Statistics -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8">
+                <!-- Total Items Card -->
+                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-blue-200 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-boxes text-white text-lg"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-semibold text-blue-700 uppercase tracking-wide">Total Items</p>
+                                <p class="text-3xl font-bold text-blue-900" id="total-items">Loading...</p>
                             </div>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Total Items</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="total-items">Loading...</p>
+                        <div class="text-right">
+                            <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-green-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-check-circle text-white"></i>
+                <!-- In Stock Card -->
+                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-green-200 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-check-circle text-white text-lg"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-semibold text-green-700 uppercase tracking-wide">In Stock</p>
+                                <p class="text-3xl font-bold text-green-900" id="in-stock">Loading...</p>
                             </div>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">In Stock</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="in-stock">Loading...</p>
+                        <div class="text-right">
+                            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-yellow-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-exclamation-triangle text-white"></i>
+                <!-- Low Stock Card -->
+                <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-yellow-200 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-semibold text-yellow-700 uppercase tracking-wide">Low Stock</p>
+                                <p class="text-3xl font-bold text-yellow-900" id="low-stock">Loading...</p>
                             </div>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Low Stock</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="low-stock">Loading...</p>
+                        <div class="text-right">
+                            <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-red-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-times-circle text-white"></i>
+                <!-- Out of Stock Card -->
+                <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-red-200 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-times-circle text-white text-lg"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-semibold text-red-700 uppercase tracking-wide">Out of Stock</p>
+                                <p class="text-3xl font-bold text-red-900" id="out-of-stock">Loading...</p>
                             </div>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Out of Stock</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="out-of-stock">Loading...</p>
+                        <div class="text-right">
+                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-white rounded-lg shadow p-6">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-purple-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-utensils text-white"></i>
+                <!-- POS Products Card -->
+                <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-purple-200 group">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="flex-shrink-0">
+                                <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                    <i class="fas fa-shopping-cart text-white text-lg"></i>
+                                </div>
+                            </div>
+                            <div class="ml-4">
+                                <p class="text-sm font-semibold text-purple-700 uppercase tracking-wide">POS Products</p>
+                                <p class="text-3xl font-bold text-purple-900" id="pos-products-count">Loading...</p>
                             </div>
                         </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">POS Products</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="pos-products-count">Loading...</p>
+                        <div class="text-right">
+                            <div class="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Item Categories -->
-            <div id="categories-container" class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div id="categories-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8">
                 <!-- Categories will be loaded dynamically -->
             </div>
 
@@ -330,7 +487,7 @@ $page_title = 'Inventory Items';
                 
                 <!-- Card View -->
                 <div id="card-view" class="hidden p-6">
-                    <div id="inventory-items-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div id="inventory-items-cards" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                         <!-- Cards will be loaded dynamically -->
                     </div>
                 </div>
@@ -460,6 +617,7 @@ $(document).ready(function() {
             method: 'GET',
             dataType: 'json',
             success: function(response) {
+                console.log('Statistics API response:', response);
                 if (response.success) {
                     const stats = response.statistics;
                     $('#total-items').text(stats.total_items.toLocaleString());
@@ -474,6 +632,8 @@ $(document).ready(function() {
             },
             error: function(xhr, status, error) {
                 console.error('AJAX error loading statistics:', error);
+                console.error('Response:', xhr.responseText);
+                console.error('Status:', xhr.status);
                 $('#total-items, #in-stock, #low-stock, #out-of-stock, #pos-products-count').text('Error');
             }
         });
@@ -527,15 +687,15 @@ $(document).ready(function() {
                         </div>
                         <div class="grid grid-cols-3 gap-2 text-xs">
                             <div class="text-center p-2 bg-green-50 rounded">
-                                <div class="font-semibold text-green-800">${category.in_stock_count}</div>
+                                <div class="font-semibold text-green-800">${category.in_stock_count || 0}</div>
                                 <div class="text-green-600">In Stock</div>
                             </div>
                             <div class="text-center p-2 bg-yellow-50 rounded">
-                                <div class="font-semibold text-yellow-800">${category.low_stock_count}</div>
+                                <div class="font-semibold text-yellow-800">${category.low_stock_count || 0}</div>
                                 <div class="text-yellow-600">Low Stock</div>
                             </div>
                             <div class="text-center p-2 bg-red-50 rounded">
-                                <div class="font-semibold text-red-800">${category.out_of_stock_count}</div>
+                                <div class="font-semibold text-red-800">${category.out_of_stock_count || 0}</div>
                                 <div class="text-red-600">Out of Stock</div>
                             </div>
                         </div>
@@ -553,13 +713,17 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
+                    // Store items globally for easy access
+                    window.currentItems = response.inventory_items;
                     displayInventoryItems(response.inventory_items);
                 } else {
                     console.error('Error loading inventory items:', response.message);
+                    showNotification('Failed to load inventory items: ' + response.message, 'error');
                 }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX error loading inventory items:', error);
+                showNotification('Failed to load inventory items. Please try again.', 'error');
             }
         });
     }
@@ -599,22 +763,32 @@ $(document).ready(function() {
                     <td class="px-3 py-4 text-sm text-gray-900 font-mono">${item.sku || 'N/A'}</td>
                     <td class="px-3 py-4 text-sm text-gray-900">
                         <div class="font-medium">${item.quantity}</div>
-                        <div class="text-xs text-gray-500">${item.unit}</div>
+                        <div class="text-xs text-gray-500">${item.unit || ''}</div>
                     </td>
                     <td class="px-3 py-4 text-sm text-gray-900">
                         <div class="font-medium">${item.minimum_stock}</div>
-                        <div class="text-xs text-gray-500">${item.unit}</div>
+                        <div class="text-xs text-gray-500">${item.unit || ''}</div>
                     </td>
-                    <td class="px-3 py-4 text-sm text-gray-900 font-medium">₱${parseFloat(item.cost_price).toFixed(2)}</td>
+                    <td class="px-3 py-4 text-sm text-gray-900 font-medium">₱${parseFloat(item.cost_price || item.unit_price || 0).toFixed(2)}</td>
                     <td class="px-3 py-4">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
                             ${statusText}
                         </span>
                     </td>
                     <td class="px-3 py-4 text-sm font-medium">
-                        <div class="flex flex-col space-y-1">
-                            <button class="text-blue-600 hover:text-blue-900 text-xs">Edit</button>
-                            <button class="text-green-600 hover:text-green-900 text-xs">Restock</button>
+                        <div class="flex space-x-1">
+                            <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="openEditItem(${item.id})" title="Edit Item">
+                                <i class="fas fa-edit mr-1.5"></i>
+                                <span class="hidden sm:inline">Edit</span>
+                            </button>
+                            <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="restockItem(${item.id})" title="Restock Item">
+                                <i class="fas fa-plus-circle mr-1.5"></i>
+                                <span class="hidden sm:inline">Restock</span>
+                            </button>
+                            <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="deleteItem(${item.id})" title="Delete Item">
+                                <i class="fas fa-trash-alt mr-1.5"></i>
+                                <span class="hidden sm:inline">Delete</span>
+                            </button>
                         </div>
                     </td>
                 </tr>
@@ -664,24 +838,27 @@ $(document).ready(function() {
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500">Current Stock:</span>
-                            <span class="font-medium">${item.quantity} ${item.unit}</span>
+                            <span class="font-medium">${item.quantity} ${item.unit || ''}</span>
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500">Min Level:</span>
-                            <span class="font-medium">${item.minimum_stock} ${item.unit}</span>
+                            <span class="font-medium">${item.minimum_stock} ${item.unit || ''}</span>
                         </div>
                         <div class="flex justify-between text-sm">
                             <span class="text-gray-500">Unit Cost:</span>
-                            <span class="font-medium">₱${parseFloat(item.cost_price).toFixed(2)}</span>
+                            <span class="font-medium">₱${parseFloat(item.cost_price || item.unit_price || 0).toFixed(2)}</span>
                         </div>
                     </div>
                     
                     <div class="flex space-x-2">
-                        <button class="flex-1 text-blue-600 hover:text-blue-900 text-xs font-medium py-2 px-3 border border-blue-200 rounded-md hover:bg-blue-50">
+                        <button class="flex-1 text-blue-600 hover:text-blue-900 text-xs font-medium py-2 px-3 border border-blue-200 rounded-md hover:bg-blue-50" onclick="openEditItem(${item.id})">
                             Edit
                         </button>
-                        <button class="flex-1 text-green-600 hover:text-green-900 text-xs font-medium py-2 px-3 border border-green-200 rounded-md hover:bg-green-50">
+                        <button class="flex-1 text-green-600 hover:text-green-900 text-xs font-medium py-2 px-3 border border-green-200 rounded-md hover:bg-green-50" onclick="restockItem(${item.id})">
                             Restock
+                        </button>
+                        <button class="flex-1 text-red-600 hover:text-red-900 text-xs font-medium py-2 px-3 border border-red-200 rounded-md hover:bg-red-50" onclick="deleteItem(${item.id})">
+                            Delete
                         </button>
                     </div>
                 </div>
@@ -718,32 +895,57 @@ $(document).ready(function() {
             const statusText = product.active ? 'Active' : 'Inactive';
             
             const row = `
-                <tr>
+                <tr class="hover:bg-gray-50 transition-colors duration-200">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 h-10 w-10">
-                                <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
-                                    <i class="fas fa-utensils text-white"></i>
+                                <div class="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                                    <i class="fas fa-utensils text-white text-sm"></i>
                                 </div>
                             </div>
                             <div class="ml-4">
-                                <div class="text-sm font-medium text-gray-900">${product.name}</div>
-                                <div class="text-sm text-gray-500">${product.description || 'No description'}</div>
+                                <div class="text-sm font-medium text-gray-900 truncate max-w-xs">${product.name}</div>
+                                <div class="text-sm text-gray-500 truncate max-w-xs">${product.description || 'No description'}</div>
                             </div>
                         </div>
                     </td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">${product.category.replace('-', ' ')}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(product.price).toFixed(2)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(product.cost).toFixed(2)}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${margin}%</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="px-2 py-1 inline-flex text-xs font-medium bg-purple-100 text-purple-800 rounded-full capitalize">
+                            ${product.category.replace('-', ' ')}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="font-bold text-lg text-green-600">₱${parseFloat(product.price).toFixed(2)}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="font-medium text-gray-600">₱${parseFloat(product.cost).toFixed(2)}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="px-2 py-1 inline-flex text-xs font-semibold rounded-full ${parseFloat(margin) > 50 ? 'bg-green-100 text-green-800' : parseFloat(margin) > 25 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}">
+                            ${margin}%
+                        </span>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass} border">
+                            <i class="fas ${product.active ? 'fa-check-circle' : 'fa-times-circle'} mr-1"></i>
                             ${statusText}
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                        <button class="text-green-600 hover:text-green-900">View</button>
+                        <div class="flex space-x-2">
+                            <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="openEditItem(${product.id})" title="Edit Product">
+                                <i class="fas fa-edit mr-1.5"></i>
+                                <span class="hidden sm:inline">Edit</span>
+                            </button>
+                            <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="restockItem(${product.id})" title="Restock Product">
+                                <i class="fas fa-plus-circle mr-1.5"></i>
+                                <span class="hidden sm:inline">Restock</span>
+                            </button>
+                            <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="deleteItem(${product.id})" title="Delete Product">
+                                <i class="fas fa-trash-alt mr-1.5"></i>
+                                <span class="hidden sm:inline">Delete</span>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -771,35 +973,54 @@ $(document).ready(function() {
                                           'In Stock';
             
             const combinedRow = `
-                <tr>
+                <tr class="hover:bg-gray-50 transition-colors duration-200">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
                             <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full flex items-center justify-center" style="background-color: ${item.category_color || '#6B7280'}">
-                                                <i class="${item.category_icon || 'fas fa-box'} text-white"></i>
+                                <div class="h-10 w-10 rounded-full flex items-center justify-center shadow-lg" style="background-color: ${item.category_color || '#6B7280'}">
+                                    <i class="${item.category_icon || 'fas fa-box'} text-white text-sm"></i>
                                 </div>
                             </div>
                             <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">${item.name}</div>
+                                <div class="text-sm font-medium text-gray-900 truncate max-w-xs">${item.name}</div>
                                 <div class="text-sm text-gray-500">Inventory Item</div>
                             </div>
                         </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            Inventory
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 border border-blue-200">
+                            <i class="fas fa-box mr-1"></i>Inventory
                         </span>
                     </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${item.category_name || 'Uncategorized'}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(item.cost_price).toFixed(2)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
-                                        ${statusText}
-                                    </span>
-                                </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="px-2 py-1 inline-flex text-xs font-medium bg-gray-100 text-gray-800 rounded-full">
+                            ${item.category_name || 'Uncategorized'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="font-bold text-lg">₱${parseFloat(item.cost_price || item.unit_price || 0).toFixed(2)}</span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass} border">
+                            <i class="fas ${item.stock_status === 'out_of_stock' ? 'fa-times-circle' : item.stock_status === 'low_stock' ? 'fa-exclamation-triangle' : 'fa-check-circle'} mr-1"></i>
+                            ${statusText}
+                        </span>
+                    </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                        <button class="text-green-600 hover:text-green-900">View</button>
+                        <div class="flex space-x-2">
+                            <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="openEditItem(${item.id})" title="Edit Item">
+                                <i class="fas fa-edit mr-1.5"></i>
+                                <span class="hidden sm:inline">Edit</span>
+                            </button>
+                            <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="restockItem(${item.id})" title="Restock Item">
+                                <i class="fas fa-plus-circle mr-1.5"></i>
+                                <span class="hidden sm:inline">Restock</span>
+                            </button>
+                            <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="deleteItem(${item.id})" title="Delete Item">
+                                <i class="fas fa-trash-alt mr-1.5"></i>
+                                <span class="hidden sm:inline">Delete</span>
+                            </button>
+                        </div>
                     </td>
                 </tr>
             `;
@@ -824,35 +1045,54 @@ $(document).ready(function() {
                         const statusText = product.active ? 'Active' : 'Inactive';
                         
                         const combinedRow = `
-                            <tr>
+                            <tr class="hover:bg-gray-50 transition-colors duration-200">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-purple-500 flex items-center justify-center">
-                                                <i class="fas fa-utensils text-white"></i>
+                                            <div class="h-10 w-10 rounded-full bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center shadow-lg">
+                                                <i class="fas fa-utensils text-white text-sm"></i>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">${product.name}</div>
+                                            <div class="text-sm font-medium text-gray-900 truncate max-w-xs">${product.name}</div>
                                             <div class="text-sm text-gray-500">POS Product</div>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800">
-                                        POS
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                                        <i class="fas fa-utensils mr-1"></i>POS
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 capitalize">${product.category.replace('-', ' ')}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(product.price).toFixed(2)}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
+                                    <span class="px-2 py-1 inline-flex text-xs font-medium bg-purple-100 text-purple-800 rounded-full capitalize">
+                                        ${product.category.replace('-', ' ')}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <span class="font-bold text-lg text-green-600">₱${parseFloat(product.price).toFixed(2)}</span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass} border">
+                                        <i class="fas ${product.active ? 'fa-check-circle' : 'fa-times-circle'} mr-1"></i>
                                         ${statusText}
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                                    <button class="text-green-600 hover:text-green-900">View</button>
+                                    <div class="flex space-x-2">
+                                        <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="openEditItem(${product.id})" title="Edit Product">
+                                            <i class="fas fa-edit mr-1.5"></i>
+                                            <span class="hidden sm:inline">Edit</span>
+                                        </button>
+                                        <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="restockItem(${product.id})" title="Restock Product">
+                                            <i class="fas fa-plus-circle mr-1.5"></i>
+                                            <span class="hidden sm:inline">Restock</span>
+                                        </button>
+                                        <button class="group relative inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all duration-200 shadow-sm hover:shadow-md" onclick="deleteItem(${product.id})" title="Delete Product">
+                                            <i class="fas fa-trash-alt mr-1.5"></i>
+                                            <span class="hidden sm:inline">Delete</span>
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         `;
@@ -979,14 +1219,302 @@ $(document).ready(function() {
                     loadInventoryItems();
                     loadAllItems();
                 } else {
-                    alert('Error adding item: ' + response.message);
+                    alert('Error adding item: ' + (response.message || ''));
                 }
             },
             error: function(xhr, status, error) {
-                console.error('Error adding item:', error);
-                alert('Error adding item');
+                let msg = 'Error adding item';
+                try {
+                    const resp = xhr.responseJSON || JSON.parse(xhr.responseText);
+                    if (resp && resp.message) msg += ': ' + resp.message;
+                } catch(e) {}
+                alert(msg);
             }
         });
     }
+    
+    // Edit item (modal)
+    window.openEditItem = function(itemId) {
+        // Find the item data from the current items array
+        const item = window.currentItems ? window.currentItems.find(i => i.id == itemId) : null;
+        
+        if (item) {
+            $('#edit-item-id').val(itemId);
+            $('#edit-item-name').val(item.name);
+            $('#edit-item-sku').val(item.sku || '');
+            $('#edit-item-qty').val(item.quantity);
+            $('#edit-item-min').val(item.minimum_stock);
+            $('#edit-item-cost').val(parseFloat(item.cost_price || item.unit_price || 0).toFixed(2));
+            $('#edit-item-description').val(item.description || '');
+        } else {
+            // Fallback to table parsing if item not found in array
+            const row = $(event.target).closest('tr');
+            const name = row.find('td').eq(0).find('.text-sm.font-medium').text().trim();
+            const sku = row.find('td').eq(2).text().trim();
+            const qty = parseInt(row.find('td').eq(3).find('.font-medium').text()) || 0;
+            const min = parseInt(row.find('td').eq(4).find('.font-medium').text()) || 0;
+            const costText = row.find('td').eq(5).text().replace('₱','').replace(/,/g,'');
+            const cost = parseFloat(costText) || 0;
+
+            $('#edit-item-id').val(itemId);
+            $('#edit-item-name').val(name);
+            $('#edit-item-sku').val(sku === 'N/A' ? '' : sku);
+            $('#edit-item-qty').val(qty);
+            $('#edit-item-min').val(min);
+            $('#edit-item-cost').val(cost.toFixed(2));
+            $('#edit-item-description').val('');
+        }
+
+        // Show modal with animation
+        $('#edit-item-modal').removeClass('hidden').addClass('flex');
+        setTimeout(() => {
+            $('#edit-modal-content').removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+        }, 10);
+    }
+
+    window.closeEditModal = function() {
+        $('#edit-modal-content').removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+        setTimeout(() => {
+            $('#edit-item-modal').addClass('hidden').removeClass('flex');
+        }, 300);
+    }
+
+    window.submitEditItem = function() {
+        const id = $('#edit-item-id').val();
+        const name = $('#edit-item-name').val().trim();
+        const quantity = parseInt($('#edit-item-qty').val()) || 0;
+        const minimum_stock = parseInt($('#edit-item-min').val()) || 0;
+        const sku = $('#edit-item-sku').val().trim();
+        const cost_price = parseFloat($('#edit-item-cost').val()) || 0;
+        const description = $('#edit-item-description').val().trim();
+
+        // Validation
+        if (!name) {
+            alert('Please enter an item name');
+            $('#edit-item-name').focus();
+            return;
+        }
+
+        if (quantity < 0) {
+            alert('Quantity cannot be negative');
+            $('#edit-item-qty').focus();
+            return;
+        }
+
+        if (minimum_stock < 0) {
+            alert('Minimum stock cannot be negative');
+            $('#edit-item-min').focus();
+            return;
+        }
+
+        if (cost_price < 0) {
+            alert('Cost price cannot be negative');
+            $('#edit-item-cost').focus();
+            return;
+        }
+
+        const payload = {
+            id: id,
+            name: name,
+            quantity: quantity,
+            minimum_stock: minimum_stock,
+            sku: sku,
+            cost_price: cost_price,
+            description: description
+        };
+
+        // Show loading state
+        const submitBtn = $('button[onclick="submitEditItem()"]');
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i>Saving...').prop('disabled', true);
+
+        $.post('api/update-inventory-item.php', payload, function(resp){
+            if (resp.success) {
+                // Show success message
+                showNotification('Item updated successfully!', 'success');
+                closeEditModal();
+                loadInventoryItems();
+                loadAllItems();
+            } else {
+                showNotification('Update failed: ' + (resp.message || 'Unknown error'), 'error');
+            }
+        }, 'json').fail(function(xhr){
+            let msg = 'Update error';
+            try {
+                const resp = xhr.responseJSON || JSON.parse(xhr.responseText);
+                if (resp && resp.message) msg += ': ' + resp.message;
+            } catch(e) {}
+            showNotification(msg, 'error');
+        }).always(function() {
+            // Reset button state
+            submitBtn.html(originalText).prop('disabled', false);
+        });
+    }
+
+    // Restock simple handler (adds quantity)
+    window.restockItem = function(itemId) {
+        // Find the item data from the current items array
+        const item = window.currentItems ? window.currentItems.find(i => i.id == itemId) : null;
+        
+        if (item) {
+            $('#restock-item-id').val(itemId);
+            $('#restock-item-name').val(item.name);
+            $('#restock-unit').val(item.unit || 'pcs');
+        } else {
+            // Fallback to table parsing
+            const row = $(event.target).closest('tr');
+            const name = row.find('td').eq(0).find('.text-sm.font-medium').text().trim();
+            const unit = row.find('td').eq(3).find('.text-xs').text().trim();
+            $('#restock-item-id').val(itemId);
+            $('#restock-item-name').val(name);
+            $('#restock-unit').val(unit);
+        }
+        
+        $('#restock-add-qty').val(10);
+        
+        // Show modal with animation
+        $('#restock-item-modal').removeClass('hidden').addClass('flex');
+        setTimeout(() => {
+            $('#restock-modal-content').removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100');
+        }, 10);
+    }
+
+    window.closeRestockModal = function() {
+        $('#restock-modal-content').removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
+        setTimeout(() => {
+            $('#restock-item-modal').addClass('hidden').removeClass('flex');
+        }, 300);
+    }
+
+    window.submitRestockItem = function() {
+        const id = $('#restock-item-id').val();
+        const add = parseInt($('#restock-add-qty').val());
+        
+        if (isNaN(add) || add <= 0) { 
+            showNotification('Please enter a valid quantity', 'error');
+            $('#restock-add-qty').focus();
+            return; 
+        }
+
+        // Show loading state
+        const submitBtn = $('button[onclick="submitRestockItem()"]');
+        const originalText = submitBtn.html();
+        submitBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i>Restocking...').prop('disabled', true);
+
+        $.post('api/update-inventory-item.php', { id: id, quantity: add }, function(resp){
+            if (resp.success) {
+                showNotification('Item restocked successfully!', 'success');
+                closeRestockModal();
+                loadInventoryItems();
+                loadAllItems();
+            } else {
+                showNotification('Restock failed: ' + (resp.message || 'Unknown error'), 'error');
+            }
+        }, 'json').fail(function(xhr){
+            let msg = 'Restock error';
+            try {
+                const resp = xhr.responseJSON || JSON.parse(xhr.responseText);
+                if (resp && resp.message) msg += ': ' + resp.message;
+            } catch(e) {}
+            showNotification(msg, 'error');
+        }).always(function() {
+            // Reset button state
+            submitBtn.html(originalText).prop('disabled', false);
+        });
+    }
+
+    // Delete item
+    window.deleteItem = function(itemId) {
+        // Find item name for confirmation
+        const item = window.currentItems ? window.currentItems.find(i => i.id == itemId) : null;
+        const itemName = item ? item.name : 'this item';
+        
+        if (!confirm(`Are you sure you want to delete "${itemName}"?\n\nThis action cannot be undone.`)) return;
+        
+        // Show loading state on the delete button
+        const deleteBtn = $(event.target).closest('button');
+        const originalText = deleteBtn.html();
+        deleteBtn.html('<i class="fas fa-spinner fa-spin mr-1.5"></i><span class="hidden sm:inline">Deleting...</span>').prop('disabled', true);
+        
+        $.post('api/delete-inventory-item.php', { id: itemId }, function(resp){
+            if (resp.success) {
+                showNotification('Item deleted successfully!', 'success');
+                loadInventoryItems();
+                loadAllItems();
+            } else {
+                showNotification('Delete failed: ' + (resp.message || 'Unknown error'), 'error');
+                // Reset button state on error
+                deleteBtn.html(originalText).prop('disabled', false);
+            }
+        }, 'json').fail(function(xhr){
+            let msg = 'Delete error';
+            try {
+                const resp = xhr.responseJSON || JSON.parse(xhr.responseText);
+                if (resp && resp.message) msg += ': ' + resp.message;
+            } catch(e) {}
+            showNotification(msg, 'error');
+            // Reset button state on error
+            deleteBtn.html(originalText).prop('disabled', false);
+        });
+    }
+
+    // Notification system
+    function showNotification(message, type = 'info') {
+        const notification = $(`
+            <div class="fixed top-4 right-4 z-50 max-w-sm w-full bg-white rounded-lg shadow-lg border-l-4 transform transition-all duration-300 translate-x-full" 
+                 style="border-left-color: ${type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : type === 'warning' ? '#F59E0B' : '#3B82F6'}">
+                <div class="p-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <i class="fas ${type === 'success' ? 'fa-check-circle text-green-500' : type === 'error' ? 'fa-exclamation-circle text-red-500' : type === 'warning' ? 'fa-exclamation-triangle text-yellow-500' : 'fa-info-circle text-blue-500'}"></i>
+                        </div>
+                        <div class="ml-3 w-0 flex-1">
+                            <p class="text-sm font-medium text-gray-900">${message}</p>
+                        </div>
+                        <div class="ml-4 flex-shrink-0 flex">
+                            <button class="bg-white rounded-md inline-flex text-gray-400 hover:text-gray-500 focus:outline-none" onclick="$(this).closest('.fixed').remove()">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `);
+        
+        $('body').append(notification);
+        
+        // Animate in
+        setTimeout(() => {
+            notification.removeClass('translate-x-full');
+        }, 10);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.addClass('translate-x-full');
+            setTimeout(() => {
+                notification.remove();
+            }, 300);
+        }, 5000);
+    }
+    
+    // Handle URL parameters for quick actions
+    function handleUrlParameters() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const action = urlParams.get('action');
+        const filter = urlParams.get('filter');
+        
+        if (action === 'add') {
+            // Open add item modal
+            openAddItemModal();
+        } else if (filter === 'low_stock') {
+            // Filter to show low stock items
+            filterItems('low_stock');
+        }
+    }
+    
+    // Call on page load
+    $(document).ready(function() {
+        handleUrlParameters();
+    });
 });
 </script>

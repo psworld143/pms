@@ -7,6 +7,30 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_role = $_SESSION['user_role'];
 $user_name = $_SESSION['user_name'];
+
+if (!function_exists('booking_url')) {
+    function booking_base() {
+        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
+        $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
+        $pos = strpos($path, '/booking/');
+        if ($pos !== false) {
+            return rtrim(substr($path, 0, $pos + strlen('/booking/')), '/') . '/';
+        }
+        $dir = str_replace('\\','/', dirname($path));
+        $guard = 0;
+        while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'booking' && $guard < 10) {
+            $dir = dirname($dir);
+            $guard++;
+        }
+        if (basename($dir) === 'booking') {
+            return rtrim($dir, '/') . '/';
+        }
+        return '/booking/';
+    }
+    function booking_url($relative = '') {
+        return rtrim(booking_base(), '/') . '/' . ltrim($relative, '/');
+    }
+}
 ?>
 <!-- Training Navbar -->
 <header class="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex justify-between items-center px-6 z-50 shadow-lg">
@@ -56,19 +80,19 @@ $user_name = $_SESSION['user_name'];
                     <h3 class="text-lg font-semibold text-gray-800">Quick Actions</h3>
                 </div>
                 <div class="py-2">
-                    <a href="../modules/training/scenarios.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/training/scenarios.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-play mr-3"></i>
                         Start Scenario
                     </a>
-                    <a href="/pms/booking/modules/training/training-dashboard.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/training/training-dashboard.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-chart-line mr-3"></i>
                         View Progress
                     </a>
-                    <a href="../modules/training/certificates.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/training/certificates.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-certificate mr-3"></i>
                         Certificates
                     </a>
-                    <a href="../modules/training/leaderboard.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/training/leaderboard.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-trophy mr-3"></i>
                         Leaderboard
                     </a>
@@ -93,20 +117,20 @@ $user_name = $_SESSION['user_name'];
                     <div class="text-sm text-gray-500">Training Participant</div>
                 </div>
                 <div class="py-2">
-                    <a href="../profile.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('profile.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-user-circle mr-3"></i>
                         Profile
                     </a>
-                    <a href="../modules/training/settings.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/training/settings.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-cog mr-3"></i>
                         Settings
                     </a>
-                    <a href="../modules/training/activity-log.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                    <a href="<?php echo booking_url('modules/training/activity-log.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                         <i class="fas fa-history mr-3"></i>
                         Activity Log
                     </a>
                     <hr class="my-2">
-                    <a href="/pms/booking/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                    <a href="<?php echo booking_url('logout.php'); ?>" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                         <i class="fas fa-sign-out-alt mr-3"></i>
                         Logout
                     </a>

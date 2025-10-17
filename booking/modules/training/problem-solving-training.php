@@ -91,6 +91,14 @@ try {
         
         $answers = $attempt["answers"] ? json_decode($attempt["answers"], true) : [];
         $current_question = isset($_GET["question"]) ? (int)$_GET["question"] : 1;
+        
+        // Ensure current_question is within valid range
+        if ($current_question < 1) $current_question = 1;
+        if ($current_question > count($questions)) {
+            // If we're past the last question, redirect to results
+            header('Location: problem-solving-results.php?attempt_id=' . $attempt_id);
+            exit();
+        }
     } else {
         // Create new attempt
         $stmt = $pdo->prepare("
@@ -162,7 +170,8 @@ include "../../includes/sidebar-unified.php";
                                 <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
                                     <input type="radio" name="answer" value="<?php echo $value; ?>" 
                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                           <?php echo (isset($answers[$current_question]) && $answers[$current_question] === $value) ? "checked" : ""; ?>>
+                                           <?php echo (isset($answers[$current_question]) && $answers[$current_question] === $value) ? "checked" : ""; ?>
+                                           required>
                                     <span class="ml-3 text-gray-700">
                                         <span class="font-medium"><?php echo $value; ?>.</span>
                                         <?php echo htmlspecialchars($text); ?>
@@ -269,6 +278,18 @@ include "../../includes/sidebar-unified.php";
                 window.location.href = `problem-solving-training.php?id=<?php echo $scenario_id; ?>&attempt_id=<?php echo $attempt_id; ?>&question=${currentQuestion - 1}`;
             }
         }
+
+        // Prevent form submission if no answer is selected
+        document.getElementById("questionForm").addEventListener("submit", function(e) {
+            const selectedAnswer = document.querySelector("input[name=\"answer\"]:checked");
+            if (!selectedAnswer) {
+                e.preventDefault();
+                alert("Please select an answer before continuing.");
+                return false;
+            }
+            // Allow form to submit
+            console.log("Form submitting with answer:", selectedAnswer.value);
+        });
         </script>
 
 <?php include "../../includes/footer.php"; ?>

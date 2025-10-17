@@ -11,86 +11,102 @@ $user_role = $_SESSION['user_role'];
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $current_url = $_SERVER['REQUEST_URI'];
 
+if (!function_exists('booking_url')) {
+    function booking_base() {
+        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
+        $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
+        $pos = strpos($path, '/booking/');
+        if ($pos !== false) {
+            return rtrim(substr($path, 0, $pos + strlen('/booking/')), '/') . '/';
+        }
+        $dir = str_replace('\\','/', dirname($path));
+        $guard = 0;
+        while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'booking' && $guard < 10) {
+            $dir = dirname($dir);
+            $guard++;
+        }
+        if (basename($dir) === 'booking') {
+            return rtrim($dir, '/') . '/';
+        }
+        return '/booking/';
+    }
+    function booking_url($relative = '') {
+        return rtrim(booking_base(), '/') . '/' . ltrim($relative, '/');
+    }
+}
+
 // Function to check if a URL is active
-function isActiveUrl($url, $current_url) {
-    $clean_url = strtok($url, '?');
-    $clean_current = strtok($current_url, '?');
-    
-    if ($clean_current === $clean_url) {
-        return true;
-    }
-    
-    if (strpos($clean_current, $clean_url) !== false) {
-        return true;
-    }
-    
-    return false;
+function isActiveUrl($relativePath, $currentUrl)
+{
+    $normalizedCurrent = rtrim(parse_url($currentUrl, PHP_URL_PATH), '/');
+    $normalizedTarget = rtrim(parse_url(booking_url($relativePath), PHP_URL_PATH), '/');
+    return $normalizedCurrent === $normalizedTarget;
 }
 
 // Booking System Navigation Items
 $navigation_items = [
     'dashboard' => [
-        'url' => '/pms/booking/index.php',
+        'url' => booking_url('index.php'),
         'icon' => 'fas fa-tachometer-alt',
         'label' => 'Booking Dashboard',
         'roles' => ['manager', 'front_desk', 'housekeeping', 'student'],
-        'active' => isActiveUrl('/pms/booking/index.php', $current_url)
+        'active' => isActiveUrl('index.php', $current_url)
     ],
     'reservations' => [
-        'url' => '/pms/booking/modules/front-desk/manage-reservations.php',
+        'url' => booking_url('modules/front-desk/manage-reservations.php'),
         'icon' => 'fas fa-calendar-check',
         'label' => 'Reservations',
         'roles' => ['manager', 'front_desk', 'student'],
-        'active' => strpos($current_url, 'manage-reservations') !== false
+        'active' => isActiveUrl('modules/front-desk/manage-reservations.php', $current_url)
     ],
     'check_in' => [
-        'url' => '/pms/booking/modules/front-desk/check-in.php',
+        'url' => booking_url('modules/front-desk/check-in.php'),
         'icon' => 'fas fa-sign-in-alt',
         'label' => 'Check In',
         'roles' => ['manager', 'front_desk', 'student'],
-        'active' => strpos($current_url, 'check-in') !== false
+        'active' => isActiveUrl('modules/front-desk/check-in.php', $current_url)
     ],
     'check_out' => [
-        'url' => '/pms/booking/modules/front-desk/check-out.php',
+        'url' => booking_url('modules/front-desk/check-out.php'),
         'icon' => 'fas fa-sign-out-alt',
         'label' => 'Check Out',
         'roles' => ['manager', 'front_desk', 'student'],
-        'active' => strpos($current_url, 'check-out') !== false
+        'active' => isActiveUrl('modules/front-desk/check-out.php', $current_url)
     ],
     'guest_management' => [
-        'url' => '/pms/booking/modules/front-desk/guest-management.php',
+        'url' => booking_url('modules/front-desk/guest-management.php'),
         'icon' => 'fas fa-users',
         'label' => 'Guest Management',
         'roles' => ['manager', 'front_desk', 'student'],
-        'active' => strpos($current_url, 'guest-management') !== false
+        'active' => isActiveUrl('modules/front-desk/guest-management.php', $current_url)
     ],
     'room_status' => [
-        'url' => '/pms/booking/modules/housekeeping/room-status.php',
+        'url' => booking_url('modules/housekeeping/room-status.php'),
         'icon' => 'fas fa-bed',
         'label' => 'Room Status',
         'roles' => ['manager', 'housekeeping', 'student'],
-        'active' => strpos($current_url, 'room-status') !== false
+        'active' => isActiveUrl('modules/housekeeping/room-status.php', $current_url)
     ],
     'billing' => [
-        'url' => '/pms/booking/modules/front-desk/billing-payment.php',
+        'url' => booking_url('modules/front-desk/billing-payment.php'),
         'icon' => 'fas fa-credit-card',
         'label' => 'Billing & Payments',
         'roles' => ['manager', 'front_desk', 'student'],
-        'active' => strpos($current_url, 'billing-payment') !== false
+        'active' => isActiveUrl('modules/front-desk/billing-payment.php', $current_url)
     ],
     'reports' => [
-        'url' => '/pms/booking/modules/management/reports-dashboard.php',
+        'url' => booking_url('modules/management/reports-dashboard.php'),
         'icon' => 'fas fa-chart-line',
         'label' => 'Reports',
         'roles' => ['manager', 'student'],
-        'active' => strpos($current_url, 'reports') !== false
+        'active' => isActiveUrl('modules/management/reports-dashboard.php', $current_url)
     ],
     'training' => [
-        'url' => '/pms/booking/modules/training/training-dashboard.php',
+        'url' => booking_url('modules/training/training-dashboard.php'),
         'icon' => 'fas fa-graduation-cap',
         'label' => 'Training',
         'roles' => ['manager', 'front_desk', 'housekeeping', 'student'],
-        'active' => strpos($current_url, 'training') !== false
+        'active' => isActiveUrl('modules/training/training-dashboard.php', $current_url)
     ]
 ];
 
@@ -134,19 +150,18 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
     <div class="p-4 border-t border-gray-200">
         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Quick Actions</h3>
         <div class="space-y-2">
-            <a href="/pms/booking/modules/front-desk/new-reservation.php" 
+            <a href="<?php echo booking_url('modules/front-desk/new-reservation.php'); ?>" 
                class="flex items-center px-3 py-2 text-sm text-green-600 hover:text-green-700 hover:bg-green-50 rounded transition-colors">
                 <i class="fas fa-plus-circle mr-2"></i>
                 New Reservation
             </a>
-            <a href="/pms/booking/modules/front-desk/room-status.php" 
+            <a href="<?php echo booking_url('modules/housekeeping/room-status.php'); ?>" 
                class="flex items-center px-3 py-2 text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors">
                 <i class="fas fa-eye mr-2"></i>
                 View Rooms
             </a>
         </div>
     </div>
-    
 </nav>
 
 <!-- Sidebar Overlay for Mobile -->

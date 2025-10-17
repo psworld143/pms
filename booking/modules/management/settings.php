@@ -4,13 +4,15 @@
  * Hotel PMS Training System for Students
  */
 
-session_start();
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
+require_once __DIR__ . '/../../includes/booking-paths.php';
 
-// Check if user is logged in and has manager role
+booking_initialize_paths();
+
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
-    header('Location: ../../login.php');
+    header('Location: ' . booking_base() . 'login.php');
     exit();
 }
 

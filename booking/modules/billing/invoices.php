@@ -8,6 +8,10 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
+// Load dynamic data
+$invoiceMetrics = getInvoiceMetrics();
+$invoices = getBills('', '', null);
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../login.php');
@@ -37,7 +41,7 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Invoice Statistics -->
+            <!-- Invoice Statistics (Dynamic) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
@@ -48,7 +52,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Invoices</p>
-                            <p class="text-2xl font-semibold text-gray-900">1,247</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($invoiceMetrics['total_invoices']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -62,7 +66,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Paid Invoices</p>
-                            <p class="text-2xl font-semibold text-gray-900">1,156</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($invoiceMetrics['paid_count']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -76,7 +80,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Pending</p>
-                            <p class="text-2xl font-semibold text-gray-900">67</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($invoiceMetrics['pending_count']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -90,7 +94,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Overdue</p>
-                            <p class="text-2xl font-semibold text-gray-900">24</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($invoiceMetrics['overdue_count']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -168,139 +172,95 @@ include '../../includes/sidebar-unified.php';
                     </div>
                 </div>
 
-                <!-- Invoice Summary -->
+            <!-- Invoice Summary (Dynamic) -->
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Invoice Summary</h3>
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Total Revenue:</span>
-                            <span class="font-semibold text-gray-900">$125,450</span>
+                        <span class="font-semibold text-gray-900">₱<?php echo number_format($invoiceMetrics['total_revenue'], 2); ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Outstanding Amount:</span>
-                            <span class="font-semibold text-red-600">$8,750</span>
+                        <span class="font-semibold text-red-600">₱<?php echo number_format($invoiceMetrics['outstanding_amount'], 2); ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Average Invoice:</span>
-                            <span class="font-semibold text-gray-900">$100.60</span>
+                        <span class="font-semibold text-gray-900">₱<?php echo number_format($invoiceMetrics['average_invoice'], 2); ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Payment Rate:</span>
-                            <span class="font-semibold text-green-600">92.7%</span>
+                        <span class="font-semibold text-green-600"><?php
+                            $paid = max(0, (int)$invoiceMetrics['paid_count']);
+                            $total = max(1, (int)$invoiceMetrics['total_invoices']);
+                            echo number_format(($paid / $total) * 100, 1); ?>%</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Invoices Table -->
+            <!-- Invoices Table (Dynamic) -->
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800">All Invoices</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#INV-001</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-8 w-8">
-                                            <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-                                                <span class="text-white text-xs font-medium">JD</span>
+                    <?php if (!empty($invoices)): ?>
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice #</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Due Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php foreach ($invoices as $inv): ?>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#<?php echo htmlspecialchars($inv['bill_number']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-8 w-8">
+                                                <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
+                                                    <span class="text-white text-xs font-medium"><?php echo strtoupper(substr($inv['guest_name'],0,1)); ?></span>
+                                                </div>
+                                            </div>
+                                            <div class="ml-3">
+                                                <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($inv['guest_name']); ?></div>
                                             </div>
                                         </div>
-                                        <div class="ml-3">
-                                            <div class="text-sm font-medium text-gray-900">John Doe</div>
-                                            <div class="text-sm text-gray-500">john.doe@email.com</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 205</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$450.00</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-15</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-22</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Paid
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Download</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#INV-002</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-8 w-8">
-                                            <div class="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
-                                                <span class="text-white text-xs font-medium">JS</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-3">
-                                            <div class="text-sm font-medium text-gray-900">Jane Smith</div>
-                                            <div class="text-sm text-gray-500">jane.smith@email.com</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 301</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$320.00</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-14</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-21</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Pending
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Send</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#INV-003</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-8 w-8">
-                                            <div class="h-8 w-8 rounded-full bg-purple-500 flex items-center justify-center">
-                                                <span class="text-white text-xs font-medium">RB</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-3">
-                                            <div class="text-sm font-medium text-gray-900">Robert Brown</div>
-                                            <div class="text-sm text-gray-500">robert.brown@email.com</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 102</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$180.00</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-10</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-17</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                        Overdue
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-red-600 hover:text-red-900">Remind</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room <?php echo htmlspecialchars($inv['room_number']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱<?php echo number_format($inv['total_amount'], 2); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($inv['bill_date']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($inv['due_date']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php
+                                            $cls = 'bg-gray-100 text-gray-800';
+                                            if ($inv['status'] === 'paid') $cls = 'bg-green-100 text-green-800';
+                                            elseif ($inv['status'] === 'pending') $cls = 'bg-yellow-100 text-yellow-800';
+                                            elseif ($inv['status'] === 'overdue') $cls = 'bg-red-100 text-red-800';
+                                        ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $cls; ?>">
+                                            <?php echo htmlspecialchars(ucfirst($inv['status'])); ?>
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                                        <button class="text-green-600 hover:text-green-900">Download</button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php else: ?>
+                        <div class="p-6 text-center text-gray-500">No invoices found.</div>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>

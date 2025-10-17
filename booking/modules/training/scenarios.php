@@ -133,10 +133,10 @@ include '../../includes/sidebar-unified.php';
                         <p class="text-gray-600 mt-1">Choose from a variety of training scenarios to improve your skills</p>
                     </div>
                     <div class="flex space-x-3">
-                        <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
+                        <button id="btn-random-scenario" class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
                             <i class="fas fa-random mr-2"></i>Random Scenario
                         </button>
-                        <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
+                        <button id="btn-download-certificate" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
                             <i class="fas fa-download mr-2"></i>Download Certificate
                         </button>
                     </div>
@@ -205,7 +205,7 @@ include '../../includes/sidebar-unified.php';
             </div>
 
             <!-- Scenarios Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div id="scenarios-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <?php if (empty($scenarios)): ?>
                     <div class="col-span-full text-center py-12">
                         <i class="fas fa-play-circle text-4xl text-gray-400 mb-4"></i>
@@ -350,44 +350,91 @@ include '../../includes/sidebar-unified.php';
                 });
             });
 
-            // Category filter
-            $('#category-filter').on('change', function() {
-                console.log('Category filter changed:', $(this).val());
-                const selectedCategory = $(this).val();
-                $('.scenario-card').each(function() {
-                    const category = $(this).data('category');
-                    
-                    if (selectedCategory === '' || category === selectedCategory) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
+            // AJAX load scenarios
+            let lastFetchedList = [];
+            async function fetchScenarios() {
+                const category = $('#category-filter').val() || '';
+                const difficulty = $('#difficulty-filter').val() || '';
+                const search = ($('#search-scenarios').val() || '').toLowerCase();
+                const $grid = $('#scenarios-grid');
+                $grid.html('<div class="col-span-full text-center py-12 text-gray-500">Loading scenarios...</div>');
+                try {
+                    const res = await fetch(`../../api/training/get-scenarios.php?category=${encodeURIComponent(category)}&difficulty=${encodeURIComponent(difficulty)}`);
+                    const data = await res.json();
+                    if (!data.success) throw new Error(data.message || 'Failed');
+                    lastFetchedList = data.scenarios || [];
+                    const list = lastFetchedList.filter(s => !search || (String(s.title||'').toLowerCase().includes(search) || String(s.description||'').toLowerCase().includes(search)));
+                    if (!list.length) {
+                        $grid.html('<div class="col-span-full text-center py-12 text-gray-500">No scenarios found.</div>');
+                        return;
                     }
-                });
-            });
+                    $grid.html(list.map(renderScenarioCard).join(''));
+                } catch (e) {
+                    console.error(e);
+                    $grid.html('<div class="col-span-full text-center py-12 text-red-600">Error loading scenarios.</div>');
+                }
+            }
 
-            // Difficulty filter
-            $('#difficulty-filter').on('change', function() {
-                console.log('Difficulty filter changed:', $(this).val());
-                const selectedDifficulty = $(this).val();
-                $('.scenario-card').each(function() {
-                    const difficulty = $(this).data('difficulty');
-                    
-                    if (selectedDifficulty === '' || difficulty === selectedDifficulty) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
+            function renderScenarioCard(s) {
+                const difficultyClass = s.difficulty === 'advanced' ? 'bg-red-100 text-red-800' : (s.difficulty === 'intermediate' ? 'bg-yellow-100 text-yellow-800' : 'bg-green-100 text-green-800');
+                const categoryIcon = s.category === 'housekeeping' ? 'fas fa-broom' : (s.category === 'management' ? 'fas fa-chart-line' : 'fas fa-user-tie');
+                return `
+                <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-300 scenario-card flex flex-col" data-category="${s.category||''}" data-difficulty="${s.difficulty||''}" data-title="${(s.title||'').toLowerCase()}">
+                  <div class="p-6 border-b border-gray-200">
+                    <div class="flex items-start justify-between mb-4">
+                      <div class="flex items-center">
+                        <i class="${categoryIcon} text-purple-600 text-xl mr-3"></i>
+                        <div>
+                          <h3 class="text-lg font-semibold text-gray-900">${escapeHtml(s.title||'Scenario')}</h3>
+                          <p class="text-sm text-gray-500">${(s.category||'').replace('_',' ')}</p>
+                        </div>
+                      </div>
+                    </div>
+                    <p class="text-gray-600 text-sm mb-4">${escapeHtml((s.description||'').slice(0,100))}${(s.description||'').length>100?'...':''}</p>
+                    <div class="flex items-center justify-between">
+                      <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${difficultyClass}">${(s.difficulty||'').charAt(0).toUpperCase()+ (s.difficulty||'').slice(1)}</span>
+                      <div class="flex items-center text-sm text-gray-500"><i class="fas fa-clock mr-1"></i>${s.estimated_time||0} min</div>
+                    </div>
+                  </div>
+                  <div class="p-6 pt-0">
+                    <div class="flex space-x-2">
+                      <button onclick="startScenario(${s.id})" class="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors text-sm"><i class="fas fa-play mr-2"></i>Start</button>
+                      <button onclick="previewScenario(${s.id})" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm"><i class="fas fa-eye mr-2"></i>Preview</button>
+                    </div>
+                  </div>
+                </div>`;
+            }
 
-            // Clear filters
-            $('#clear-filters').on('click', function() {
-                console.log('Clear filters clicked');
+            function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+            // Bind filters
+            $('#category-filter, #difficulty-filter').on('change', fetchScenarios);
+            $('#search-scenarios').on('input', fetchScenarios);
+            $('#clear-filters').on('click', function(){
                 $('#search-scenarios').val('');
                 $('#category-filter').val('');
                 $('#difficulty-filter').val('');
-                $('.scenario-card').show();
+                fetchScenarios();
             });
+
+            // Random Scenario
+            $('#btn-random-scenario').on('click', function(){
+                if (!lastFetchedList.length) { fetchScenarios().then(()=> pickRandom()); }
+                else { pickRandom(); }
+                function pickRandom(){
+                    if (!lastFetchedList.length) return;
+                    const random = lastFetchedList[Math.floor(Math.random()*lastFetchedList.length)];
+                    if (random && random.id) startScenario(random.id);
+                }
+            });
+
+            // Download Certificate (global training cert summary)
+            $('#btn-download-certificate').on('click', function(){
+                window.open('../../api/training/download-certificate.php', '_blank');
+            });
+
+            // Initial load
+            fetchScenarios();
             
             console.log('Filters initialized successfully');
         });
@@ -404,9 +451,43 @@ include '../../includes/sidebar-unified.php';
             }
         }
 
-        function previewScenario(scenarioId) {
-            // Open preview modal or redirect to preview page
-            window.location.href = `scenario-preview.php?id=${scenarioId}`;
+        async function previewScenario(scenarioId) {
+            // Load details and show lightweight preview modal
+            const modalId = 'scenario-preview-modal';
+            let modal = document.getElementById(modalId);
+            if (!modal) {
+                modal = document.createElement('div');
+                modal.id = modalId;
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden';
+                modal.innerHTML = `
+                  <div class="bg-white rounded-lg p-6 max-w-3xl w-full mx-4">
+                    <div class="flex justify-between items-center mb-4">
+                      <h3 id="preview-title" class="text-lg font-semibold text-gray-900">Scenario Preview</h3>
+                      <button onclick="document.getElementById('${modalId}').classList.add('hidden')" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>
+                    </div>
+                    <div id="preview-body" class="text-gray-700">Loading...</div>
+                    <div class="text-right mt-6">
+                      <button onclick="startScenario(${scenarioId})" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Start Scenario</button>
+                    </div>
+                  </div>`;
+                document.body.appendChild(modal);
+                modal.addEventListener('click', (e)=>{ if(e.target===modal) modal.classList.add('hidden'); });
+            }
+            modal.classList.remove('hidden');
+            const titleEl = document.getElementById('preview-title');
+            const bodyEl = document.getElementById('preview-body');
+            bodyEl.textContent = 'Loading...';
+            try {
+                const res = await fetch(`../../api/training/get-scenario-details.php?id=${scenarioId}`);
+                const data = await res.json();
+                if (!data.success) throw new Error(data.message||'Failed');
+                titleEl.textContent = data.scenario.title || 'Scenario Preview';
+                const desc = (data.scenario.description||'').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+                const questions = (data.questions||[]).slice(0,3).map((q,i)=>`<div class="mb-3"><div class="font-medium">${i+1}. ${q.question}</div></div>`).join('');
+                bodyEl.innerHTML = `<div class="mb-4">${desc}</div>${questions || '<div class="text-sm text-gray-500">No preview questions available.</div>'}`;
+            } catch(e) {
+                bodyEl.innerHTML = '<div class="text-red-600">Failed to load preview.</div>';
+            }
         }
 
         function viewResults(scenarioId) {

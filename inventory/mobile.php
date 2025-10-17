@@ -4,19 +4,19 @@
  * Hotel PMS Training System - Inventory Module
  */
 
-session_start();
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../vps_session_fix.php';
+require_once __DIR__ . '/../includes/database.php';
 
-// Check if user is logged in
+// Check if user is logged in and has appropriate role
 if (!isset($_SESSION['user_id'])) {
     header('Location: login.php');
     exit();
 }
 
-// Check if user has housekeeping role
-$user_role = $_SESSION['role'] ?? 'student';
-if (!in_array($user_role, ['housekeeping', 'manager', 'student'])) {
-    header('Location: index.php');
+// Check if user has appropriate role (only manager and housekeeping)
+$user_role = $_SESSION['user_role'] ?? '';
+if (!in_array($user_role, ['housekeeping', 'manager'])) {
+    header('Location: login.php?error=access_denied');
     exit();
 }
 

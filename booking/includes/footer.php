@@ -245,6 +245,23 @@
             // Load notifications
             loadNotifications();
             
+            // Ensure sidebar links always navigate (guard against accidental preventDefault)
+            (function ensureSidebarNavigation() {
+                const sidebar = document.getElementById('sidebar');
+                if (!sidebar) return;
+                const links = sidebar.querySelectorAll('a[href]');
+                links.forEach(a => {
+                    a.addEventListener('click', function(e) {
+                        const href = this.getAttribute('href');
+                        if (!href || href === '#' || href.startsWith('javascript:')) return;
+                        // If another handler prevented default, force navigation
+                        if (e.defaultPrevented) {
+                            window.location.href = href;
+                        }
+                    }, true); // capture phase to observe prevented events
+                });
+            })();
+            
 
         });
 

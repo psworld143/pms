@@ -8,6 +8,10 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 
+// Load dynamic data
+$discountMetrics = getDiscountMetrics();
+$discounts = getDiscounts('', null);
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../login.php');
@@ -37,7 +41,7 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Discount Statistics -->
+            <!-- Discount Statistics (Dynamic) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
@@ -47,8 +51,8 @@ include '../../includes/sidebar-unified.php';
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Active Discounts</p>
-                            <p class="text-2xl font-semibold text-gray-900">24</p>
+                            <p class="text-sm font-medium text-gray-500">Total Discounts</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($discountMetrics['total_discounts']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -62,7 +66,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Savings</p>
-                            <p class="text-2xl font-semibold text-gray-900">$12,450</p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($discountMetrics['total_amount'], 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -75,8 +79,8 @@ include '../../includes/sidebar-unified.php';
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Guests Benefited</p>
-                            <p class="text-2xl font-semibold text-gray-900">456</p>
+                            <p class="text-sm font-medium text-gray-500">Avg. Discount</p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($discountMetrics['average_amount'], 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -89,8 +93,8 @@ include '../../includes/sidebar-unified.php';
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Avg. Discount</p>
-                            <p class="text-2xl font-semibold text-gray-900">15%</p>
+                            <p class="text-sm font-medium text-gray-500">Types Tracked</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo count($discountMetrics['type_counts']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -227,69 +231,40 @@ include '../../includes/sidebar-unified.php';
                 </form>
             </div>
 
-            <!-- Discounts Table -->
+            <!-- Discounts Table (Dynamic) -->
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800">All Discounts</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount Name</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Value</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Usage</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Valid Period</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div>
-                                        <div class="text-sm font-medium text-gray-900">Early Bird Special</div>
-                                        <div class="text-sm text-gray-500">20% off for advance booking</div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Percentage</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">20%</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">45/100</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-01 to 2024-12-31</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                                    <button class="text-red-600 hover:text-red-900">Deactivate</button>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div>
-                                        <div class="text-sm font-medium text-gray-900">Weekend Special</div>
-                                        <div class="text-sm text-gray-500">$50 off weekend stays</div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Fixed Amount</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$50</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">23/50</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-01 to 2024-06-30</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Active
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">Edit</button>
-                                    <button class="text-red-600 hover:text-red-900">Deactivate</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
+                    <?php if (!empty($discounts)): ?>
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bill</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Applied</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php foreach ($discounts as $d): ?>
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($d['reason'] ?? ($d['description'] ?? 'Discount')); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars(ucfirst($d['discount_type'])); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱<?= number_format($d['discount_amount'], 2); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">#<?= htmlspecialchars($d['bill_number']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($d['guest_name']); ?> (Room <?= htmlspecialchars($d['room_number']); ?>)</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($d['created_at']); ?></td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    <?php else: ?>
+                        <div class="p-6 text-center text-gray-500">No discounts found.</div>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>

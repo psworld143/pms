@@ -26,25 +26,42 @@ try {
         throw new Exception('Invalid input data');
     }
     
+    // Normalize payload
+    $guestId = (int)($input['guest_id'] ?? 0);
+    $reservationId = isset($input['reservation_id']) && $input['reservation_id'] !== ''
+        ? (int)$input['reservation_id']
+        : null;
+    $feedbackType = trim((string)($input['feedback_type'] ?? ''));
+    $category = trim((string)($input['category'] ?? ''));
+    $comments = trim((string)($input['comments'] ?? ''));
+    $rating = $input['rating'] !== '' ? $input['rating'] : null;
+
     // Validate required fields
-    if (empty($input['guest_id'])) {
+    if ($guestId <= 0) {
         throw new Exception('Guest ID is required');
     }
     
-    if (empty($input['feedback_type'])) {
+    if ($feedbackType === '') {
         throw new Exception('Feedback type is required');
     }
     
-    if (empty($input['category'])) {
+    if ($category === '') {
         throw new Exception('Category is required');
     }
     
-    if (empty($input['comments'])) {
+    if ($comments === '') {
         throw new Exception('Comments are required');
     }
     
     // Save feedback
-    $result = saveFeedback($input);
+    $result = saveFeedback([
+        'guest_id' => $guestId,
+        'reservation_id' => $reservationId,
+        'feedback_type' => $feedbackType,
+        'category' => $category,
+        'comments' => $comments,
+        'rating' => $rating,
+    ]);
     
     echo json_encode($result);
     
@@ -64,30 +81,47 @@ function saveFeedback($data) {
     
     try {
         $pdo->beginTransaction();
-        
+
         // Get guest information
         $stmt = $pdo->prepare("SELECT first_name, last_name FROM guests WHERE id = ?");
         $stmt->execute([$data['guest_id']]);
         $guest = $stmt->fetch();
-        
+
         if (!$guest) {
             throw new Exception('Guest not found');
         }
-        
-        // Insert feedback
+
+        if ($data['reservation_id']) {
+            $stmt = $pdo->prepare("SELECT id FROM reservations WHERE id = ? AND guest_id = ?");
+            $stmt->execute([$data['reservation_id'], $data['guest_id']]);
+            if (!$stmt->fetch()) {
+                throw new Exception('Reservation does not belong to this guest');
+            }
+        } else {
+            $stmt = $pdo->prepare("SELECT id FROM reservations WHERE guest_id = ? ORDER BY check_in_date DESC, created_at DESC LIMIT 1");
+            $stmt->execute([$data['guest_id']]);
+            $latestReservation = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$latestReservation) {
+                throw new Exception('Guest has no reservations to attach feedback to. Please create a reservation first.');
+            }
+
+            $data['reservation_id'] = (int)$latestReservation['id'];
+        }
+
         $stmt = $pdo->prepare("
             INSERT INTO guest_feedback (
-                guest_id, reservation_id, feedback_type, category, 
+                guest_id, reservation_id, feedback_type, category,
                 rating, comments, created_at
             ) VALUES (?, ?, ?, ?, ?, ?, NOW())
         ");
-        
+
         $stmt->execute([
             $data['guest_id'],
-            $data['reservation_id'] ?? null,
+            $data['reservation_id'],
             $data['feedback_type'],
             $data['category'],
-            $data['rating'] ?? null,
+            $data['rating'],
             $data['comments']
         ]);
         

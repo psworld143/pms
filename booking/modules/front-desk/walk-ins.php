@@ -4,23 +4,35 @@
  * Hotel PMS Training System for Students
  */
 
-session_start();
-require_once __DIR__ . '/../../config/database.php';
-require_once __DIR__ . '/../../includes/functions.php';
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+require_once dirname(__DIR__, 2) . '/config/database.php';
+require_once dirname(__DIR__, 2) . '/includes/functions.php';
+require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
+
+booking_initialize_paths();
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../login.php');
+    header('Location: ' . booking_base() . 'login.php');
     exit();
 }
+
+// Load dynamic data
+$today = date('Y-m-d');
+$recentWalkIns = getReservations('walk_in', '', 10) ?: [];
+$todayWalkIns = array_filter($recentWalkIns, function($r) use ($today) { return substr($r['created_at'],0,10) === $today; });
+$successfulCheckins = array_filter($recentWalkIns, function($r){ return ($r['status'] ?? '') === 'checked_in'; });
+$pendingWalkIns = array_filter($recentWalkIns, function($r){ return ($r['status'] ?? '') === 'pending'; });
+$walkInRevenue = 0;
+foreach ($recentWalkIns as $r) { $walkInRevenue += (float)($r['total_amount'] ?? 0); }
 
 // Set page title
 $page_title = 'Walk-in Reservations';
 
 // Include header
-include '../../includes/header-unified.php';
+include dirname(__DIR__, 2) . '/includes/header-unified.php';
 // Include sidebar
-include '../../includes/sidebar-unified.php';
+include dirname(__DIR__, 2) . '/includes/sidebar-unified.php';
 ?>
 
         <!-- Main Content -->
@@ -34,7 +46,7 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Walk-in Statistics -->
+            <!-- Walk-in Statistics (Dynamic) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
@@ -45,7 +57,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Today's Walk-ins</p>
-                            <p class="text-2xl font-semibold text-gray-900">12</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format(count($todayWalkIns)); ?></p>
                         </div>
                     </div>
                 </div>
@@ -59,7 +71,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Successful Check-ins</p>
-                            <p class="text-2xl font-semibold text-gray-900">10</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format(count($successfulCheckins)); ?></p>
                         </div>
                     </div>
                 </div>
@@ -73,7 +85,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Pending</p>
-                            <p class="text-2xl font-semibold text-gray-900">2</p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format(count($pendingWalkIns)); ?></p>
                         </div>
                     </div>
                 </div>
@@ -87,16 +99,16 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Revenue</p>
-                            <p class="text-2xl font-semibold text-gray-900">$1,250</p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($walkInRevenue, 2); ?></p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Walk-in Form -->
+            <!-- Walk-in Form (Dynamic options) -->
             <div class="bg-white rounded-lg shadow p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">New Walk-in Reservation</h3>
-                <form class="space-y-6">
+                <form id="walkin-form" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Guest Name</label>
@@ -111,12 +123,25 @@ include '../../includes/sidebar-unified.php';
                             <input type="email" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter email address">
                         </div>
                         <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ID Type</label>
+                            <select name="id_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <option value="">Select ID Type</option>
+                                <option value="passport">Passport</option>
+                                <option value="drivers_license">Driver's License</option>
+                                <option value="national_id">National ID</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ID Number</label>
+                            <input type="text" name="id_number" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter ID number" required>
+                        </div>
+                        <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Room Type</label>
-                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>Standard Room</option>
-                                <option>Deluxe Room</option>
-                                <option>Suite</option>
-                                <option>Presidential Suite</option>
+                            <select name="room_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <?php foreach (getRoomTypes() as $key => $rt): ?>
+                                    <option value="<?php echo htmlspecialchars($key); ?>"><?php echo htmlspecialchars(ucfirst($key)); ?></option>
+                                <?php endforeach; ?>
                             </select>
                         </div>
                         <div>
@@ -128,8 +153,12 @@ include '../../includes/sidebar-unified.php';
                             <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Number of Guests</label>
-                            <input type="number" min="1" max="6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Adults</label>
+                            <input type="number" name="adults" value="1" min="1" max="6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Children</label>
+                            <input type="number" name="children" value="0" min="0" max="6" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Special Requests</label>
@@ -147,12 +176,13 @@ include '../../includes/sidebar-unified.php';
                 </form>
             </div>
 
-            <!-- Recent Walk-ins -->
+            <!-- Recent Walk-ins (Dynamic) -->
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800">Recent Walk-ins</h3>
                 </div>
                 <div class="overflow-x-auto">
+                    <?php if (!empty($recentWalkIns)): ?>
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -165,67 +195,79 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
+                            <?php foreach ($recentWalkIns as $row): ?>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10">
                                             <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
-                                                <span class="text-white font-medium">JD</span>
+                                                <span class="text-white font-medium"><?php echo strtoupper(substr($row['guest_name'],0,2)); ?></span>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">John Doe</div>
-                                            <div class="text-sm text-gray-500">john.doe@email.com</div>
+                                            <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($row['guest_name']); ?></div>
+                                            <div class="text-sm text-gray-500"><?php echo htmlspecialchars($row['email'] ?? ''); ?></div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 205</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-15</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-17</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room <?php echo htmlspecialchars($row['room_number']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($row['check_in_date']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($row['check_out_date']); ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                        Checked In
-                                    </span>
+                                    <?php $cls = $row['status']==='checked_in'?'bg-green-100 text-green-800':($row['status']==='pending'?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-800'); ?>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $cls; ?>"><?php echo htmlspecialchars(getStatusLabel($row['status'])); ?></span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                                    <?php if (($row['status'] ?? '') !== 'checked_in'): ?>
                                     <button class="text-green-600 hover:text-green-900">Check-in</button>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10">
-                                            <div class="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center">
-                                                <span class="text-white font-medium">JS</span>
-                                            </div>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">Jane Smith</div>
-                                            <div class="text-sm text-gray-500">jane.smith@email.com</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 301</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-15</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-16</td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                        Pending
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Check-in</button>
-                                </td>
-                            </tr>
+                            <?php endforeach; ?>
                         </tbody>
                     </table>
+                    <?php else: ?>
+                        <div class="p-6 text-center text-gray-500">No recent walk-ins.</div>
+                    <?php endif; ?>
                 </div>
             </div>
         </main>
 
         <!-- Include footer -->
-        <?php include '../../includes/footer.php'; ?>
+        <?php include dirname(__DIR__, 2) . '/includes/footer.php'; ?>
+        <script>
+        document.getElementById('walkin-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const form = e.currentTarget;
+            const [firstName, lastName] = (form.querySelector('input[placeholder="Enter guest name"]').value || '').split(' ');
+            const payload = {
+                first_name: firstName || 'Walk',
+                last_name: lastName || 'In',
+                phone: form.querySelector('input[type="tel"]').value || '',
+                email: form.querySelector('input[type="email"]').value || '',
+                id_type: form.querySelector('select[name="id_type"]').value || 'other',
+                id_number: form.querySelector('input[name="id_number"]').value || 'WALKIN' + Date.now(),
+                room_type: form.querySelector('select[name="room_type"]').value,
+                check_in_date: form.querySelector('input[type="date"]').value,
+                check_out_date: form.querySelectorAll('input[type="date"]')[1].value,
+                adults: form.querySelector('input[name="adults"]').value || 1,
+                children: form.querySelector('input[name="children"]').value || 0,
+                special_requests: form.querySelector('textarea').value || '',
+                booking_source: 'walk_in'
+            };
+
+            const btn = form.querySelector('button[type="submit"]');
+            const original = btn.innerHTML; btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+            try {
+                const res = await fetch('../../api/create-reservation.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+                const data = await res.json();
+                if (data.success) { alert('Walk-in reservation created'); location.reload(); }
+                else { alert(data.message || 'Failed to create reservation'); }
+            } catch(err) {
+                console.error(err); alert('Network error');
+            } finally { btn.disabled = false; btn.innerHTML = original; }
+        });
+        </script>
     </body>
 </html>

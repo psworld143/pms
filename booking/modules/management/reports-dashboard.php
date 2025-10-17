@@ -1,10 +1,13 @@
 <?php
-session_start();
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
-// Check if user is logged in and has manager access
+require_once '../../includes/booking-paths.php';
+
+booking_initialize_paths();
+
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
-    header('Location: ../../login.php');
+    header('Location: ' . booking_base() . 'login.php');
     exit();
 }
 
@@ -122,6 +125,84 @@ include '../../includes/sidebar-unified.php';
             </div>
         </div>
 
+        <!-- Guest Demographics Section -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Guest Demographics</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Demographics Charts -->
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Age Groups</h4>
+                        <div class="chart-container">
+                            <canvas id="ageGroupsChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Nationalities</h4>
+                        <div class="chart-container">
+                            <canvas id="nationalitiesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Gender Distribution</h4>
+                        <div class="chart-container">
+                            <canvas id="genderChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Guest Types</h4>
+                        <div class="chart-container">
+                            <canvas id="guestTypesChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="guest-demographics-container" class="mt-6">
+                <!-- Additional demographics data will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Inventory Analytics Section -->
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Inventory Analytics</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Inventory Charts -->
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Stock Levels by Category</h4>
+                        <div class="chart-container">
+                            <canvas id="inventoryCategoryChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Stock Status Distribution</h4>
+                        <div class="chart-container">
+                            <canvas id="stockStatusChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-6">
+                    <div>
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Low Stock Items</h4>
+                        <div class="chart-container">
+                            <canvas id="lowStockChart"></canvas>
+                        </div>
+                    </div>
+                    <div>
+                        <h4 class="text-md font-medium text-gray-700 mb-3">Inventory Value by Category</h4>
+                        <div class="chart-container">
+                            <canvas id="inventoryValueChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="inventory-analytics-container" class="mt-6">
+                <!-- Additional inventory data will be loaded here -->
+            </div>
+        </div>
+
         <!-- Reports Section -->
         <div class="bg-white rounded-lg shadow-sm border overflow-hidden">
             <div class="border-b border-gray-200">
@@ -199,10 +280,7 @@ include '../../includes/sidebar-unified.php';
                     <div class="flex space-x-2">
                         <select id="inventory-category-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                             <option value="">All Categories</option>
-                            <option value="minibar">Minibar</option>
-                            <option value="housekeeping">Housekeeping</option>
-                            <option value="amenities">Amenities</option>
-                            <option value="linens">Linens</option>
+                            <!-- Categories will be loaded dynamically -->
                         </select>
                         <button onclick="exportReport('inventory')" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
                             <i class="fas fa-download mr-2"></i>Export

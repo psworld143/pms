@@ -4,6 +4,10 @@
  * Hotel PMS Training System - Inventory Module
  */
 
+// Suppress warnings and notices for clean JSON output
+error_reporting(E_ERROR | E_PARSE);
+ini_set('display_errors', 0);
+
 session_start();
 require_once '../config/database.php';
 
@@ -17,26 +21,16 @@ if (!isset($_SESSION['user_id'])) {
 header('Content-Type: application/json');
 
 try {
-    $report_type = $_POST['report_type'] ?? '';
-    $date_range = $_POST['date_range'] ?? '';
-    $category = $_POST['category'] ?? '';
+    $report_type = $_GET['report_type'] ?? 'usage_trends';
+    $category = $_GET['category'] ?? '';
+    $date_range = $_GET['date_range'] ?? 'last_30_days';
     
-    $data = getEnhancedReportData($report_type, $date_range, $category);
-    $csvContent = generateEnhancedCSVContent($data, $report_type);
-    $filename = 'enhanced_report_' . $report_type . '_' . date('Y-m-d_H-i-s') . '.csv';
-    
-    // Save CSV file
-    $filepath = '../exports/' . $filename;
-    if (!file_exists('../exports/')) {
-        mkdir('../exports/', 0755, true);
-    }
-    
-    file_put_contents($filepath, $csvContent);
+    $result = exportEnhancedReport($report_type, $category, $date_range);
     
     echo json_encode([
         'success' => true,
-        'download_url' => 'exports/' . $filename,
-        'filename' => $filename
+        'message' => 'Enhanced report exported successfully',
+        'download_url' => $result['download_url']
     ]);
     
 } catch (Exception $e) {
@@ -48,261 +42,108 @@ try {
 }
 
 /**
- * Get enhanced report data based on type
+ * Export enhanced report
  */
-function getEnhancedReportData($report_type, $date_range, $category) {
+function exportEnhancedReport($report_type, $category, $date_range) {
     global $pdo;
     
     try {
-        switch ($report_type) {
-            case 'abc-analysis':
-                return getABCAnalysisData();
-            case 'cost-analysis':
-                return getCostAnalysisData($category);
-            case 'turnover-analysis':
-                return getTurnoverAnalysisData($category);
-            case 'supplier-performance':
-                return getSupplierPerformanceData();
-            case 'room-utilization':
-                return getRoomUtilizationData();
-            default:
-                return [];
+        // Calculate date range
+        $start_date = date('Y-m-d H:i:s', strtotime('-30 days'));
+        if ($date_range === 'last_90_days') {
+            $start_date = date('Y-m-d H:i:s', strtotime('-90 days'));
+        } elseif ($date_range === 'this_year') {
+            $start_date = date('Y-m-d H:i:s', strtotime('first day of January this year'));
         }
+        
+        // Get transaction data
+        $base_sql = "
+        SELECT 
+                it.item_id,
+                ii.item_name,
+                ii.unit,
+                ic.name as category_name,
+                it.quantity,
+                it.unit_price,
+                it.created_at
+            FROM inventory_transactions it
+            JOIN inventory_items ii ON it.item_id = ii.id
+            LEFT JOIN inventory_categories ic ON ii.category_id = ic.id
+            WHERE it.created_at >= ? AND it.transaction_type = 'out'
+        ";
+        $params = [$start_date];
+    
+    if (!empty($category)) {
+            $base_sql .= " AND ic.name = ?";
+        $params[] = $category;
+    }
+    
+        $stmt = $pdo->prepare($base_sql . " ORDER BY it.created_at ASC");
+        $stmt->execute($params);
+        $transactions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $detailed_items = [];
+        foreach ($transactions as $transaction) {
+            $item_id = $transaction['item_id'];
+            if (!isset($detailed_items[$item_id])) {
+                $detailed_items[$item_id] = [
+                    'item_name' => $transaction['item_name'],
+                    'category_name' => $transaction['category_name'],
+                    'unit' => $transaction['unit'],
+                    'total_used' => 0,
+                    'total_cost' => 0,
+                    'first_used_date' => strtotime($transaction['created_at']),
+                    'last_used_date' => strtotime($transaction['created_at'])
+                ];
+            }
+            $detailed_items[$item_id]['total_used'] += $transaction['quantity'];
+            $detailed_items[$item_id]['total_cost'] += ($transaction['quantity'] * $transaction['unit_price']);
+            $detailed_items[$item_id]['last_used_date'] = max($detailed_items[$item_id]['last_used_date'], strtotime($transaction['created_at']));
+            $detailed_items[$item_id]['first_used_date'] = min($detailed_items[$item_id]['first_used_date'], strtotime($transaction['created_at']));
+        }
+        
+        // Process detailed report
+        foreach ($detailed_items as &$item) {
+            $days_active = (strtotime(date('Y-m-d')) - $item['first_used_date']) / (60 * 60 * 24);
+            $item['avg_daily_usage'] = $days_active > 0 ? $item['total_used'] / $days_active : $item['total_used'];
+            $item['last_used_date'] = date('M j, Y', $item['last_used_date']);
+            unset($item['first_used_date']);
+        }
+        $report_data = array_values($detailed_items);
+        
+        // Create CSV content
+        $csv_content = "Item Name,Category,Unit,Total Used,Total Cost,Avg Daily Usage,Last Used Date\n";
+        
+        foreach ($report_data as $row) {
+            $csv_content .= '"' . str_replace('"', '""', $row['item_name']) . '",';
+            $csv_content .= '"' . str_replace('"', '""', $row['category_name']) . '",';
+            $csv_content .= '"' . str_replace('"', '""', $row['unit']) . '",';
+            $csv_content .= $row['total_used'] . ',';
+            $csv_content .= $row['total_cost'] . ',';
+            $csv_content .= number_format($row['avg_daily_usage'], 2) . ',';
+            $csv_content .= '"' . $row['last_used_date'] . '"';
+            $csv_content .= "\n";
+        }
+        
+        // Generate filename
+        $filename = 'enhanced_report_' . $report_type . '_' . date('Y-m-d_H-i-s') . '.csv';
+        
+        // Save to temp directory
+        $temp_dir = __DIR__ . '/../../temp/';
+        if (!is_dir($temp_dir)) {
+            mkdir($temp_dir, 0755, true);
+        }
+        
+        $filepath = $temp_dir . $filename;
+        file_put_contents($filepath, $csv_content);
+        
+        return [
+            'download_url' => '../../temp/' . $filename
+        ];
+        
     } catch (PDOException $e) {
-        error_log("Error getting enhanced report data: " . $e->getMessage());
-        return [];
+        error_log("Error exporting enhanced report: " . $e->getMessage());
+        throw $e;
     }
-}
-
-/**
- * Get ABC Analysis data
- */
-function getABCAnalysisData() {
-    global $pdo;
-    
-    $stmt = $pdo->query("
-        SELECT 
-            i.name,
-            c.name as category_name,
-            (i.quantity * i.cost_price) as annual_usage_value,
-            ROUND(
-                (i.quantity * i.cost_price) / (
-                    SELECT SUM(quantity * cost_price) 
-                    FROM inventory_items 
-                    WHERE status = 'active'
-                ) * 100, 2
-            ) as percentage_of_total
-        FROM inventory_items i
-        LEFT JOIN inventory_categories c ON i.category_id = c.id
-        WHERE i.status = 'active'
-        ORDER BY annual_usage_value DESC
-    ");
-    
-    return $stmt->fetchAll();
-}
-
-/**
- * Get Cost Analysis data
- */
-function getCostAnalysisData($category) {
-    global $pdo;
-    
-    $where_clause = "WHERE c.active = 1";
-    $params = [];
-    
-    if (!empty($category)) {
-        $where_clause .= " AND c.id = ?";
-        $params[] = $category;
-    }
-    
-    $stmt = $pdo->prepare("
-        SELECT 
-            c.name as category_name,
-            COUNT(i.id) as item_count,
-            SUM(i.quantity * i.cost_price) as total_cost,
-            AVG(i.cost_price) as avg_cost
-        FROM inventory_categories c
-        LEFT JOIN inventory_items i ON c.id = i.category_id AND i.status = 'active'
-        $where_clause
-        GROUP BY c.id, c.name
-        ORDER BY total_cost DESC
-    ");
-    
-    $stmt->execute($params);
-    return $stmt->fetchAll();
-}
-
-/**
- * Get Turnover Analysis data
- */
-function getTurnoverAnalysisData($category) {
-    global $pdo;
-    
-    $where_clause = "WHERE i.status = 'active'";
-    $params = [];
-    
-    if (!empty($category)) {
-        $where_clause .= " AND i.category_id = ?";
-        $params[] = $category;
-    }
-    
-    $stmt = $pdo->prepare("
-        SELECT 
-            i.name,
-            c.name as category_name,
-            i.quantity,
-            COUNT(t.id) as transaction_count,
-            CASE 
-                WHEN i.quantity > 0 THEN COUNT(t.id) / i.quantity * 12
-                ELSE 0 
-            END as turnover_rate
-        FROM inventory_items i
-        LEFT JOIN inventory_categories c ON i.category_id = c.id
-        LEFT JOIN inventory_transactions t ON i.id = t.item_id 
-            AND t.transaction_type = 'out' 
-            AND t.created_at >= DATE_SUB(NOW(), INTERVAL 1 YEAR)
-        $where_clause
-        GROUP BY i.id, i.name, c.name, i.quantity
-        ORDER BY turnover_rate DESC
-    ");
-    
-    $stmt->execute($params);
-    return $stmt->fetchAll();
-}
-
-/**
- * Get Supplier Performance data
- */
-function getSupplierPerformanceData() {
-    global $pdo;
-    
-    $stmt = $pdo->query("
-        SELECT 
-            s.name as supplier_name,
-            s.contact_person,
-            s.email,
-            s.phone,
-            s.rating,
-            COUNT(DISTINCT i.id) as items_supplied,
-            AVG(r.lead_time_days) as avg_lead_time
-        FROM inventory_suppliers s
-        LEFT JOIN inventory_items i ON s.id = i.supplier_id
-        LEFT JOIN reorder_rules r ON i.id = r.item_id
-        WHERE s.active = 1
-        GROUP BY s.id, s.name, s.contact_person, s.email, s.phone, s.rating
-        ORDER BY s.rating DESC
-    ");
-    
-    return $stmt->fetchAll();
-}
-
-/**
- * Get Room Utilization data
- */
-function getRoomUtilizationData() {
-    global $pdo;
-    
-    $stmt = $pdo->query("
-        SELECT 
-            r.room_number,
-            f.floor_name,
-            COUNT(ri.id) as total_items,
-            SUM(ri.quantity_current) as used_items,
-            AVG(ri.quantity_current / ri.par_level * 100) as utilization_percentage,
-            MAX(ri.last_restocked) as last_restocked
-        FROM hotel_rooms r
-        LEFT JOIN hotel_floors f ON r.floor_id = f.id
-        LEFT JOIN room_inventory_items ri ON r.id = ri.room_id
-        WHERE r.active = 1
-        GROUP BY r.id, r.room_number, f.floor_name
-        ORDER BY f.floor_number, r.room_number
-    ");
-    
-    return $stmt->fetchAll();
-}
-
-/**
- * Generate CSV content based on report type
- */
-function generateEnhancedCSVContent($data, $report_type) {
-    $csv = "";
-    
-    switch ($report_type) {
-        case 'abc-analysis':
-            $csv = "Item Name,Category,Annual Usage Value,Percentage of Total,ABC Classification\n";
-            foreach ($data as $item) {
-                $classification = $item['percentage_of_total'] >= 80 ? 'A' : 
-                                 ($item['percentage_of_total'] >= 15 ? 'B' : 'C');
-                $csv .= sprintf(
-                    "%s,%s,%s,%s,%s\n",
-                    '"' . str_replace('"', '""', $item['name']) . '"',
-                    '"' . str_replace('"', '""', $item['category_name']) . '"',
-                    $item['annual_usage_value'],
-                    $item['percentage_of_total'],
-                    $classification
-                );
-            }
-            break;
-            
-        case 'cost-analysis':
-            $csv = "Category,Item Count,Total Cost,Average Cost\n";
-            foreach ($data as $item) {
-                $csv .= sprintf(
-                    "%s,%s,%s,%s\n",
-                    '"' . str_replace('"', '""', $item['category_name']) . '"',
-                    $item['item_count'],
-                    $item['total_cost'],
-                    $item['avg_cost']
-                );
-            }
-            break;
-            
-        case 'turnover-analysis':
-            $csv = "Item Name,Category,Quantity,Transaction Count,Turnover Rate\n";
-            foreach ($data as $item) {
-                $csv .= sprintf(
-                    "%s,%s,%s,%s,%s\n",
-                    '"' . str_replace('"', '""', $item['name']) . '"',
-                    '"' . str_replace('"', '""', $item['category_name']) . '"',
-                    $item['quantity'],
-                    $item['transaction_count'],
-                    round($item['turnover_rate'], 2)
-                );
-            }
-            break;
-            
-        case 'supplier-performance':
-            $csv = "Supplier Name,Contact Person,Email,Phone,Rating,Items Supplied,Avg Lead Time\n";
-            foreach ($data as $item) {
-                $csv .= sprintf(
-                    "%s,%s,%s,%s,%s,%s,%s\n",
-                    '"' . str_replace('"', '""', $item['supplier_name']) . '"',
-                    '"' . str_replace('"', '""', $item['contact_person']) . '"',
-                    $item['email'],
-                    $item['phone'],
-                    $item['rating'],
-                    $item['items_supplied'],
-                    $item['avg_lead_time']
-                );
-            }
-            break;
-            
-        case 'room-utilization':
-            $csv = "Room Number,Floor,Total Items,Used Items,Utilization %,Last Restocked\n";
-            foreach ($data as $item) {
-                $csv .= sprintf(
-                    "%s,%s,%s,%s,%s,%s\n",
-                    $item['room_number'],
-                    '"' . str_replace('"', '""', $item['floor_name']) . '"',
-                    $item['total_items'],
-                    $item['used_items'],
-                    round($item['utilization_percentage'], 2),
-                    $item['last_restocked']
-                );
-            }
-            break;
-    }
-    
-    return $csv;
 }
 ?>

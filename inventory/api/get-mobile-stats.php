@@ -1,71 +1,31 @@
 <?php
-/**
- * Get Mobile Interface Statistics
- * Hotel PMS Training System - Inventory Module
- */
-
-session_start();
-require_once '../config/database.php';
-
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-    exit();
-}
+require_once '../../vps_session_fix.php';
+require_once '../../includes/database.php';
 
 header('Content-Type: application/json');
 
 try {
-    $user_id = $_SESSION['user_id'];
-    $stats = getMobileStats($user_id);
-    
-    echo json_encode([
-        'success' => true,
-        'stats' => $stats
-    ]);
-    
-} catch (Exception $e) {
-    error_log("Error getting mobile stats: " . $e->getMessage());
-    echo json_encode([
-        'success' => false,
-        'message' => $e->getMessage()
-    ]);
-}
-
-/**
- * Get mobile interface statistics for housekeeping staff
- */
-function getMobileStats($user_id) {
     global $pdo;
-    
-    try {
-        // Get rooms assigned to this user (if any assignment system exists)
-        // For now, we'll get all active rooms as this is a training system
-        $stmt = $pdo->query("SELECT COUNT(*) as my_rooms FROM hotel_rooms WHERE active = 1");
-        $my_rooms = $stmt->fetch()['my_rooms'];
-        
-        // Get rooms that need restocking
-        $stmt = $pdo->query("
-            SELECT COUNT(DISTINCT r.id) as need_restock
-            FROM hotel_rooms r
-            INNER JOIN room_inventory_items ri ON r.id = ri.room_id
-            WHERE r.active = 1
-            AND ri.quantity_current < ri.par_level
-        ");
-        $need_restock = $stmt->fetch()['need_restock'];
-        
-        return [
-            'my_rooms' => (int)$my_rooms,
-            'need_restock' => (int)$need_restock
-        ];
-        
-    } catch (PDOException $e) {
-        error_log("Error getting mobile stats: " . $e->getMessage());
-        return [
-            'my_rooms' => 0,
-            'need_restock' => 0
-        ];
+
+    // Detect rooms table
+    $roomsTable = 'hotel_rooms';
+    $t = $pdo->query("SHOW TABLES LIKE 'hotel_rooms'");
+    if ($t->rowCount() === 0) { $roomsTable = 'rooms'; }
+
+    // Total rooms (as 'my rooms' for now; if you later add assignments, filter here)
+    $myRooms = (int)$pdo->query("SELECT COUNT(*) FROM `{$roomsTable}`")->fetchColumn();
+
+    // Need restock: rooms with any item below par
+    $need = 0;
+    $riiCols = $pdo->query("SHOW COLUMNS FROM room_inventory_items")->fetchAll(PDO::FETCH_COLUMN, 0);
+    if (in_array('quantity_current', $riiCols, true) && in_array('par_level', $riiCols, true)) {
+        $stmt = $pdo->query("SELECT COUNT(DISTINCT room_id) FROM room_inventory_items WHERE quantity_current < par_level");
+        $need = (int)$stmt->fetchColumn();
     }
+
+    echo json_encode(['success' => true, 'stats' => ['my_rooms' => $myRooms, 'need_restock' => $need]]);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
 }
 ?>

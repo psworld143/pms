@@ -1,11 +1,16 @@
 <?php
+require_once __DIR__ . '/booking-paths.php';
+
+booking_initialize_paths();
+
 // Unified header component that automatically selects the appropriate navbar
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../login.php');
+    header('Location: ' . booking_base() . 'login.php');
     exit();
 }
 
 $user_role = $_SESSION['user_role'];
+$normalized_role = strtolower(str_replace(['-', ' '], '_', trim($user_role)));
 $user_name = $_SESSION['user_name'];
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 
@@ -101,19 +106,25 @@ $school_abbreviation = 'Hotel PMS'; // Default abbreviation
         <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
         <?php
         // Include the appropriate navbar based on user role
-        switch ($user_role) {
+        switch ($normalized_role) {
             case 'manager':
-                include 'navbar-manager.php';
+                include booking_base_dir() . 'includes/navbar-manager.php';
                 break;
             case 'front_desk':
-                include 'navbar-frontdesk.php';
+                include booking_base_dir() . 'includes/navbar-frontdesk.php';
+                break;
+            case 'frontdesk':
+                include booking_base_dir() . 'includes/navbar-frontdesk.php';
                 break;
             case 'housekeeping':
-                include 'navbar-housekeeping.php';
+                include booking_base_dir() . 'includes/navbar-housekeeping.php';
+                break;
+            case 'house_keeping':
+                include booking_base_dir() . 'includes/navbar-housekeeping.php';
                 break;
             default:
                 // Fallback to generic navbar
-                include 'header.php';
+                include booking_base_dir() . 'includes/header.php';
                 break;
         }
         ?>

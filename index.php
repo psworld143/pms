@@ -1,6 +1,5 @@
 <?php
-
-//Sample Edit
+//Commit by Kurt
 /**
  * Hotel PMS Training System - Main Entry Point
  * Redirects to the appropriate module based on user session or shows module selection

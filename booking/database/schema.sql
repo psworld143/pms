@@ -2,8 +2,8 @@
 -- Training System for Hospitality Management
 
 -- Create database
-CREATE DATABASE IF NOT EXISTS hotel_pms_clean;
-USE hotel_pms_clean;
+CREATE DATABASE IF NOT EXISTS pms_pms_hotel;
+USE pms_pms_hotel;
 
 -- Users table
 CREATE TABLE users (

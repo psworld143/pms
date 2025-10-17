@@ -1,6 +1,6 @@
 <?php
-session_start();
-require_once "../../config/database.php";
+require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
+require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
@@ -367,45 +367,45 @@ include '../../includes/sidebar-unified.php';
     
     <script>
         // Search functionality
-        $('#search-feedback').on('input', function() {
-            const searchTerm = $(this).val().toLowerCase();
-            $('.feedback-row').each(function() {
-                const guestName = $(this).find('td:first').text().toLowerCase();
-                const guestEmail = $(this).find('td:first .text-gray-500').text().toLowerCase();
-                const comments = $(this).find('td:nth-child(4)').text().toLowerCase();
+        document.getElementById('search-feedback').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            document.querySelectorAll('.feedback-row').forEach(function(row) {
+                const guestName = row.querySelector('td:first-child').textContent.toLowerCase();
+                const guestEmail = row.querySelector('td:first-child .text-gray-500').textContent.toLowerCase();
+                const comments = row.querySelector('td:nth-child(4)').textContent.toLowerCase();
                 
                 if (guestName.includes(searchTerm) || guestEmail.includes(searchTerm) || comments.includes(searchTerm)) {
-                    $(this).show();
+                    row.style.display = '';
                 } else {
-                    $(this).hide();
+                    row.style.display = 'none';
                 }
             });
         });
 
         // Rating filter
-        $('#rating-filter').on('change', function() {
-            const selectedRating = $(this).val();
-            $('.feedback-row').each(function() {
-                const feedbackRating = $(this).data('rating');
+        document.getElementById('rating-filter').addEventListener('change', function() {
+            const selectedRating = this.value;
+            document.querySelectorAll('.feedback-row').forEach(function(row) {
+                const feedbackRating = row.dataset.rating;
                 
                 if (selectedRating === '' || feedbackRating == selectedRating) {
-                    $(this).show();
+                    row.style.display = '';
                 } else {
-                    $(this).hide();
+                    row.style.display = 'none';
                 }
             });
         });
 
         // Status filter
-        $('#status-filter').on('change', function() {
-            const selectedStatus = $(this).val();
-            $('.feedback-row').each(function() {
-                const feedbackStatus = $(this).data('status');
+        document.getElementById('status-filter').addEventListener('change', function() {
+            const selectedStatus = this.value;
+            document.querySelectorAll('.feedback-row').forEach(function(row) {
+                const feedbackStatus = row.dataset.status;
                 
                 if (selectedStatus === '' || feedbackStatus === selectedStatus) {
-                    $(this).show();
+                    row.style.display = '';
                 } else {
-                    $(this).hide();
+                    row.style.display = 'none';
                 }
             });
         });
@@ -424,8 +424,16 @@ include '../../includes/sidebar-unified.php';
         function flagFeedback(feedbackId) {
             if (confirm('Are you sure you want to flag this feedback for review?')) {
                 // AJAX call to flag feedback
-                $.post('../../api/flag-feedback.php', {feedback_id: feedbackId}, function(response) {
-                    if (response.success) {
+                fetch('../../api/flag-feedback.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({feedback_id: feedbackId})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
                         // Show success notification
                         showNotification('Feedback flagged successfully', 'success');
                         // Reload the page to reflect changes
@@ -433,9 +441,11 @@ include '../../includes/sidebar-unified.php';
                             location.reload();
                         }, 1000);
                     } else {
-                        showNotification('Error flagging feedback: ' + response.message, 'error');
+                        showNotification('Error flagging feedback: ' + data.message, 'error');
                     }
-                }).fail(function() {
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                     showNotification('Error flagging feedback. Please try again.', 'error');
                 });
             }
@@ -443,59 +453,66 @@ include '../../includes/sidebar-unified.php';
 
         // Notification function
         function showNotification(message, type) {
-            const notification = $(`
-                <div class="fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas ${type === 'success' ? 'fa-check-circle text-green-500' : 'fa-exclamation-circle text-red-500'}"></i>
-                        </div>
-                        <div class="ml-3">
-                            <p class="text-sm font-medium text-gray-900">${message}</p>
-                        </div>
-                        <div class="ml-auto pl-3">
-                            <button class="text-gray-400 hover:text-gray-600" onclick="$(this).parent().parent().parent().remove()">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
+            const notification = document.createElement('div');
+            notification.className = 'fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full';
+            
+            const iconClass = type === 'success' ? 'fa-check-circle text-green-500' : 'fa-exclamation-circle text-red-500';
+            
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <div class="flex-shrink-0">
+                        <i class="fas ${iconClass}"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-900">${message}</p>
+                    </div>
+                    <div class="ml-auto pl-3">
+                        <button class="text-gray-400 hover:text-gray-600" onclick="this.parentElement.parentElement.parentElement.remove()">
+                            <i class="fas fa-times"></i>
+                        </button>
                     </div>
                 </div>
-            `);
+            `;
             
-            $('body').append(notification);
+            document.body.appendChild(notification);
             
             // Animate in
             setTimeout(() => {
-                notification.removeClass('translate-x-full');
+                notification.classList.remove('translate-x-full');
             }, 100);
             
             // Auto remove after 5 seconds
             setTimeout(() => {
-                notification.addClass('translate-x-full');
+                notification.classList.add('translate-x-full');
                 setTimeout(() => {
-                    notification.remove();
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
                 }, 300);
             }, 5000);
         }
 
         // Initialize tooltips and other UI enhancements
-        $(document).ready(function() {
+        document.addEventListener('DOMContentLoaded', function() {
             // Add hover effects to feedback rows
-            $('.feedback-row').hover(
-                function() {
-                    $(this).addClass('bg-blue-50');
-                },
-                function() {
-                    $(this).removeClass('bg-blue-50');
-                }
-            );
+            document.querySelectorAll('.feedback-row').forEach(function(row) {
+                row.addEventListener('mouseenter', function() {
+                    this.classList.add('bg-blue-50');
+                });
+                row.addEventListener('mouseleave', function() {
+                    this.classList.remove('bg-blue-50');
+                });
+            });
 
             // Add click to expand comments functionality
-            $('.feedback-row td:nth-child(4)').click(function() {
-                const comments = $(this).find('span').text();
-                if (comments.length > 100) {
-                    // Show full comments in a modal or expand the cell
-                    showCommentsModal(comments);
-                }
+            document.querySelectorAll('.feedback-row td:nth-child(4)').forEach(function(cell) {
+                cell.addEventListener('click', function() {
+                    const comments = this.querySelector('span').textContent;
+                    if (comments.length > 100) {
+                        // Show full comments in a modal or expand the cell
+                        showCommentsModal(comments);
+                    }
+                });
             });
 
             // Initialize any additional UI components
@@ -504,23 +521,25 @@ include '../../includes/sidebar-unified.php';
 
         // Function to show comments modal
         function showCommentsModal(comments) {
-            const modal = $(`
-                <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50" id="commentsModal">
-                    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-                        <div class="mt-3">
-                            <h3 class="text-lg font-medium text-gray-900 mb-4">Full Comments</h3>
-                            <p class="text-sm text-gray-700 mb-4">${comments}</p>
-                            <div class="flex justify-end">
-                                <button class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400" onclick="$('#commentsModal').remove()">
-                                    Close
-                                </button>
-                            </div>
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+            modal.id = 'commentsModal';
+            
+            modal.innerHTML = `
+                <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+                    <div class="mt-3">
+                        <h3 class="text-lg font-medium text-gray-900 mb-4">Full Comments</h3>
+                        <p class="text-sm text-gray-700 mb-4">${comments}</p>
+                        <div class="flex justify-end">
+                            <button class="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400" onclick="document.getElementById('commentsModal').remove()">
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>
-            `);
+            `;
             
-            $('body').append(modal);
+            document.body.appendChild(modal);
         }
     </script>
 </body>

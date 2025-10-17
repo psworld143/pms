@@ -1,8 +1,7 @@
 <?php
-session_start();
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../vps_session_fix.php';
+
 require_once __DIR__ . '/../includes/database.php';
 require_once 'includes/functions.php';
 
@@ -12,7 +11,14 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
-// Get dashboard statistics
+// Redirect users to their role-specific dashboard when available
+$targetDashboard = booking_dashboard_path();
+if ($targetDashboard !== 'index.php') {
+    header('Location: ' . booking_url($targetDashboard));
+    exit();
+}
+
+// Get dashboard statistics (fallback dashboard)
 $stats = getDashboardStats();
 
 // Set page title

@@ -4,13 +4,40 @@
  * Hotel PMS Training System - Inventory Module
  */
 
-session_start();
-require_once __DIR__ . '/config/database.php';
+require_once __DIR__ . '/../vps_session_fix.php';
+require_once __DIR__ . '/../includes/database.php';
+
+// Debug: Check what's happening
+error_log("Accounting module accessed. User ID: " . ($_SESSION['user_id'] ?? 'NOT SET'));
+error_log("User Role: " . ($_SESSION['user_role'] ?? 'NOT SET'));
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
+    error_log("User not logged in, redirecting to login");
     header('Location: login.php');
     exit();
+}
+
+// Check if user has appropriate role (only manager)
+$user_role = $_SESSION['user_role'] ?? '';
+if ($user_role !== 'manager') {
+    error_log("User is not manager, redirecting to index. Role: " . $user_role);
+    header('Location: index.php?error=access_denied');
+    exit();
+}
+
+error_log("Accounting module proceeding normally");
+
+// Test database connection
+try {
+    global $pdo;
+    if (!$pdo) {
+        throw new Exception('Database connection not available');
+    }
+    error_log("Database connection OK");
+} catch (Exception $e) {
+    error_log("Database error: " . $e->getMessage());
+    die("Database connection error. Please check the logs.");
 }
 
 // Set page title
@@ -71,7 +98,7 @@ $page_title = 'Accounting Integration';
                         <i class="fas fa-sync mr-2"></i>Sync with Accounting
                     </button>
                     <button id="export-journal-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                        <i class="fas fa-file-export mr-2"></i>Export Journal Entries
+                        <i class="fas fa-file-pdf mr-2"></i>Export to PDF
                     </button>
                 </div>
             </div>
@@ -82,12 +109,12 @@ $page_title = 'Accounting Integration';
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-dollar-sign text-white"></i>
+                                <i class="fas fa-peso-sign text-white"></i>
                             </div>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Inventory Value</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="total-inventory-value">$0</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="total-inventory-value">₱0</p>
                         </div>
                     </div>
                 </div>
@@ -101,7 +128,7 @@ $page_title = 'Accounting Integration';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Monthly Purchases</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="monthly-purchases">$0</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="monthly-purchases">₱0</p>
                         </div>
                     </div>
                 </div>
@@ -115,7 +142,7 @@ $page_title = 'Accounting Integration';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Monthly Usage</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="monthly-usage">$0</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="monthly-usage">₱0</p>
                         </div>
                     </div>
                 </div>
@@ -129,7 +156,7 @@ $page_title = 'Accounting Integration';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">COGS (30d)</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="cogs-30d">$0</p>
+                            <p class="text-2xl font-semibold text-gray-900" id="cogs-30d">₱0</p>
                         </div>
                     </div>
                 </div>
@@ -328,6 +355,25 @@ $(document).ready(function() {
         editAccountMapping();
     });
     
+    // Event delegation for dynamically created buttons
+    $(document).on('click', 'button[onclick*="viewJournalEntry"]', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const entryId = $(this).attr('onclick').match(/viewJournalEntry\((\d+)\)/)[1];
+        viewJournalEntry(entryId);
+    });
+    
+    $(document).on('click', 'button[onclick*="postJournalEntry"]', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const entryId = $(this).attr('onclick').match(/postJournalEntry\((\d+)\)/)[1];
+        postJournalEntry(entryId);
+    });
+    
+    // Global close functions for debugging
+    window.closeJournalEntryModal = closeJournalEntryModal;
+    window.closeAccountMappingModal = closeAccountMappingModal;
+    
     function loadAccountingData() {
         $.ajax({
             url: 'api/get-accounting-data.php',
@@ -365,10 +411,10 @@ $(document).ready(function() {
     }
     
     function updateFinancialOverview(data) {
-        $('#total-inventory-value').text('$' + data.total_inventory_value.toLocaleString());
-        $('#monthly-purchases').text('$' + data.monthly_purchases.toLocaleString());
-        $('#monthly-usage').text('$' + data.monthly_usage.toLocaleString());
-        $('#cogs-30d').text('$' + data.cogs_30d.toLocaleString());
+        $('#total-inventory-value').text('₱' + data.total_inventory_value.toLocaleString());
+        $('#monthly-purchases').text('₱' + data.monthly_purchases.toLocaleString());
+        $('#monthly-usage').text('₱' + data.monthly_usage.toLocaleString());
+        $('#cogs-30d').text('₱' + data.cogs_30d.toLocaleString());
     }
     
     function displayJournalEntries(entries) {
@@ -396,16 +442,26 @@ $(document).ready(function() {
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${entry.reference_number || 'N/A'}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${entry.account_code}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${entry.description}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${entry.debit_amount > 0 ? '$' + parseFloat(entry.debit_amount).toFixed(2) : '-'}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${entry.credit_amount > 0 ? '$' + parseFloat(entry.credit_amount).toFixed(2) : '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${entry.debit_amount > 0 ? '₱' + parseFloat(entry.debit_amount).toFixed(2) : '-'}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${entry.credit_amount > 0 ? '₱' + parseFloat(entry.credit_amount).toFixed(2) : '-'}</td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">
                             ${statusText}
                         </span>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                        ${entry.status === 'pending' ? '<button class="text-green-600 hover:text-green-900">Post</button>' : ''}
+                        <div class="flex space-x-2">
+                            <button type="button" onclick="viewJournalEntry(${entry.id})" class="inline-flex items-center px-3 py-1 border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-md text-xs font-medium transition-colors cursor-pointer">
+                                <i class="fas fa-eye mr-1"></i>
+                                View
+                            </button>
+                            ${entry.status === 'pending' ? `
+                                <button type="button" onclick="postJournalEntry(${entry.id})" class="inline-flex items-center px-3 py-1 border border-green-300 text-green-700 bg-green-50 hover:bg-green-100 rounded-md text-xs font-medium transition-colors cursor-pointer">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Post
+                                </button>
+                            ` : ''}
+                        </div>
                     </td>
                 </tr>
             `;
@@ -445,7 +501,7 @@ $(document).ready(function() {
                         beginAtZero: true,
                         ticks: {
                             callback: function(value) {
-                                return '$' + value.toLocaleString();
+                                return '₱' + value.toLocaleString();
                             }
                         }
                     }
@@ -473,7 +529,7 @@ $(document).ready(function() {
                         beginAtZero: true,
                         ticks: {
                             callback: function(value) {
-                                return '$' + value.toLocaleString();
+                                return '₱' + value.toLocaleString();
                             }
                         }
                     }
@@ -516,32 +572,377 @@ $(document).ready(function() {
     }
     
     function exportJournalEntries() {
+        // Show loading state
+        const exportBtn = $('#export-journal-btn');
+        const originalText = exportBtn.html();
+        exportBtn.html('<i class="fas fa-spinner fa-spin mr-2"></i>Generating PDF...');
+        exportBtn.prop('disabled', true);
+        
         $.ajax({
-            url: 'api/export-journal-entries.php',
+            url: 'api/export-journal-entries-pdf.php',
             method: 'POST',
             dataType: 'json',
             success: function(response) {
+                console.log('Export response:', response);
                 if (response.success) {
-                    // Create download link
-                    const link = document.createElement('a');
-                    link.href = response.download_url;
-                    link.download = 'journal_entries_' + new Date().toISOString().split('T')[0] + '.csv';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    // Open in new window for printing
+                    window.open(response.download_url, '_blank');
+                    
+                    // Show success message
+                    alert('Journal entries exported to PDF successfully!');
                 } else {
                     alert('Error exporting journal entries: ' + response.message);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Error exporting journal entries:', error);
-                alert('Error exporting journal entries');
+                console.error('Response text:', xhr.responseText);
+                alert('Error exporting journal entries: ' + error);
+            },
+            complete: function() {
+                // Restore button state
+                exportBtn.html(originalText);
+                exportBtn.prop('disabled', false);
             }
         });
     }
     
+    function viewJournalEntry(entryId) {
+        console.log('Viewing journal entry:', entryId);
+        
+        // Create mock data for demo (since we don't have real data yet)
+        const mockEntry = createMockJournalEntry(entryId);
+        showJournalEntryModal(mockEntry);
+    }
+    
+    function createMockJournalEntry(entryId) {
+        // Create mock data for demo purposes
+        const mockEntries = [
+            {
+                id: entryId,
+                reference_number: 'INV-' + (40 - Math.floor(Math.random() * 10)),
+                account_code: Math.random() > 0.5 ? '5000' : '1200',
+                description: Math.random() > 0.5 ? 'COGS - Sample Item' : 'Inventory Usage - Sample Item',
+                debit_amount: Math.random() > 0.5 ? Math.floor(Math.random() * 5000) + 100 : 0,
+                credit_amount: Math.random() > 0.5 ? 0 : Math.floor(Math.random() * 5000) + 100,
+                status: 'posted',
+                created_at: new Date().toISOString().replace('T', ' ').substring(0, 19)
+            }
+        ];
+        
+        return mockEntries[0];
+    }
+    
+    function postJournalEntry(entryId) {
+        if (confirm('Are you sure you want to post this journal entry?')) {
+            $.ajax({
+                url: 'api/post-journal-entry.php',
+                method: 'POST',
+                data: { id: entryId },
+                dataType: 'json',
+                success: function(response) {
+                    if (response.success) {
+                        alert('Journal entry posted successfully');
+                        loadJournalEntries();
+                    } else {
+                        alert('Error posting journal entry: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error posting journal entry:', error);
+                    alert('Error posting journal entry');
+                }
+            });
+        }
+    }
+    
+    function showJournalEntryModal(entry) {
+        const statusClass = getJournalStatusClass(entry.status);
+        const statusText = entry.status.charAt(0).toUpperCase() + entry.status.slice(1);
+        
+        const modal = `
+            <div id="journal-entry-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                <div class="relative top-10 mx-auto p-6 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-xl rounded-lg bg-white">
+                    <div class="mt-3">
+                        <!-- Header -->
+                        <div class="flex justify-between items-center mb-6 pb-4 border-b border-gray-200">
+                            <div>
+                                <h3 class="text-xl font-semibold text-gray-900">Journal Entry Details</h3>
+                                <p class="text-sm text-gray-600 mt-1">Reference: ${entry.reference_number || 'N/A'}</p>
+                            </div>
+                            <button onclick="closeJournalEntryModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- Content -->
+                        <div class="space-y-6">
+                            <!-- Basic Information -->
+                            <div class="bg-gray-50 rounded-lg p-4">
+                                <h4 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-info-circle text-blue-500 mr-2"></i>
+                                    Basic Information
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Reference Number</label>
+                                        <p class="text-sm text-gray-900 bg-white px-3 py-2 rounded border">${entry.reference_number || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Account Code</label>
+                                        <p class="text-sm text-gray-900 bg-white px-3 py-2 rounded border">${entry.account_code}</p>
+                                    </div>
+                                </div>
+                                <div class="mt-4">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                    <p class="text-sm text-gray-900 bg-white px-3 py-2 rounded border min-h-[60px]">${entry.description}</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Financial Information -->
+                            <div class="bg-blue-50 rounded-lg p-4">
+                                <h4 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-calculator text-blue-500 mr-2"></i>
+                                    Financial Information
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="text-center">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Debit Amount</label>
+                                        <div class="bg-white px-4 py-3 rounded-lg border-2 ${entry.debit_amount > 0 ? 'border-red-200' : 'border-gray-200'}">
+                                            <p class="text-lg font-semibold ${entry.debit_amount > 0 ? 'text-red-600' : 'text-gray-500'}">
+                                                ${entry.debit_amount > 0 ? '₱' + parseFloat(entry.debit_amount).toFixed(2) : 'No Debit'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Credit Amount</label>
+                                        <div class="bg-white px-4 py-3 rounded-lg border-2 ${entry.credit_amount > 0 ? 'border-green-200' : 'border-gray-200'}">
+                                            <p class="text-lg font-semibold ${entry.credit_amount > 0 ? 'text-green-600' : 'text-gray-500'}">
+                                                ${entry.credit_amount > 0 ? '₱' + parseFloat(entry.credit_amount).toFixed(2) : 'No Credit'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Status and Date Information -->
+                            <div class="bg-green-50 rounded-lg p-4">
+                                <h4 class="text-lg font-medium text-gray-800 mb-4 flex items-center">
+                                    <i class="fas fa-clock text-green-500 mr-2"></i>
+                                    Status & Timeline
+                                </h4>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                        <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${statusClass}">
+                                            <i class="fas fa-circle text-xs mr-2"></i>
+                                            ${statusText}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">Created At</label>
+                                        <p class="text-sm text-gray-900 bg-white px-3 py-2 rounded border">
+                                            <i class="fas fa-calendar-alt text-gray-400 mr-2"></i>
+                                            ${entry.created_at}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="mt-8 flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                            <button onclick="closeJournalEntryModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                                <i class="fas fa-times mr-2"></i>
+                                Close
+                            </button>
+                            ${entry.status === 'pending' ? `
+                                <button onclick="postJournalEntry(${entry.id}); closeJournalEntryModal();" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition-colors">
+                                    <i class="fas fa-check mr-2"></i>
+                                    Post Entry
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('body').append(modal);
+        
+        // Add click outside to close functionality
+        $('#journal-entry-modal').on('click.journal-modal', function(e) {
+            if (e.target === this) {
+                closeJournalEntryModal();
+            }
+        });
+        
+        // Add escape key to close functionality
+        $(document).on('keydown.journal-modal', function(e) {
+            if (e.key === 'Escape' && $('#journal-entry-modal').length > 0) {
+                closeJournalEntryModal();
+            }
+        });
+    }
+    
+    function closeJournalEntryModal() {
+        console.log('Closing journal entry modal');
+        // Remove the modal
+        $('#journal-entry-modal').remove();
+        // Remove any event handlers
+        $(document).off('keydown.journal-modal');
+        $(document).off('click.journal-modal');
+    }
+    
     function editAccountMapping() {
-        alert('Account mapping editor would open here');
+        // Show account mapping editor modal
+        const modal = `
+            <div id="account-mapping-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-lg rounded-md bg-white">
+                    <div class="mt-3">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-lg font-medium text-gray-900">Account Mapping Editor</h3>
+                            <button onclick="closeAccountMappingModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-6">
+                            <!-- Inventory Accounts -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <h4 class="text-md font-semibold text-gray-800 mb-4">Inventory Accounts</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Raw Materials</span>
+                                        <input type="text" value="1200" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Finished Goods</span>
+                                        <input type="text" value="1210" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Supplies</span>
+                                        <input type="text" value="1220" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Expense Accounts -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <h4 class="text-md font-semibold text-gray-800 mb-4">Expense Accounts</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Cost of Goods Sold</span>
+                                        <input type="text" value="5000" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Supplies Expense</span>
+                                        <input type="text" value="5100" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Waste Expense</span>
+                                        <input type="text" value="5200" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Liability Accounts -->
+                            <div class="border border-gray-200 rounded-lg p-4">
+                                <h4 class="text-md font-semibold text-gray-800 mb-4">Liability Accounts</h4>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Accounts Payable</span>
+                                        <input type="text" value="2000" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Accrued Expenses</span>
+                                        <input type="text" value="2100" class="w-20 px-2 py-1 border border-gray-300 rounded text-sm">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-6 flex justify-end space-x-3">
+                            <button onclick="closeAccountMappingModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                Cancel
+                            </button>
+                            <button onclick="saveAccountMapping()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                Save Changes
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        $('body').append(modal);
+        
+        // Add click outside to close functionality
+        $('#account-mapping-modal').on('click.mapping-modal', function(e) {
+            if (e.target === this) {
+                closeAccountMappingModal();
+            }
+        });
+        
+        // Add escape key to close functionality
+        $(document).on('keydown.mapping-modal', function(e) {
+            if (e.key === 'Escape' && $('#account-mapping-modal').length > 0) {
+                closeAccountMappingModal();
+            }
+        });
+    }
+    
+    function closeAccountMappingModal() {
+        console.log('Closing account mapping modal');
+        // Remove the modal
+        $('#account-mapping-modal').remove();
+        // Remove any event handlers
+        $(document).off('keydown.mapping-modal');
+        $(document).off('click.mapping-modal');
+    }
+    
+    function saveAccountMapping() {
+        console.log('Save account mapping clicked');
+        // Collect all the account codes using better selectors
+        const modal = $('#account-mapping-modal');
+        const mappingData = {
+            inventory: {
+                raw_materials: modal.find('input[value="1200"]').val(),
+                finished_goods: modal.find('input[value="1210"]').val(),
+                supplies: modal.find('input[value="1220"]').val()
+            },
+            expense: {
+                cogs: modal.find('input[value="5000"]').val(),
+                supplies_expense: modal.find('input[value="5100"]').val(),
+                waste_expense: modal.find('input[value="5200"]').val()
+            },
+            liability: {
+                accounts_payable: modal.find('input[value="2000"]').val(),
+                accrued_expenses: modal.find('input[value="2100"]').val()
+            }
+        };
+        
+        // Debug: Log the data being sent
+        console.log('Saving account mapping data:', mappingData);
+        
+        $.ajax({
+            url: 'api/save-account-mapping.php',
+            method: 'POST',
+            data: mappingData,
+            dataType: 'json',
+            success: function(response) {
+                console.log('Save response:', response);
+                if (response.success) {
+                    alert('Account mapping saved successfully');
+                    closeAccountMappingModal();
+                } else {
+                    alert('Error saving account mapping: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error saving account mapping:', error);
+                console.error('Response text:', xhr.responseText);
+                alert('Error saving account mapping: ' + error);
+            }
+        });
     }
 });
 </script>

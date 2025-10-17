@@ -9,6 +9,30 @@ $user_role = $_SESSION['user_role'];
 $user_name = $_SESSION['user_name'];
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 
+if (!function_exists('booking_url')) {
+    function booking_base() {
+        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
+        $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
+        $pos = strpos($path, '/booking/');
+        if ($pos !== false) {
+            return rtrim(substr($path, 0, $pos + strlen('/booking/')), '/') . '/';
+        }
+        $dir = str_replace('\\','/', dirname($path));
+        $guard = 0;
+        while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'booking' && $guard < 10) {
+            $dir = dirname($dir);
+            $guard++;
+        }
+        if (basename($dir) === 'booking') {
+            return rtrim($dir, '/') . '/';
+        }
+        return '/booking/';
+    }
+    function booking_url($relative = '') {
+        return rtrim(booking_base(), '/') . '/' . ltrim($relative, '/');
+    }
+}
+
 // Get school logo and abbreviation from database
 require_once '../../../config/database.php';
 require_once '../includes/functions.php';
@@ -39,6 +63,31 @@ $school_abbreviation = get_school_abbreviation($conn);
             }
         }
     </script>
+    
+    <!-- Mobile Sidebar CSS -->
+    <style>
+        #sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        @media (max-width: 1023px) {
+            #sidebar {
+                transform: translateX(-100%);
+                z-index: 50;
+            }
+            #sidebar.sidebar-open {
+                transform: translateX(0);
+            }
+        }
+        @media (min-width: 1024px) {
+            #sidebar {
+                transform: translateX(0) !important;
+            }
+        }
+        #sidebar-overlay {
+            transition: opacity 0.3s ease-in-out;
+            z-index: 40;
+        }
+    </style>
     <?php if (isset($additional_css)): ?>
         <?php echo $additional_css; ?>
     <?php endif; ?>
@@ -93,16 +142,16 @@ $school_abbreviation = get_school_abbreviation($conn);
                             <div class="text-sm text-gray-500"><?php echo ucfirst(str_replace('_', ' ', $user_role)); ?></div>
                         </div>
                         <div class="py-2">
-                            <a href="../../profile.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <a href="<?php echo booking_url('profile.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-user-circle mr-3"></i>
                                 Profile
                             </a>
-                            <a href="../settings.php" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                            <a href="<?php echo booking_url('settings.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-cog mr-3"></i>
                                 Settings
                             </a>
                             <hr class="my-2">
-                            <a href="/pms/booking/logout.php" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                            <a href="<?php echo booking_url('logout.php'); ?>" class="flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                 <i class="fas fa-sign-out-alt mr-3"></i>
                                 Logout
                             </a>
@@ -116,3 +165,103 @@ $school_abbreviation = get_school_abbreviation($conn);
                 </span>
             </div>
         </header>
+        
+        <!-- Sidebar Overlay for Mobile -->
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
+        
+        <!-- JavaScript for sidebar functionality -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // User dropdown functionality
+            const userMenuToggle = document.getElementById('user-menu-toggle');
+            const userDropdown = document.getElementById('user-dropdown');
+            
+            if (userMenuToggle && userDropdown) {
+                userMenuToggle.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    userDropdown.classList.toggle('hidden');
+                });
+                
+                // Close dropdown when clicking outside
+                document.addEventListener('click', function(event) {
+                    if (!event.target.closest('#user-menu-toggle') && !event.target.closest('#user-dropdown')) {
+                        userDropdown.classList.add('hidden');
+                    }
+                });
+            }
+            
+            // Sidebar toggle functionality
+            const sidebarToggle = document.getElementById('sidebar-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            
+            if (sidebarToggle && sidebar) {
+                sidebarToggle.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Sidebar toggle clicked');
+                    sidebar.classList.toggle('sidebar-open');
+                    if (sidebarOverlay) {
+                        sidebarOverlay.classList.toggle('hidden');
+                    }
+                });
+            }
+            
+            if (sidebarOverlay) {
+                sidebarOverlay.addEventListener('click', function() {
+                    console.log('Sidebar overlay clicked');
+                    sidebar.classList.remove('sidebar-open');
+                    sidebarOverlay.classList.add('hidden');
+                });
+            }
+            
+            // Close sidebar when clicking outside on mobile
+            document.addEventListener('click', function(event) {
+                if (window.innerWidth < 1024) {
+                    if (!event.target.closest('#sidebar') && !event.target.closest('#sidebar-toggle')) {
+                        if (sidebar && sidebar.classList.contains('sidebar-open')) {
+                            sidebar.classList.remove('sidebar-open');
+                            if (sidebarOverlay) {
+                                sidebarOverlay.classList.add('hidden');
+                            }
+                        }
+                    }
+                }
+            });
+            
+            // Close sidebar on escape key
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    if (sidebar && sidebar.classList.contains('sidebar-open')) {
+                        sidebar.classList.remove('sidebar-open');
+                        if (sidebarOverlay) {
+                            sidebarOverlay.classList.add('hidden');
+                        }
+                    }
+                }
+            });
+        });
+
+        // Global functions for sidebar control
+        function openSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            if (sidebar) {
+                sidebar.classList.add('sidebar-open');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.remove('hidden');
+                }
+            }
+        }
+
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            if (sidebar) {
+                sidebar.classList.remove('sidebar-open');
+                if (sidebarOverlay) {
+                    sidebarOverlay.classList.add('hidden');
+                }
+            }
+        }
+        </script>

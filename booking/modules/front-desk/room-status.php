@@ -1,7 +1,7 @@
 <?php
 require_once '../../includes/session-config.php';
 session_start();
-require_once "../../config/database.php";
+require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
@@ -152,8 +152,21 @@ include '../../includes/sidebar-unified.php';
         </main>
     </div>
 
+    <!-- Room Details Modal -->
+    <div id="fd-room-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-lg font-semibold text-gray-900">Room Details</h3>
+                <button onclick="closeFdRoomDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+            <div id="fd-room-details-content"></div>
+        </div>
+    </div>
+
     <script src="../../assets/js/main.js"></script>
-    <script src="../../assets/js/front-desk-room-status.js"></script>
+    <script src="../../assets/js/front-desk-room-status.js?v=1"></script>
     
     <?php include '../../includes/footer.php'; ?>
 

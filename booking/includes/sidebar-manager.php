@@ -8,10 +8,34 @@ if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
 $user_role = $_SESSION['user_role'];
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 
+if (!function_exists('booking_url')) {
+    function booking_base() {
+        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
+        $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
+        $pos = strpos($path, '/booking/');
+        if ($pos !== false) {
+            return rtrim(substr($path, 0, $pos + strlen('/booking/')), '/') . '/';
+        }
+        $dir = str_replace('\\','/', dirname($path));
+        $guard = 0;
+        while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'booking' && $guard < 10) {
+            $dir = dirname($dir);
+            $guard++;
+        }
+        if (basename($dir) === 'booking') {
+            return rtrim($dir, '/') . '/';
+        }
+        return '/pms/booking/';
+    }
+    function booking_url($relative = '') {
+        return rtrim(booking_base(), '/') . '/' . ltrim($relative, '/');
+    }
+}
+
 // Manager navigation items
 $navigation_items = [
     'dashboard' => [
-        'url' => '/pms/booking/index.php',
+        'url' => booking_url('index.php'),
         'icon' => 'fas fa-tachometer-alt',
         'label' => 'Dashboard',
         'active' => ($current_page === 'index')
@@ -20,65 +44,69 @@ $navigation_items = [
         'icon' => 'fas fa-chart-line',
         'label' => 'Management',
         'submenu' => [
-            'reports' => ['url' => '/pms/booking/modules/management/reports-dashboard.php', 'label' => 'Reports & Analytics'],
-            'analytics' => ['url' => '/pms/booking/modules/management/analytics.php', 'label' => 'Business Analytics'],
-            'staff' => ['url' => '/pms/booking/modules/management/staff.php', 'label' => 'Staff Management'],
-            'settings' => ['url' => '/pms/booking/modules/management/settings.php', 'label' => 'System Settings'],
-            'audit_log' => ['url' => '/pms/booking/modules/management/audit-log.php', 'label' => 'Audit Log']
+            'reports' => ['url' => booking_url('modules/management/reports-dashboard.php'), 'label' => 'Reports'],
+            'analytics_dashboard' => ['url' => booking_url('modules/management/analytics.php'), 'label' => 'Analytics Dashboard'],
+            'financial' => ['url' => booking_url('modules/management/financial-dashboard.php'), 'label' => 'Financial Dashboard'],
+            'guest_communication' => ['url' => booking_url('modules/management/guest-communication.php'), 'label' => 'Guest Communication'],
+            'maintenance_management' => ['url' => booking_url('modules/management/maintenance-management.php'), 'label' => 'Maintenance Management'],
+            'staff_scheduling' => ['url' => booking_url('modules/management/staff-scheduling.php'), 'label' => 'Staff Scheduling'],
+            'room_management' => ['url' => booking_url('modules/management/room-management.php'), 'label' => 'Room Management'],
+            'staff' => ['url' => booking_url('modules/management/staff.php'), 'label' => 'Staff'],
+            'settings' => ['url' => booking_url('modules/management/settings.php'), 'label' => 'System Settings'],
+            'audit_log' => ['url' => booking_url('modules/management/audit-log.php'), 'label' => 'Audit Log']
         ]
     ],
     'front_desk' => [
         'icon' => 'fas fa-concierge-bell',
         'label' => 'Front Desk',
         'submenu' => [
-            'reservations' => ['url' => '/pms/booking/modules/front-desk/manage-reservations.php', 'label' => 'Reservations'],
-            'check_in' => ['url' => '/pms/booking/modules/front-desk/check-in.php', 'label' => 'Check In'],
-            'check_out' => ['url' => '/pms/booking/modules/front-desk/check-out.php', 'label' => 'Check Out'],
-            'walk_ins' => ['url' => '/pms/booking/modules/front-desk/walk-ins.php', 'label' => 'Walk-ins'],
-            'guest_services' => ['url' => '/pms/booking/modules/front-desk/guest-services.php', 'label' => 'Guest Services']
+            'reservations' => ['url' => booking_url('modules/front-desk/manage-reservations.php'), 'label' => 'Reservations'],
+            'check_in' => ['url' => booking_url('modules/front-desk/check-in.php'), 'label' => 'Check In'],
+            'check_out' => ['url' => booking_url('modules/front-desk/check-out.php'), 'label' => 'Check Out'],
+            'walk_ins' => ['url' => booking_url('modules/front-desk/walk-ins.php'), 'label' => 'Walk-ins'],
+            'guest_services' => ['url' => booking_url('modules/front-desk/guest-services.php'), 'label' => 'Guest Services']
         ]
     ],
     'housekeeping' => [
         'icon' => 'fas fa-broom',
         'label' => 'Housekeeping',
         'submenu' => [
-            'room_status' => ['url' => '/pms/booking/modules/housekeeping/room-status.php', 'label' => 'Room Status'],
-            'tasks' => ['url' => '/pms/booking/modules/housekeeping/tasks.php', 'label' => 'Task Management'],
-            'maintenance' => ['url' => '/pms/booking/modules/housekeeping/maintenance.php', 'label' => 'Maintenance'],
-            'inventory' => ['url' => '/pms/booking/modules/housekeeping/inventory.php', 'label' => 'Inventory']
+            'room_status' => ['url' => booking_url('modules/housekeeping/room-status.php'), 'label' => 'Room Status'],
+            'tasks' => ['url' => booking_url('modules/housekeeping/tasks.php'), 'label' => 'Task Management'],
+            'maintenance' => ['url' => booking_url('modules/housekeeping/maintenance.php'), 'label' => 'Maintenance']
         ]
     ],
     'guests' => [
         'icon' => 'fas fa-users',
         'label' => 'Guest Management',
         'submenu' => [
-            'profiles' => ['url' => '/pms/booking/modules/guests/profiles.php', 'label' => 'Guest Profiles'],
-            'vip' => ['url' => '/pms/booking/modules/guests/vip-management.php', 'label' => 'VIP Guests'],
-            'feedback' => ['url' => '/pms/booking/modules/guests/feedback.php', 'label' => 'Feedback'],
-            'loyalty' => ['url' => '/pms/booking/modules/guests/loyalty.php', 'label' => 'Loyalty Program']
+            'profiles' => ['url' => booking_url('modules/guests/profiles.php'), 'label' => 'Guest Profiles'],
+            'vip' => ['url' => booking_url('modules/guests/vip-management.php'), 'label' => 'VIP Guests'],
+            'feedback' => ['url' => booking_url('modules/guests/feedback.php'), 'label' => 'Feedback'],
+            'loyalty' => ['url' => booking_url('modules/guests/loyalty.php'), 'label' => 'Loyalty Program']
         ]
     ],
     'billing' => [
         'icon' => 'fas fa-credit-card',
         'label' => 'Billing & Payments',
         'submenu' => [
-            'invoices' => ['url' => '/pms/booking/modules/billing/invoices.php', 'label' => 'Invoices'],
-            'payments' => ['url' => '/pms/booking/modules/billing/payments.php', 'label' => 'Payments'],
-            'discounts' => ['url' => '/pms/booking/modules/billing/discounts.php', 'label' => 'Discounts'],
-            'vouchers' => ['url' => '/pms/booking/modules/billing/vouchers.php', 'label' => 'Vouchers'],
-            'reports' => ['url' => '/pms/booking/modules/billing/reports.php', 'label' => 'Revenue Reports']
+            'invoices' => ['url' => booking_url('modules/billing/invoices.php'), 'label' => 'Invoices'],
+            'payments' => ['url' => booking_url('modules/billing/payments.php'), 'label' => 'Payments'],
+            'discounts' => ['url' => booking_url('modules/billing/discounts.php'), 'label' => 'Discounts'],
+            'vouchers' => ['url' => booking_url('modules/billing/vouchers.php'), 'label' => 'Vouchers'],
+            'reports' => ['url' => booking_url('modules/billing/reports.php'), 'label' => 'Revenue Reports']
         ]
     ],
     'training' => [
         'icon' => 'fas fa-graduation-cap',
         'label' => 'Training & Simulations',
         'submenu' => [
-            'dashboard' => ['url' => '/pms/booking/modules/training/training-dashboard.php', 'label' => 'Training Dashboard'],
-            'scenarios' => ['url' => '/pms/booking/modules/training/scenarios.php', 'label' => 'Scenarios'],
-            'customer_service' => ['url' => '/pms/booking/modules/training/customer-service.php', 'label' => 'Customer Service'],
-            'problem_solving' => ['url' => '/pms/booking/modules/training/problem-solving.php', 'label' => 'Problem Solving'],
-            'progress' => ['url' => '/pms/booking/modules/training/progress.php', 'label' => 'Staff Progress'],
-            'certificates' => ['url' => '/pms/booking/modules/training/certificates.php', 'label' => 'Certificates']
+            'dashboard' => ['url' => booking_url('modules/training/training-dashboard.php'), 'label' => 'Training Dashboard'],
+            'scenarios' => ['url' => booking_url('modules/training/scenarios.php'), 'label' => 'Scenarios'],
+            'customer_service' => ['url' => booking_url('modules/training/customer-service.php'), 'label' => 'Customer Service'],
+            'problem_solving' => ['url' => booking_url('modules/training/problem-solving.php'), 'label' => 'Problem Solving'],
+            'progress' => ['url' => booking_url('modules/training/progress.php'), 'label' => 'Staff Progress'],
+            'certificates' => ['url' => booking_url('modules/training/certificates.php'), 'label' => 'Certificates']
         ]
     ]
 ];
@@ -141,19 +169,19 @@ $navigation_items = [
     <div class="p-4 border-t border-gray-200">
         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 sidebar-text">Management Actions</h3>
         <div class="space-y-2">
-            <a href="/pms/booking/modules/management/reports-dashboard.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
+            <a href="<?php echo booking_url('modules/management/reports-dashboard.php'); ?>" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
                 <i class="fas fa-chart-bar text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">View Reports</span>
             </a>
-            <a href="/pms/booking/modules/management/staff.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
+            <a href="<?php echo booking_url('modules/management/staff.php'); ?>" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
                 <i class="fas fa-users-cog text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">Staff Management</span>
             </a>
-            <a href="/pms/booking/modules/management/settings.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
+            <a href="<?php echo booking_url('modules/management/settings.php'); ?>" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
                 <i class="fas fa-cog text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">System Settings</span>
             </a>
-            <a href="/pms/booking/modules/management/audit-log.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
+            <a href="<?php echo booking_url('modules/management/audit-log.php'); ?>" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-purple-600 hover:bg-purple-50 rounded transition-colors">
                 <i class="fas fa-history text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">Audit Log</span>
             </a>

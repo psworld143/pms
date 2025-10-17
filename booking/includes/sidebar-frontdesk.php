@@ -9,26 +9,35 @@ $user_role = $_SESSION['user_role'];
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $current_url = $_SERVER['REQUEST_URI'];
 
-// Use absolute paths for navigation
-$base_path = '/pms/booking/';
+if (!function_exists('booking_url')) {
+    function booking_base() {
+        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
+        $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
+        $pos = strpos($path, '/booking/');
+        if ($pos !== false) {
+            return rtrim(substr($path, 0, $pos + strlen('/booking/')), '/') . '/';
+        }
+        $dir = str_replace('\\','/', dirname($path));
+        $guard = 0;
+        while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'booking' && $guard < 10) {
+            $dir = dirname($dir);
+            $guard++;
+        }
+        if (basename($dir) === 'booking') {
+            return rtrim($dir, '/') . '/';
+        }
+        return '/pms/booking/';
+    }
+    function booking_url($relative = '') {
+        return rtrim(booking_base(), '/') . '/' . ltrim($relative, '/');
+    }
+}
 
 // Function to check if a URL is active
 function isActiveUrl($url, $current_url) {
-    // Remove query parameters for comparison
-    $clean_url = strtok($url, '?');
-    $clean_current = strtok($current_url, '?');
-    
-    // Check if current URL matches the menu URL
-    if ($clean_current === $clean_url) {
-        return true;
-    }
-    
-    // Check if current URL contains the menu path (for pages with parameters)
-    if (strpos($clean_current, $clean_url) !== false) {
-        return true;
-    }
-    
-    return false;
+    $clean_url = rtrim(parse_url($url, PHP_URL_PATH), '/');
+    $clean_current = rtrim(parse_url($current_url, PHP_URL_PATH), '/');
+    return $clean_current === $clean_url;
 }
 
 // Function to check if any submenu item is active
@@ -44,51 +53,51 @@ function hasActiveSubmenu($submenu, $current_url) {
 // Front Desk navigation items
 $navigation_items = [
     'dashboard' => [
-        'url' => $base_path . 'modules/front-desk/index.php',
+        'url' => booking_url('modules/front-desk/index.php'),
         'icon' => 'fas fa-tachometer-alt',
         'label' => 'Dashboard',
-        'active' => isActiveUrl($base_path . 'modules/front-desk/index.php', $current_url)
+        'active' => isActiveUrl(booking_url('modules/front-desk/index.php'), $current_url)
     ],
     'front_desk' => [
         'icon' => 'fas fa-concierge-bell',
         'label' => 'Front Desk',
         'active' => hasActiveSubmenu([
-            ['url' => $base_path . 'modules/front-desk/manage-reservations.php'],
-            ['url' => $base_path . 'modules/front-desk/check-in.php'],
-            ['url' => $base_path . 'modules/front-desk/check-out.php'],
-            ['url' => $base_path . 'modules/front-desk/new-reservation.php'],
-            ['url' => $base_path . 'modules/front-desk/service-management.php']
+            ['url' => booking_url('modules/front-desk/manage-reservations.php')],
+            ['url' => booking_url('modules/front-desk/check-in.php')],
+            ['url' => booking_url('modules/front-desk/check-out.php')],
+            ['url' => booking_url('modules/front-desk/new-reservation.php')],
+            ['url' => booking_url('modules/front-desk/service-management.php')]
         ], $current_url),
         'submenu' => [
             'reservations' => [
-                'url' => $base_path . 'modules/front-desk/manage-reservations.php', 
+                'url' => booking_url('modules/front-desk/manage-reservations.php'), 
                 'label' => 'Reservations', 
                 'icon' => 'fas fa-calendar-check',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/manage-reservations.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/manage-reservations.php'), $current_url)
             ],
             'check_in' => [
-                'url' => $base_path . 'modules/front-desk/check-in.php', 
+                'url' => booking_url('modules/front-desk/check-in.php'), 
                 'label' => 'Check In', 
                 'icon' => 'fas fa-sign-in-alt',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/check-in.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/check-in.php'), $current_url)
             ],
             'check_out' => [
-                'url' => $base_path . 'modules/front-desk/check-out.php', 
+                'url' => booking_url('modules/front-desk/check-out.php'), 
                 'label' => 'Check Out', 
                 'icon' => 'fas fa-sign-out-alt',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/check-out.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/check-out.php'), $current_url)
             ],
             'new_reservation' => [
-                'url' => $base_path . 'modules/front-desk/new-reservation.php', 
+                'url' => booking_url('modules/front-desk/new-reservation.php'), 
                 'label' => 'New Reservation', 
                 'icon' => 'fas fa-plus',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/new-reservation.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/new-reservation.php'), $current_url)
             ],
             'service_management' => [
-                'url' => $base_path . 'modules/front-desk/service-management.php', 
+                'url' => booking_url('modules/front-desk/service-management.php'), 
                 'label' => 'Service Management', 
                 'icon' => 'fas fa-hands-helping',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/service-management.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/service-management.php'), $current_url)
             ]
         ]
     ],
@@ -96,28 +105,28 @@ $navigation_items = [
         'icon' => 'fas fa-users',
         'label' => 'Guest Management',
         'active' => hasActiveSubmenu([
-            ['url' => $base_path . 'modules/front-desk/guest-management.php'],
-            ['url' => $base_path . 'modules/front-desk/vip-guests.php'],
-            ['url' => $base_path . 'modules/front-desk/feedback.php']
+            ['url' => booking_url('modules/front-desk/guest-management.php')],
+            ['url' => booking_url('modules/front-desk/vip-guests.php')],
+            ['url' => booking_url('modules/front-desk/feedback.php')]
         ], $current_url),
         'submenu' => [
             'profiles' => [
-                'url' => $base_path . 'modules/front-desk/guest-management.php', 
+                'url' => booking_url('modules/front-desk/guest-management.php'), 
                 'label' => 'Guest Management', 
                 'icon' => 'fas fa-user-circle',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/guest-management.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/guest-management.php'), $current_url)
             ],
             'vip' => [
-                'url' => $base_path . 'modules/front-desk/vip-guests.php', 
+                'url' => booking_url('modules/front-desk/vip-guests.php'), 
                 'label' => 'VIP Guests', 
                 'icon' => 'fas fa-crown',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/vip-guests.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/vip-guests.php'), $current_url)
             ],
             'feedback' => [
-                'url' => $base_path . 'modules/front-desk/feedback.php', 
+                'url' => booking_url('modules/front-desk/feedback.php'), 
                 'label' => 'Feedback', 
                 'icon' => 'fas fa-comment-alt',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/feedback.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/feedback.php'), $current_url)
             ]
         ]
     ],
@@ -125,14 +134,14 @@ $navigation_items = [
         'icon' => 'fas fa-credit-card',
         'label' => 'Billing & Payments',
         'active' => hasActiveSubmenu([
-            ['url' => $base_path . 'modules/front-desk/billing-payment.php']
+            ['url' => booking_url('modules/front-desk/billing-payment.php')]
         ], $current_url),
         'submenu' => [
             'bills' => [
-                'url' => $base_path . 'modules/front-desk/billing-payment.php', 
+                'url' => booking_url('modules/front-desk/billing-payment.php'), 
                 'label' => 'Bills and Payments', 
                 'icon' => 'fas fa-file-invoice',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/billing-payment.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/billing-payment.php'), $current_url)
             ]
         ]
     ],
@@ -140,21 +149,21 @@ $navigation_items = [
         'icon' => 'fas fa-broom',
         'label' => 'Housekeeping',
         'active' => hasActiveSubmenu([
-            ['url' => $base_path . 'modules/front-desk/room-status.php'],
-            ['url' => $base_path . 'modules/front-desk/requests.php']
+            ['url' => booking_url('modules/front-desk/room-status.php')],
+            ['url' => booking_url('modules/front-desk/requests.php')]
         ], $current_url),
         'submenu' => [
             'room_status' => [
-                'url' => $base_path . 'modules/front-desk/room-status.php', 
+                'url' => booking_url('modules/front-desk/room-status.php'), 
                 'label' => 'Room Status', 
                 'icon' => 'fas fa-clipboard-list',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/room-status.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/room-status.php'), $current_url)
             ],
             'requests' => [
-                'url' => $base_path . 'modules/front-desk/requests.php', 
+                'url' => booking_url('modules/front-desk/requests.php'), 
                 'label' => 'Service Requests', 
                 'icon' => 'fas fa-tools',
-                'active' => isActiveUrl($base_path . 'modules/front-desk/requests.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/front-desk/requests.php'), $current_url)
             ]
         ]
     ],
@@ -162,49 +171,49 @@ $navigation_items = [
         'icon' => 'fas fa-graduation-cap',
         'label' => 'Training & Simulations',
         'active' => hasActiveSubmenu([
-            ['url' => $base_path . 'modules/training/training-dashboard.php'],
-            ['url' => $base_path . 'modules/training/scenarios.php'],
-            ['url' => $base_path . 'modules/training/customer-service.php'],
-            ['url' => $base_path . 'modules/training/problem-solving.php'],
-            ['url' => $base_path . 'modules/training/progress.php'],
-            ['url' => $base_path . 'modules/training/certificates.php']
+            ['url' => booking_url('modules/training/training-dashboard.php')],
+            ['url' => booking_url('modules/training/scenarios.php')],
+            ['url' => booking_url('modules/training/customer-service.php')],
+            ['url' => booking_url('modules/training/problem-solving.php')],
+            ['url' => booking_url('modules/training/progress.php')],
+            ['url' => booking_url('modules/training/certificates.php')]
         ], $current_url),
         'submenu' => [
             'dashboard' => [
-                'url' => $base_path . 'modules/training/training-dashboard.php', 
+                'url' => booking_url('modules/training/training-dashboard.php'), 
                 'label' => 'Training Dashboard', 
                 'icon' => 'fas fa-tachometer-alt',
-                'active' => isActiveUrl($base_path . 'modules/training/training-dashboard.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/training/training-dashboard.php'), $current_url)
             ],
             'scenarios' => [
-                'url' => $base_path . 'modules/training/scenarios.php', 
+                'url' => booking_url('modules/training/scenarios.php'), 
                 'label' => 'Scenarios', 
                 'icon' => 'fas fa-theater-masks',
-                'active' => isActiveUrl($base_path . 'modules/training/scenarios.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/training/scenarios.php'), $current_url)
             ],
             'customer_service' => [
-                'url' => $base_path . 'modules/training/customer-service.php', 
+                'url' => booking_url('modules/training/customer-service.php'), 
                 'label' => 'Customer Service', 
                 'icon' => 'fas fa-headset',
-                'active' => isActiveUrl($base_path . 'modules/training/customer-service.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/training/customer-service.php'), $current_url)
             ],
             'problem_solving' => [
-                'url' => $base_path . 'modules/training/problem-solving.php', 
+                'url' => booking_url('modules/training/problem-solving.php'), 
                 'label' => 'Problem Solving', 
                 'icon' => 'fas fa-lightbulb',
-                'active' => isActiveUrl($base_path . 'modules/training/problem-solving.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/training/problem-solving.php'), $current_url)
             ],
             'progress' => [
-                'url' => $base_path . 'modules/training/progress.php', 
+                'url' => booking_url('modules/training/progress.php'), 
                 'label' => 'My Progress', 
                 'icon' => 'fas fa-chart-line',
-                'active' => isActiveUrl($base_path . 'modules/training/progress.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/training/progress.php'), $current_url)
             ],
             'certificates' => [
-                'url' => $base_path . 'modules/training/certificates.php', 
+                'url' => booking_url('modules/training/certificates.php'), 
                 'label' => 'Certificates', 
                 'icon' => 'fas fa-certificate',
-                'active' => isActiveUrl($base_path . 'modules/training/certificates.php', $current_url)
+                'active' => isActiveUrl(booking_url('modules/training/certificates.php'), $current_url)
             ]
         ]
     ]
@@ -303,19 +312,19 @@ $navigation_items = [
     <div class="p-4 border-t border-gray-200">
         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 sidebar-text">Quick Actions</h3>
         <div class="space-y-2">
-            <a href="<?php echo $base_path; ?>modules/front-desk/new-reservation.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+            <a href="<?php echo booking_url('modules/front-desk/new-reservation.php'); ?>" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
                 <i class="fas fa-plus text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">New Reservation</span>
             </a>
-            <a href="<?php echo $base_path; ?>modules/front-desk/check-in.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+            <a href="<?php echo booking_url('modules/front-desk/check-in.php'); ?>" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
                 <i class="fas fa-sign-in-alt text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">Check In</span>
             </a>
-            <a href="<?php echo $base_path; ?>modules/front-desk/check-out.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+            <a href="<?php echo booking_url('modules/front-desk/check-out.php'); ?>" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
                 <i class="fas fa-sign-out-alt text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">Check Out</span>
             </a>
-            <a href="<?php echo $base_path; ?>modules/front-desk/guest-management.php" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
+            <a href="<?php echo booking_url('modules/front-desk/guest-management.php'); ?>" class="flex items-center px-3 py-2 text-sm text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors">
                 <i class="fas fa-users text-xs mr-2 sidebar-icon"></i>
                 <span class="sidebar-text">Guest Management</span>
             </a>

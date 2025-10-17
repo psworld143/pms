@@ -1,7 +1,7 @@
 <?php
-session_start();
-require_once "../../config/database.php";
-require_once '../../includes/functions.php';
+require_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'vps_session_fix.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
     header('Location: ../../login.php');
@@ -56,10 +56,9 @@ $checked_in_guests = getCheckedInGuests();
 // Set page title
 $page_title = 'Check Out';
 
-// Include unified header (automatically selects appropriate navbar)
-include '../../includes/header-unified.php';
-// Include unified sidebar (automatically selects appropriate sidebar)
-include '../../includes/sidebar-unified.php';
+// Include unified navigation (automatically selects based on user role)
+include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'header-unified.php';
+include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'sidebar-unified.php';
 ?>
 
         <!-- Main Content -->
@@ -177,7 +176,87 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4">Currently Checked-in Guests</h2>
                     <div id="checked-in-guests" class="overflow-x-auto">
-                        <!-- Checked-in guests will be loaded here -->
+                        <?php if (!empty($checked_in_guests)): ?>
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservation</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <?php foreach ($checked_in_guests as $guest): ?>
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center">
+                                            <div class="flex-shrink-0 h-10 w-10">
+                                                <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+                                                    <span class="text-white font-medium">
+                                                        <?php echo strtoupper(substr($guest['guest_name'], 0, 1)); ?>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-sm font-medium text-gray-900">
+                                                    <?php echo htmlspecialchars($guest['guest_name']); ?>
+                                                    <?php if ($guest['is_vip']): ?>
+                                                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+                                                            VIP
+                                                        </span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="text-sm text-gray-500"><?php echo htmlspecialchars($guest['email'] ?? ''); ?></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <?php echo htmlspecialchars($guest['reservation_number']); ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        Room <?php echo htmlspecialchars($guest['room_number']); ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <?php echo date('M j, Y', strtotime($guest['check_out_date'])); ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <?php 
+                                        $days_remaining = $guest['days_remaining'];
+                                        if ($days_remaining < 0): ?>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                                Overdue
+                                            </span>
+                                        <?php elseif ($days_remaining == 0): ?>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                Due Today
+                                            </span>
+                                        <?php else: ?>
+                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                <?php echo $days_remaining; ?> day<?php echo $days_remaining != 1 ? 's' : ''; ?> left
+                                            </span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <button onclick="startCheckOut(<?php echo $guest['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">
+                                            <i class="fas fa-sign-out-alt mr-1"></i>Check Out
+                                        </button>
+                                        <button onclick="viewReservationDetails(<?php echo $guest['id']; ?>)" class="text-gray-600 hover:text-gray-900">
+                                            <i class="fas fa-eye mr-1"></i>View
+                                        </button>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                        <?php else: ?>
+                        <div class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-bed text-4xl mb-4"></i>
+                            <p>No checked-in guests found</p>
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -318,6 +397,41 @@ include '../../includes/sidebar-unified.php';
                 icon.classList.remove('fa-spin');
                 refreshBtn.disabled = false;
             }, 1000);
+        }
+
+        // Load checked-in guests function
+        function loadCheckedInGuests() {
+            if (window.checkOutManager) {
+                window.checkOutManager.loadCheckedInGuests();
+            } else {
+                // Fallback: reload the page
+                location.reload();
+            }
+        }
+
+        // Search checked-in guests function
+        function searchCheckedInGuests() {
+            if (window.checkOutManager) {
+                window.checkOutManager.handleSearch();
+            } else {
+                // Fallback: reload the page
+                location.reload();
+            }
+        }
+
+        // Start check-out process
+        function startCheckOut(reservationId) {
+            if (window.checkOutManager) {
+                window.checkOutManager.startCheckOut(reservationId);
+            } else {
+                // Fallback: show alert
+                alert('Check-out manager not loaded. Please refresh the page.');
+            }
+        }
+
+        // View reservation details
+        function viewReservationDetails(reservationId) {
+            window.location.href = `view-reservation.php?id=${reservationId}`;
         }
 
         // Initialize time update

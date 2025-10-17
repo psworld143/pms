@@ -1,5 +1,7 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once '../vps_session_fix.php';
+
 require_once '../includes/database.php';
 // Redirect if already logged in to POS
 if (isset($_SESSION['pos_user_id'])) {

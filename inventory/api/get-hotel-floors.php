@@ -1,63 +1,56 @@
 <?php
 /**
- * Get Hotel Floors
- * Hotel PMS Training System - Inventory Module
+ * Get hotel floors
  */
 
-session_start();
-require_once '../config/database.php';
+require_once __DIR__ . '/../../vps_session_fix.php';
+require_once __DIR__ . '/../../includes/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
-    http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
     exit();
 }
 
-header('Content-Type: application/json');
-
 try {
-    $floors = getHotelFloors();
+    // Check if hotel_floors table exists
+    $stmt = $pdo->query("SHOW TABLES LIKE 'hotel_floors'");
+    $table_exists = $stmt->fetch();
+    
+    if ($table_exists) {
+        // Use hotel_floors table
+        $stmt = $pdo->query("SELECT * FROM hotel_floors WHERE active = 1 ORDER BY floor_number");
+        $floors = $stmt->fetchAll();
+    } else {
+        // Generate floors from rooms table
+        $stmt = $pdo->query("
+            SELECT DISTINCT floor, 
+                   CONCAT('Floor ', floor) as floor_name,
+                   floor as floor_number
+            FROM rooms 
+            ORDER BY floor
+        ");
+        $floors = $stmt->fetchAll();
+        
+        // Add id field for consistency
+        foreach ($floors as &$floor) {
+            $floor['id'] = $floor['floor'];
+        }
+    }
+    
+    // Extract just the floor numbers for the frontend
+    $floor_numbers = array_column($floors, 'floor_number');
     
     echo json_encode([
         'success' => true,
-        'floors' => $floors
+        'floors' => $floor_numbers
     ]);
     
-} catch (Exception $e) {
-    error_log("Error getting hotel floors: " . $e->getMessage());
+} catch (PDOException $e) {
+    error_log("Database error in get-hotel-floors.php: " . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => $e->getMessage()
+        'message' => 'Database error: ' . $e->getMessage()
     ]);
-}
-
-/**
- * Get hotel floors
- */
-function getHotelFloors() {
-    global $pdo;
-    
-    try {
-        $stmt = $pdo->query("
-            SELECT 
-                id,
-                floor_number,
-                floor_name,
-                description,
-                active,
-                created_at,
-                updated_at
-            FROM hotel_floors
-            WHERE active = 1
-            ORDER BY floor_number ASC
-        ");
-        
-        return $stmt->fetchAll();
-        
-    } catch (PDOException $e) {
-        error_log("Error getting hotel floors: " . $e->getMessage());
-        return [];
-    }
 }
 ?>

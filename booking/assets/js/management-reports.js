@@ -72,6 +72,8 @@ function switchReportTab(tabName) {
 function loadCharts() {
     loadOccupancyChart();
     loadRevenueChart();
+    loadGuestDemographicsChart();
+    loadInventoryAnalytics();
 }
 
 function loadOccupancyChart() {
@@ -91,13 +93,14 @@ function loadOccupancyChart() {
     fetch('../../api/get-occupancy-data.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.data) {
-                // Process the data to extract labels and values
-                const labels = data.data.map(item => {
+            if (data.success && data.data && data.data.daily) {
+                // Process the daily occupancy data
+                const dailyData = data.data.daily || [];
+                const labels = dailyData.map(item => {
                     const date = new Date(item.date);
                     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 });
-                const values = data.data.map(item => item.occupancy_rate);
+                const values = dailyData.map(item => parseFloat(item.occupancy_rate) || 0);
                 
                 const ctx = document.getElementById('occupancyChart').getContext('2d');
                 chartInstances.occupancyChart = new Chart(ctx, {
@@ -171,25 +174,27 @@ function loadRevenueChart() {
     fetch('../../api/get-revenue-data.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.data) {
-                // Process the data to extract labels and values
-                const labels = data.data.map(item => {
+            if (data.success && data.data && data.data.daily) {
+                // Process the daily revenue data
+                const dailyData = data.data.daily || [];
+                const labels = dailyData.map(item => {
                     const date = new Date(item.date);
                     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
                 });
-                const values = data.data.map(item => item.revenue);
+                const values = dailyData.map(item => parseFloat(item.daily_revenue) || 0);
                 
                 const ctx = document.getElementById('revenueChart').getContext('2d');
                 chartInstances.revenueChart = new Chart(ctx, {
-                    type: 'bar',
+                    type: 'line',
                     data: {
                         labels: labels,
                         datasets: [{
-                            label: 'Revenue (₱)',
+                            label: 'Daily Revenue (₱)',
                             data: values,
-                            backgroundColor: '#10B981',
-                            borderColor: '#059669',
-                            borderWidth: 1
+                            borderColor: 'rgb(34, 197, 94)',
+                            backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                            tension: 0.4,
+                            fill: true
                         }]
                     },
                     options: {
@@ -294,33 +299,17 @@ function loadInventoryReports() {
     const categoryFilter = document.getElementById('inventory-category-filter').value;
     const params = new URLSearchParams({ category: categoryFilter });
     
-    // Updated: Use the proper inventory module API endpoints (corrected path: ../../../inventory/api/)
-    Promise.all([
-        fetch(`../../../inventory/api/get-inventory-items.php?${params}`),
-        fetch(`../../../inventory/api/get-inventory-stats.php`),
-        fetch(`../../../inventory/api/get-enhanced-report-data.php`)
-    ])
-    .then(responses => Promise.all(responses.map(r => r.json())))
-    .then(([itemsData, statsData, reportData]) => {
-        if (itemsData.success && statsData.success && reportData.success) {
-            // Combine the data in the expected format
-            const combinedData = {
-                success: true,
-                category_filter: categoryFilter,
-                inventory_items: itemsData.inventory_items,
-                stock_summary: {
-                    total_items: statsData.statistics.total_items,
-                    low_stock_items: statsData.statistics.low_stock,
-                    medium_stock_items: statsData.statistics.low_stock, // Using low_stock as medium for now
-                    good_stock_items: statsData.statistics.in_stock,
-                    total_inventory_value: reportData.kpis.total_inventory_value || 0
-                },
-                recent_transactions: [], // This would need a separate API call
-                enhanced_data: reportData
-            };
-            displayInventoryReports(combinedData);
+    // Use the new management-specific inventory reports API
+    fetch(`../../api/get-inventory-reports.php?${params}`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Load categories into the filter dropdown
+            loadInventoryCategoriesFilter(data.categories || []);
+            displayInventoryReports(data);
         } else {
-            HotelPMS.Utils.showNotification('Error loading inventory reports', 'error');
+            console.error('API Error:', data);
+            HotelPMS.Utils.showNotification(data.message || 'Error loading inventory reports', 'error');
         }
     })
     .catch(error => {
@@ -329,10 +318,24 @@ function loadInventoryReports() {
     });
 }
 
+function loadInventoryCategoriesFilter(categories) {
+    const select = document.getElementById('inventory-category-filter');
+    if (select && categories.length > 0) {
+        // Keep the "All Categories" option and add dynamic categories
+        const currentValue = select.value;
+        select.innerHTML = '<option value="">All Categories</option>';
+        categories.forEach(category => {
+            select.innerHTML += `<option value="${category}">${category}</option>`;
+        });
+        // Restore the selected value
+        select.value = currentValue;
+    }
+}
+
 // Display functions
 function displayDailyReports(data) {
     const container = document.getElementById('daily-reports-container');
-    
+
     if (!data || !data.summary) {
         container.innerHTML = `
             <div class="text-center py-8">
@@ -343,63 +346,39 @@ function displayDailyReports(data) {
         `;
         return;
     }
-    
+
     const summary = data.summary;
     const reservations = data.reservations || [];
-    const checkIns = data.check_ins || [];
-    const checkOuts = data.check_outs || [];
-    
-    // Display summary cards
+
+    const summaryCards = [
+        { icon: 'fa-calendar-day', color: 'text-blue-600', bg: 'bg-blue-100', label: 'Total Reservations', value: formatNumber(summary.total_reservations) },
+        { icon: 'fa-sign-in-alt', color: 'text-green-600', bg: 'bg-green-100', label: 'Check-ins', value: formatNumber(summary.check_ins) },
+        { icon: 'fa-sign-out-alt', color: 'text-red-600', bg: 'bg-red-100', label: 'Check-outs', value: formatNumber(summary.check_outs) },
+        { icon: 'fa-bed', color: 'text-yellow-600', bg: 'bg-yellow-100', label: 'Occupancy Rate', value: `${Number(summary.occupancy_rate || 0).toFixed(1)}%` },
+        { icon: 'fa-peso-sign', color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Revenue', value: formatCurrency(summary.daily_revenue) },
+        { icon: 'fa-coins', color: 'text-indigo-600', bg: 'bg-indigo-100', label: 'Taxes', value: formatCurrency(summary.daily_taxes) },
+        { icon: 'fa-tags', color: 'text-purple-600', bg: 'bg-purple-100', label: 'Discounts', value: formatCurrency(summary.daily_discounts) },
+        { icon: 'fa-receipt', color: 'text-gray-600', bg: 'bg-gray-100', label: 'Transactions', value: formatNumber(summary.total_transactions) }
+    ];
+
     const summaryHtml = `
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex items-center">
-                    <div class="p-2 bg-blue-100 rounded-lg">
-                        <i class="fas fa-calendar-day text-blue-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Total Reservations</p>
-                        <p class="text-2xl font-bold text-gray-900">${summary.total_reservations}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex items-center">
-                    <div class="p-2 bg-green-100 rounded-lg">
-                        <i class="fas fa-sign-in-alt text-green-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Check-ins</p>
-                        <p class="text-2xl font-bold text-gray-900">${summary.check_ins}</p>
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            ${summaryCards.map(card => `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 ${card.bg} rounded-lg">
+                            <i class="fas ${card.icon} ${card.color}"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">${card.label}</p>
+                            <p class="text-2xl font-bold text-gray-900">${card.value}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex items-center">
-                    <div class="p-2 bg-red-100 rounded-lg">
-                        <i class="fas fa-sign-out-alt text-red-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Check-outs</p>
-                        <p class="text-2xl font-bold text-gray-900">${summary.check_outs}</p>
-                    </div>
-                </div>
-            </div>
-            <div class="bg-white p-4 rounded-lg shadow">
-                <div class="flex items-center">
-                    <div class="p-2 bg-yellow-100 rounded-lg">
-                        <i class="fas fa-percentage text-yellow-600"></i>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Occupancy Rate</p>
-                        <p class="text-2xl font-bold text-gray-900">${summary.occupancy_rate}%</p>
-                    </div>
-                </div>
-            </div>
+            `).join('')}
         </div>
     `;
-    
-    // Display reservations table
+
     const tableHtml = `
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -414,7 +393,6 @@ function displayDailyReports(data) {
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -422,17 +400,16 @@ function displayDailyReports(data) {
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm font-medium text-gray-900">${reservation.guest_name}</div>
-                                    <div class="text-sm text-gray-500">${reservation.guest_email}</div>
+                                    <div class="text-sm text-gray-500">${reservation.guest_email || '—'}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${reservation.room_number} (${reservation.room_type})</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_in)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_out)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_in_date)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatDate(reservation.check_out_date)}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(reservation.status)}">
                                         ${reservation.status.replace('_', ' ').toUpperCase()}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(reservation.total_amount || 0).toFixed(2)}</td>
                             </tr>
                         `).join('')}
                     </tbody>
@@ -440,7 +417,7 @@ function displayDailyReports(data) {
             </div>
         </div>
     `;
-    
+
     container.innerHTML = summaryHtml + tableHtml;
 }
 
@@ -458,6 +435,33 @@ function displayWeeklyReports(data) {
         return;
     }
     
+    const totals = data.totals || {};
+
+    const summaryCards = [
+        { icon: 'fa-peso-sign', color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Total Revenue', value: formatCurrency(totals.total_revenue) },
+        { icon: 'fa-coins', color: 'text-indigo-600', bg: 'bg-indigo-100', label: 'Taxes', value: formatCurrency(totals.total_taxes) },
+        { icon: 'fa-tags', color: 'text-purple-600', bg: 'bg-purple-100', label: 'Discounts', value: formatCurrency(totals.total_discounts) },
+        { icon: 'fa-bed', color: 'text-blue-600', bg: 'bg-blue-100', label: 'Occupied Nights', value: formatNumber(totals.occupied_nights) }
+    ];
+
+    const summaryHtml = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            ${summaryCards.map(card => `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 ${card.bg} rounded-lg">
+                            <i class="fas ${card.icon} ${card.color}"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">${card.label}</p>
+                            <p class="text-2xl font-bold text-gray-900">${card.value}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
     const tableHtml = `
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -468,31 +472,40 @@ function displayWeeklyReports(data) {
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservations</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taxes</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounts</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         ${data.data.map(report => `
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatDate(report.date)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.daily_reservations}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.daily_revenue || 0).toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatNumber(report.transactions)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.revenue)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.taxes)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.discounts)}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
             </div>
             <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                <div class="flex justify-between">
-                    <span class="text-sm font-medium text-gray-900">Weekly Totals:</span>
-                    <span class="text-sm text-gray-900">${data.totals.total_reservations} reservations, ₱${parseFloat(data.totals.total_revenue || 0).toFixed(2)} revenue</span>
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <span class="text-sm font-medium text-gray-900">Weekly Summary</span>
+                    <div class="text-sm text-gray-700 space-x-4">
+                        <span>Revenue: ${formatCurrency(totals.total_revenue)}</span>
+                        <span>Taxes: ${formatCurrency(totals.total_taxes)}</span>
+                        <span>Discounts: ${formatCurrency(totals.total_discounts)}</span>
+                        <span>Transactions: ${formatNumber(totals.total_reservations)}</span>
+                    </div>
                 </div>
             </div>
         </div>
     `;
-    
-    container.innerHTML = tableHtml;
+
+    container.innerHTML = summaryHtml + tableHtml;
 }
 
 function displayMonthlyReports(data) {
@@ -509,6 +522,33 @@ function displayMonthlyReports(data) {
         return;
     }
     
+    const totals = data.totals || {};
+
+    const summaryCards = [
+        { icon: 'fa-peso-sign', color: 'text-emerald-600', bg: 'bg-emerald-100', label: 'Total Revenue', value: formatCurrency(totals.total_revenue) },
+        { icon: 'fa-coins', color: 'text-indigo-600', bg: 'bg-indigo-100', label: 'Taxes', value: formatCurrency(totals.total_taxes) },
+        { icon: 'fa-tags', color: 'text-purple-600', bg: 'bg-purple-100', label: 'Discounts', value: formatCurrency(totals.total_discounts) },
+        { icon: 'fa-balance-scale', color: 'text-blue-600', bg: 'bg-blue-100', label: 'Avg. Reservation Value', value: formatCurrency(totals.average_reservation_value) }
+    ];
+
+    const summaryHtml = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-6">
+            ${summaryCards.map(card => `
+                <div class="bg-white p-4 rounded-lg shadow">
+                    <div class="flex items-center">
+                        <div class="p-2 ${card.bg} rounded-lg">
+                            <i class="fas ${card.icon} ${card.color}"></i>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">${card.label}</p>
+                            <p class="text-2xl font-bold text-gray-900">${card.value}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+
     const tableHtml = `
         <div class="bg-white rounded-lg shadow">
             <div class="px-6 py-4 border-b border-gray-200">
@@ -519,41 +559,49 @@ function displayMonthlyReports(data) {
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservations</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Transactions</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Revenue</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Taxes</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Discounts</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         ${data.data.map(report => `
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${formatDate(report.date)}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${report.daily_reservations}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱${parseFloat(report.daily_revenue || 0).toFixed(2)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatNumber(report.transactions)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.revenue)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.taxes)}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${formatCurrency(report.discounts)}</td>
                             </tr>
                         `).join('')}
                     </tbody>
                 </table>
             </div>
             <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
-                <div class="grid grid-cols-3 gap-4">
-                    <div>
-                        <span class="text-sm font-medium text-gray-500">Total Reservations:</span>
-                        <span class="text-sm text-gray-900 ml-2">${data.totals.total_reservations}</span>
-                    </div>
-                    <div>
-                        <span class="text-sm font-medium text-gray-500">Total Revenue:</span>
-                        <span class="text-sm text-gray-900 ml-2">₱${parseFloat(data.totals.total_revenue || 0).toFixed(2)}</span>
-                    </div>
-                    <div>
-                        <span class="text-sm font-medium text-gray-500">Avg. Reservation Value:</span>
-                        <span class="text-sm text-gray-900 ml-2">₱${parseFloat(data.totals.average_reservation_value || 0).toFixed(2)}</span>
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <span class="text-sm font-medium text-gray-900">Monthly Summary</span>
+                    <div class="text-sm text-gray-700 space-x-4">
+                        <span>Revenue: ${formatCurrency(totals.total_revenue)}</span>
+                        <span>Taxes: ${formatCurrency(totals.total_taxes)}</span>
+                        <span>Discounts: ${formatCurrency(totals.total_discounts)}</span>
+                        <span>Avg Value: ${formatCurrency(totals.average_reservation_value)}</span>
                     </div>
                 </div>
             </div>
         </div>
     `;
-    
-    container.innerHTML = tableHtml;
+
+    container.innerHTML = summaryHtml + tableHtml;
+}
+
+function formatCurrency(value) {
+    const amount = Number(value || 0);
+    return `₱${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatNumber(value) {
+    return Number(value || 0).toLocaleString('en-US');
 }
 
 function displayInventoryReports(data) {
@@ -668,24 +716,186 @@ function displayInventoryReports(data) {
 
 // Report generation functions
 function generateReport(type) {
-    const params = new URLSearchParams({ type: type });
-    
-    fetch(`../../api/generate-report.php?${params}`)
+    switch(type) {
+        case 'revenue':
+            generateRevenueReport();
+            break;
+        case 'occupancy':
+            generateOccupancyReport();
+            break;
+        case 'demographics':
+            generateDemographicsReport();
+            break;
+        case 'inventory':
+            generateInventoryReport();
+            break;
+        default:
+            HotelPMS.Utils.showNotification('Report type not supported', 'error');
+    }
+}
+
+function generateRevenueReport() {
+    fetch('../../api/get-revenue-data.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                HotelPMS.Utils.showNotification(`${type.charAt(0).toUpperCase() + type.slice(1)} report generated successfully!`, 'success');
-                if (data.download_url) {
-                    window.open(data.download_url, '_blank');
+                // Create a simple text report
+                let reportContent = 'REVENUE REPORT\n';
+                reportContent += '================\n\n';
+                
+                if (data.data.daily && data.data.daily.length > 0) {
+                    reportContent += 'Daily Revenue (Last 30 Days):\n';
+                    data.data.daily.forEach(day => {
+                        reportContent += `${day.date}: ₱${parseFloat(day.daily_revenue).toLocaleString()}\n`;
+                    });
                 }
+                
+                if (data.data.breakdown && data.data.breakdown.length > 0) {
+                    reportContent += '\nRevenue Breakdown:\n';
+                    data.data.breakdown.forEach(item => {
+                        reportContent += `${item.source}: ₱${parseFloat(item.amount).toLocaleString()}\n`;
+                    });
+                }
+                
+                // Download the report
+                downloadTextFile(reportContent, 'revenue-report.txt');
+                HotelPMS.Utils.showNotification('Revenue report generated successfully!', 'success');
             } else {
-                HotelPMS.Utils.showNotification(data.message || 'Error generating report', 'error');
+                HotelPMS.Utils.showNotification('Error generating revenue report', 'error');
             }
         })
         .catch(error => {
-            console.error('Error generating report:', error);
-            HotelPMS.Utils.showNotification('Error generating report', 'error');
+            console.error('Error generating revenue report:', error);
+            HotelPMS.Utils.showNotification('Error generating revenue report', 'error');
         });
+}
+
+function generateOccupancyReport() {
+    fetch('../../api/get-occupancy-data.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let reportContent = 'OCCUPANCY REPORT\n';
+                reportContent += '==================\n\n';
+                
+                if (data.data.daily && data.data.daily.length > 0) {
+                    reportContent += 'Daily Occupancy (Last 30 Days):\n';
+                    data.data.daily.forEach(day => {
+                        reportContent += `${day.date}: ${day.occupancy_rate}% (${day.occupied_rooms}/${day.total_rooms} rooms)\n`;
+                    });
+                }
+                
+                if (data.data.by_type && data.data.by_type.length > 0) {
+                    reportContent += '\nOccupancy by Room Type:\n';
+                    data.data.by_type.forEach(type => {
+                        reportContent += `${type.room_type}: ${type.occupancy_rate}% (${type.occupied_rooms}/${type.total_rooms} rooms)\n`;
+                    });
+                }
+                
+                downloadTextFile(reportContent, 'occupancy-report.txt');
+                HotelPMS.Utils.showNotification('Occupancy report generated successfully!', 'success');
+            } else {
+                HotelPMS.Utils.showNotification('Error generating occupancy report', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error generating occupancy report:', error);
+            HotelPMS.Utils.showNotification('Error generating occupancy report', 'error');
+        });
+}
+
+function generateDemographicsReport() {
+    fetch('../../api/get-guest-demographics.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let reportContent = 'GUEST DEMOGRAPHICS REPORT\n';
+                reportContent += '==========================\n\n';
+                
+                if (data.data.age_groups && data.data.age_groups.length > 0) {
+                    reportContent += 'Age Groups:\n';
+                    data.data.age_groups.forEach(group => {
+                        reportContent += `${group.age_group}: ${group.count} guests\n`;
+                    });
+                }
+                
+                if (data.data.nationalities && data.data.nationalities.length > 0) {
+                    reportContent += '\nTop Nationalities:\n';
+                    data.data.nationalities.forEach(nationality => {
+                        reportContent += `${nationality.nationality}: ${nationality.count} guests\n`;
+                    });
+                }
+                
+                if (data.data.genders && data.data.genders.length > 0) {
+                    reportContent += '\nGender Distribution:\n';
+                    data.data.genders.forEach(gender => {
+                        reportContent += `${gender.gender}: ${gender.count} guests\n`;
+                    });
+                }
+                
+                if (data.data.guest_types && data.data.guest_types.length > 0) {
+                    reportContent += '\nGuest Types:\n';
+                    data.data.guest_types.forEach(type => {
+                        reportContent += `${type.guest_type}: ${type.count} guests\n`;
+                    });
+                }
+                
+                downloadTextFile(reportContent, 'demographics-report.txt');
+                HotelPMS.Utils.showNotification('Demographics report generated successfully!', 'success');
+            } else {
+                HotelPMS.Utils.showNotification('Error generating demographics report', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error generating demographics report:', error);
+            HotelPMS.Utils.showNotification('Error generating demographics report', 'error');
+        });
+}
+
+function generateInventoryReport() {
+    fetch('../../api/get-inventory-reports.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let reportContent = 'INVENTORY REPORT\n';
+                reportContent += '==================\n\n';
+                
+                if (data.data.items && data.data.items.length > 0) {
+                    reportContent += 'Inventory Items:\n';
+                    data.data.items.forEach(item => {
+                        reportContent += `${item.item_name}: ${item.current_stock}/${item.minimum_stock} (${item.stock_status})\n`;
+                    });
+                }
+                
+                if (data.data.categories && data.data.categories.length > 0) {
+                    reportContent += '\nCategories:\n';
+                    data.data.categories.forEach(category => {
+                        reportContent += `${category.category_name}: ${category.item_count} items\n`;
+                    });
+                }
+                
+                downloadTextFile(reportContent, 'inventory-report.txt');
+                HotelPMS.Utils.showNotification('Inventory report generated successfully!', 'success');
+            } else {
+                HotelPMS.Utils.showNotification('Error generating inventory report', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error generating inventory report:', error);
+            HotelPMS.Utils.showNotification('Error generating inventory report', 'error');
+        });
+}
+
+function downloadTextFile(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
 }
 
 function exportReport(type) {
@@ -772,11 +982,11 @@ function switchInventoryTab(tabName) {
 }
 
 function loadInventoryItems() {
-    fetch('../../api/get-inventory-items.php')
+    fetch('../../inventory/api/get-inventory-items.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayInventoryItems(data.items);
+                displayInventoryItems(data.inventory_items || data.items || []);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading inventory items', 'error');
             }
@@ -872,7 +1082,7 @@ function handleAddItemSubmit(e) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Adding...';
     
-    fetch('../../api/add-inventory-item.php', {
+    fetch('../../inventory/api/create-inventory-item.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -899,13 +1109,13 @@ function handleAddItemSubmit(e) {
 
 // Utility functions
 function loadInventoryCategories(selectId) {
-    fetch('../../api/get-inventory-categories.php')
+    fetch('../../inventory/api/get-inventory-categories.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 const select = document.getElementById(selectId);
                 select.innerHTML = '<option value="">Select Category</option>';
-                data.categories.forEach(category => {
+                (data.categories || []).forEach(category => {
                     select.innerHTML += `<option value="${category.id}">${category.name}</option>`;
                 });
             }
@@ -916,11 +1126,11 @@ function loadInventoryCategories(selectId) {
 }
 
 function loadInventoryCategories() {
-    fetch('../../api/get-inventory-categories.php')
+    fetch('../../inventory/api/get-inventory-categories.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayInventoryCategories(data.categories);
+                displayInventoryCategories(data.categories || []);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading categories', 'error');
             }
@@ -983,11 +1193,11 @@ function displayInventoryCategories(categories) {
 }
 
 function loadInventoryTransactions() {
-    fetch('../../api/get-inventory-transactions.php')
+    fetch('../../inventory/api/get-transaction-stats.php')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayInventoryTransactions(data.transactions);
+                displayInventoryTransactions(data.transactions || []);
             } else {
                 HotelPMS.Utils.showNotification(data.message || 'Error loading transactions', 'error');
             }
@@ -1128,4 +1338,375 @@ function openAddCategoryModal() {
 
 function openAddTransactionModal() {
     HotelPMS.Utils.showNotification('Add transaction feature coming soon', 'info');
+}
+
+// Guest Demographics Functions
+function loadGuestDemographicsChart() {
+    fetch('../../api/get-guest-demographics.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                // Create pie charts
+                createAgeGroupsPieChart(data.data.age_groups);
+                createNationalitiesPieChart(data.data.nationalities);
+                createGenderPieChart(data.data.genders);
+                createGuestTypesPieChart(data.data.guest_types);
+                
+                // Create additional data displays
+                createAgeGroupChart(data.data.age_groups);
+                createNationalityChart(data.data.nationalities);
+                createGenderChart(data.data.genders);
+                createGuestTypeChart(data.data.guest_types);
+            } else {
+                console.error('Failed to load guest demographics:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading guest demographics:', error);
+        });
+}
+
+function createAgeGroupsPieChart(ageGroups) {
+    const ctx = document.getElementById('ageGroupsChart').getContext('2d');
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+    
+    chartInstances.ageGroupsChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: ageGroups.map(group => group.age_group),
+            datasets: [{
+                data: ageGroups.map(group => group.count),
+                backgroundColor: colors.slice(0, ageGroups.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createNationalitiesPieChart(nationalities) {
+    const ctx = document.getElementById('nationalitiesChart').getContext('2d');
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'];
+    
+    chartInstances.nationalitiesChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: nationalities.map(nationality => nationality.nationality),
+            datasets: [{
+                data: nationalities.map(nationality => nationality.count),
+                backgroundColor: colors.slice(0, nationalities.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createGenderPieChart(genders) {
+    const ctx = document.getElementById('genderChart').getContext('2d');
+    const colors = ['#3B82F6', '#EC4899', '#10B981'];
+    
+    chartInstances.genderChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: genders.map(gender => gender.gender),
+            datasets: [{
+                data: genders.map(gender => gender.count),
+                backgroundColor: colors.slice(0, genders.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createGuestTypesPieChart(guestTypes) {
+    const ctx = document.getElementById('guestTypesChart').getContext('2d');
+    const colors = ['#F59E0B', '#6B7280'];
+    
+    chartInstances.guestTypesChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: guestTypes.map(type => type.guest_type),
+            datasets: [{
+                data: guestTypes.map(type => type.count),
+                backgroundColor: colors.slice(0, guestTypes.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createAgeGroupChart(ageGroups) {
+    const container = document.getElementById('guest-demographics-container');
+    if (!container) return;
+    
+    const chartHtml = `
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Guest Age Groups</h4>
+            <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+                ${ageGroups.map(group => `
+                    <div class="text-center p-4 bg-blue-50 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600">${group.count}</div>
+                        <div class="text-sm text-gray-600">${group.age_group}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML += chartHtml;
+}
+
+function createNationalityChart(nationalities) {
+    const container = document.getElementById('guest-demographics-container');
+    if (!container) return;
+    
+    const chartHtml = `
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Top Nationalities</h4>
+            <div class="space-y-3">
+                ${nationalities.map(nationality => `
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm font-medium text-gray-700">${nationality.nationality}</span>
+                        <div class="flex items-center">
+                            <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: ${(nationality.count / nationalities[0].count) * 100}%"></div>
+                            </div>
+                            <span class="text-sm text-gray-600">${nationality.count}</span>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML += chartHtml;
+}
+
+function createGenderChart(genders) {
+    const container = document.getElementById('guest-demographics-container');
+    if (!container) return;
+    
+    const chartHtml = `
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">Gender Distribution</h4>
+            <div class="grid grid-cols-2 gap-4">
+                ${genders.map(gender => `
+                    <div class="text-center p-4 bg-purple-50 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600">${gender.count}</div>
+                        <div class="text-sm text-gray-600">${gender.gender}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML += chartHtml;
+}
+
+function createGuestTypeChart(guestTypes) {
+    const container = document.getElementById('guest-demographics-container');
+    if (!container) return;
+    
+    const chartHtml = `
+        <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+            <h4 class="text-lg font-medium text-gray-900 mb-4">VIP vs Regular Guests</h4>
+            <div class="grid grid-cols-2 gap-4">
+                ${guestTypes.map(type => `
+                    <div class="text-center p-4 ${type.guest_type === 'VIP' ? 'bg-yellow-50' : 'bg-gray-50'} rounded-lg">
+                        <div class="text-2xl font-bold ${type.guest_type === 'VIP' ? 'text-yellow-600' : 'text-gray-600'}">${type.count}</div>
+                        <div class="text-sm text-gray-600">${type.guest_type}</div>
+                    </div>
+                `).join('')}
+            </div>
+        </div>
+    `;
+    container.innerHTML += chartHtml;
+}
+
+// Inventory Analytics Functions
+function loadInventoryAnalytics() {
+    fetch('../../api/get-inventory-reports.php')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                // Create inventory charts
+                createInventoryCategoryChart(data.data.categories || []);
+                createStockStatusChart(data.data.items || []);
+                createLowStockChart(data.data.items || []);
+                createInventoryValueChart(data.data.categories || []);
+            } else {
+                console.error('Failed to load inventory analytics:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading inventory analytics:', error);
+        });
+}
+
+function createInventoryCategoryChart(categories) {
+    const ctx = document.getElementById('inventoryCategoryChart').getContext('2d');
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'];
+    
+    chartInstances.inventoryCategoryChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: categories.map(cat => cat.category_name || 'Unknown'),
+            datasets: [{
+                label: 'Items Count',
+                data: categories.map(cat => cat.item_count || 0),
+                backgroundColor: colors.slice(0, categories.length),
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function createStockStatusChart(items) {
+    const ctx = document.getElementById('stockStatusChart').getContext('2d');
+    
+    // Calculate stock status distribution
+    const statusCounts = {
+        'In Stock': 0,
+        'Low Stock': 0,
+        'Out of Stock': 0
+    };
+    
+    items.forEach(item => {
+        if (item.current_stock <= 0) {
+            statusCounts['Out of Stock']++;
+        } else if (item.current_stock <= item.minimum_stock) {
+            statusCounts['Low Stock']++;
+        } else {
+            statusCounts['In Stock']++;
+        }
+    });
+    
+    chartInstances.stockStatusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: Object.keys(statusCounts),
+            datasets: [{
+                data: Object.values(statusCounts),
+                backgroundColor: ['#10B981', '#F59E0B', '#EF4444'],
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+}
+
+function createLowStockChart(items) {
+    const ctx = document.getElementById('lowStockChart').getContext('2d');
+    
+    // Get low stock items
+    const lowStockItems = items.filter(item => item.current_stock <= item.minimum_stock).slice(0, 10);
+    
+    chartInstances.lowStockChart = new Chart(ctx, {
+        type: 'horizontalBar',
+        data: {
+            labels: lowStockItems.map(item => item.item_name || 'Unknown'),
+            datasets: [{
+                label: 'Current Stock',
+                data: lowStockItems.map(item => item.current_stock || 0),
+                backgroundColor: '#EF4444',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function createInventoryValueChart(categories) {
+    const ctx = document.getElementById('inventoryValueChart').getContext('2d');
+    const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+    
+    // Calculate total value for each category (simplified)
+    const categoryValues = categories.map(cat => ({
+        name: cat.category_name || 'Unknown',
+        value: (cat.item_count || 0) * 100 // Simplified calculation
+    }));
+    
+    chartInstances.inventoryValueChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+            labels: categoryValues.map(cat => cat.name),
+            datasets: [{
+                data: categoryValues.map(cat => cat.value),
+                backgroundColor: colors.slice(0, categoryValues.length),
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
 }

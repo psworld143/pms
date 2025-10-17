@@ -1,64 +1,97 @@
 <?php
-session_start();
-require_once "../config/database.php";
-require_once '../includes/functions.php';
-// Check if user is logged in and has housekeeping access
-if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['housekeeping', 'manager'])) {
-    http_response_code(401);
-    echo json_encode(['success' => false, 'message' => 'Unauthorized access']);
+/**
+ * Create Maintenance Request API
+ */
+
+require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+require_once dirname(__DIR__) . '/config/database.php';
+
+header('Content-Type: application/json');
+
+// Check if user is logged in and has access (manager or front_desk only)
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['manager', 'front_desk'])) {
+    echo json_encode([
+        'success' => false,
+        'message' => 'Unauthorized access'
+    ]);
     exit();
 }
 
-// Check if it's a POST request
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    http_response_code(405);
-    echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    echo json_encode([
+        'success' => false,
+        'message' => 'Invalid request method'
+    ]);
     exit();
 }
 
 try {
-    $room_id = $_POST['room_id'] ?? '';
-    $issue_type = $_POST['issue_type'] ?? '';
-    $priority = $_POST['priority'] ?? '';
-    $description = $_POST['description'] ?? '';
+    $input = json_decode(file_get_contents('php://input'), true);
     
-    // Validate inputs
-    if (empty($room_id) || empty($issue_type) || empty($priority) || empty($description)) {
-        throw new Exception('All fields are required');
+    if (!$input) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Invalid JSON data'
+        ]);
+        exit();
     }
     
-    // Validate issue type
-    $valid_issue_types = ['plumbing', 'electrical', 'hvac', 'furniture', 'appliances', 'structural', 'other'];
-    if (!in_array($issue_type, $valid_issue_types)) {
-        throw new Exception('Invalid issue type');
+    $room_id = $input['room_id'] ?? null;
+    $issue_type = $input['issue_type'] ?? null;
+    $priority = $input['priority'] ?? 'normal';
+    $description = $input['description'] ?? '';
+    $estimated_cost = $input['estimated_cost'] ?? 0;
+    
+    if (!$room_id || !$issue_type || !$description) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Missing required fields'
+        ]);
+        exit();
     }
     
-    // Validate priority
-    $valid_priorities = ['low', 'medium', 'high', 'urgent'];
-    if (!in_array($priority, $valid_priorities)) {
-        throw new Exception('Invalid priority level');
-    }
+    // Create the maintenance request
+    $stmt = $pdo->prepare("
+        INSERT INTO maintenance_requests 
+        (room_id, reported_by, issue_type, priority, description, estimated_cost, status, created_at, updated_at) 
+        VALUES (?, ?, ?, ?, ?, ?, 'pending', NOW(), NOW())
+    ");
     
-    // Create maintenance request
-    $result = createMaintenanceRequest($room_id, $issue_type, $description, $priority);
+    $stmt->execute([
+        $room_id,
+        $_SESSION['user_id'],
+        $issue_type,
+        $priority,
+        $description,
+        $estimated_cost
+    ]);
     
-    if ($result['success']) {
+    if ($stmt->rowCount() > 0) {
+        $request_id = $pdo->lastInsertId();
+        
         echo json_encode([
             'success' => true,
-            'message' => 'Maintenance request created successfully'
+            'message' => 'Maintenance request created successfully',
+            'request_id' => $request_id
         ]);
     } else {
         echo json_encode([
             'success' => false,
-            'message' => $result['message']
+            'message' => 'Failed to create maintenance request'
         ]);
     }
     
-} catch (Exception $e) {
-    error_log("Error in create-maintenance-request.php: " . $e->getMessage());
+} catch (PDOException $e) {
+    error_log('Error creating maintenance request: ' . $e->getMessage());
     echo json_encode([
         'success' => false,
-        'message' => 'Error creating maintenance request: ' . $e->getMessage()
+        'message' => 'Database error occurred'
+    ]);
+} catch (Exception $e) {
+    error_log('Error creating maintenance request: ' . $e->getMessage());
+    echo json_encode([
+        'success' => false,
+        'message' => 'An error occurred'
     ]);
 }
 ?>
