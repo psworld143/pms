@@ -15,9 +15,9 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_role = $_SESSION['user_role'] ?? '';
-if ($user_role !== 'housekeeping') {
+if (!in_array($user_role, ['housekeeping', 'manager'], true)) {
     http_response_code(403);
-    echo json_encode(['success' => false, 'message' => 'Access denied - Housekeeping role required']);
+    echo json_encode(['success' => false, 'message' => 'Access denied - Housekeeping or Manager role required']);
     exit();
 }
 
@@ -107,7 +107,7 @@ try {
     ");
     
     $quantity_changed = $room_item['quantity_current'] - $new_quantity;
-    $notes = "Item marked as $status by housekeeping";
+    $notes = "Item marked as $status by " . ucfirst($user_role);
     
     $stmt->execute([
         $room_item['room_id'],
@@ -127,7 +127,7 @@ try {
         VALUES (?, 'item_status_updated', ?, ?, ?, NOW())
     ");
     
-    $details = "Item '{$room_item['item_name']}' in Room {$room_item['room_number']} marked as $status";
+    $details = "Item '{$room_item['item_name']}' in Room {$room_item['room_number']} marked as $status by " . ucfirst($user_role);
     $ip_address = $_SERVER['REMOTE_ADDR'] ?? 'Unknown';
     $user_agent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown';
     

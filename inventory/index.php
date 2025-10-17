@@ -261,11 +261,6 @@ if (empty($low_stock_items)) {
                             <p class="font-medium">Add New Item</p>
                             <p class="text-xs opacity-90">Manage inventory</p>
                         </a>
-                        <a href="requests.php?status=pending" class="bg-orange-500 hover:bg-orange-600 text-white p-4 rounded-lg text-center transition-colors">
-                            <i class="fas fa-clock text-2xl mb-2"></i>
-                            <p class="font-medium">Approve Requests</p>
-                            <p class="text-xs opacity-90">Review & approve</p>
-                        </a>
                         <a href="reports.php" class="bg-green-500 hover:bg-green-600 text-white p-4 rounded-lg text-center transition-colors">
                             <i class="fas fa-chart-bar text-2xl mb-2"></i>
                             <p class="font-medium">Generate Reports</p>
@@ -332,8 +327,8 @@ if (empty($low_stock_items)) {
                                                 <span class="px-2 py-1 text-xs font-semibold rounded-full <?php echo $badgeClass; ?>"><?php echo $badgeText; ?></span>
                                             </td>
                                             <td class="px-2 sm:px-4 py-3 text-right">
-                                                <a href="requests.php?action=create&item=<?php echo urlencode($name); ?>" class="inline-flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-md bg-yellow-500 hover:bg-yellow-600 text-white">
-                                                    <i class="fas fa-cart-plus mr-1 sm:mr-2"></i> <span class="hidden sm:inline">Reorder</span>
+                                                <a href="items.php?action=edit&id=<?php echo $item['id']; ?>" class="inline-flex items-center px-2 sm:px-3 py-1.5 text-xs sm:text-sm rounded-md bg-blue-500 hover:bg-blue-600 text-white">
+                                                    <i class="fas fa-edit mr-1 sm:mr-2"></i> <span class="hidden sm:inline">Edit</span>
                                                 </a>
                                             </td>
                                         </tr>

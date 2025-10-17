@@ -123,20 +123,9 @@ if ($stats['completed'] > 0) {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Training - Hotel PMS Training</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#10B981',
-                        secondary: '#059669'
-                    }
-                }
-            }
-        }
-    </script>
+    <script></script>
 </head>
 <body class="bg-gray-50">
     <!-- Include unified inventory header and sidebar -->
@@ -324,13 +313,21 @@ if ($stats['completed'] > 0) {
     <script>
         function startScenario(scenarioId) {
             // Load scenario details and start training
-            fetch(`api/get-scenario.php?id=${scenarioId}`)
-                .then(response => response.json())
+            fetch(`api/get-scenario.php?id=${scenarioId}`, { credentials: 'include' })
+                .then(async (response) => {
+                    const text = await response.text();
+                    try {
+                        return JSON.parse(text);
+                    } catch (e) {
+                        console.error('Non-JSON response from get-scenario.php:', text);
+                        throw new Error('Invalid server response');
+                    }
+                })
                 .then(data => {
-                    if (data.success) {
+                    if (data && data.success) {
                         showScenarioModal(data.scenario);
                     } else {
-                        alert('Error loading scenario: ' + data.message);
+                        alert('Error loading scenario: ' + (data && data.message ? data.message : 'Server error'));
                     }
                 })
                 .catch(error => {
