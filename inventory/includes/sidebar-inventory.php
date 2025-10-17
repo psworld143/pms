@@ -69,13 +69,13 @@ $navigation_items = [
         'active' => strpos($current_url, 'transactions') !== false
     ],
     'training' => [
-        'url' => $BASE_INV . 'training.php',
+        'url' => $BASE_INV . 'training-simulations.php',
         'icon' => 'fas fa-graduation-cap',
         'label' => 'Training',
         'description' => 'Access training simulations for inventory handling',
         'roles' => ['housekeeping'],
         'access_level' => ['housekeeping' => 'access'],
-        'active' => strpos($current_url, 'training') !== false
+        'active' => strpos($current_url, 'training-simulations') !== false
     ],
     
     // 👨‍💼 MANAGER-ONLY MODULES
@@ -96,6 +96,15 @@ $navigation_items = [
         'roles' => ['manager'],
         'access_level' => ['manager' => 'full'],
         'active' => strpos($current_url, 'reports') !== false
+    ],
+    'training-manager' => [
+        'url' => $BASE_INV . 'training-simulations-manager.php',
+        'icon' => 'fas fa-graduation-cap',
+        'label' => 'Training & Simulations',
+        'description' => 'Practice manager workflows in a safe environment',
+        'roles' => ['manager'],
+        'access_level' => ['manager' => 'access'],
+        'active' => strpos($current_url, 'training-simulations-manager') !== false
     ],
     'enhanced-reports' => [
         'url' => $BASE_INV . 'enhanced-reports.php',
