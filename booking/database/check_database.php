@@ -17,7 +17,7 @@ if (file_exists($configFile)) {
         $localContent = file_get_contents($localConfig);
         $vals = [];
         foreach (['DB_HOST','DB_NAME','DB_USER','DB_PASS','DB_PORT'] as $k) {
-            $pattern = "/define\\('".$k."',\\s*'([^']*)'\\);"/;
+            $pattern = "/define\('" . $k . "',\s*'([^']*)'\);/";
             if (preg_match($pattern, $localContent, $m)) { $vals[$k] = $m[1]; }
         }
         echo "<table border='1' style='border-collapse: collapse; margin: 10px 0;'>";
