@@ -1,54 +1,129 @@
 <?php
-require_once '../../vps_session_fix.php';
-require_once '../../includes/database.php';
+/**
+ * Get Pending Supply Requests
+ * Returns pending supply requests for managers to review
+ */
 
-header('Content-Type: application/json');
+require_once __DIR__ . '/../../vps_session_fix.php';
+require_once __DIR__ . '/../../includes/database.php';
 
+// Debug session data
+error_log("Session data in get-pending-requests.php: " . print_r($_SESSION, true));
+
+// Check if user is logged in and has manager role
 if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    error_log("No user_id in session. Session data: " . print_r($_SESSION, true));
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Not authenticated', 'debug' => 'No user_id in session']);
     exit();
 }
 
 $user_role = $_SESSION['user_role'] ?? '';
-if (strtolower($user_role) !== 'manager') {
-    echo json_encode(['success' => false, 'message' => 'Access denied. Only managers can view pending requests.']);
+if ($user_role !== 'manager') {
+    error_log("User role is not manager. Role: " . $user_role . ", Session data: " . print_r($_SESSION, true));
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Access denied - Manager role required', 'debug' => 'User role: ' . $user_role]);
     exit();
 }
 
 try {
-    global $pdo;
+    $user_id = $_SESSION['user_id'];
     
-    // Build schema-tolerant projection
-    $rqCols = $pdo->query("SHOW COLUMNS FROM inventory_requests")->fetchAll(PDO::FETCH_COLUMN, 0);
-    $rqHas = array_flip($rqCols);
-    $userCols = $pdo->query("SHOW COLUMNS FROM users")->fetchAll(PDO::FETCH_COLUMN, 0);
-    $userNameCol = in_array('username', $userCols, true) ? 'username' : (in_array('name', $userCols, true) ? 'name' : 'id');
-
-    $itemLabelExpr = isset($rqHas['item_name']) ? 'ir.item_name' : (
-        (isset($rqHas['item_id']) ? (
-            // derive from inventory_items name columns
-            (function() use ($pdo) {
-                $itemCols = $pdo->query("SHOW COLUMNS FROM inventory_items")->fetchAll(PDO::FETCH_COLUMN, 0);
-                if (in_array('item_name', $itemCols, true)) return 'ii.item_name';
-                if (in_array('name', $itemCols, true)) return 'ii.name';
-                return "CONCAT('Item ', ii.id)";
-            })()
-        ) : "'Unknown'" )
-    );
-
-    $qtyExpr = isset($rqHas['quantity_requested']) ? 'ir.quantity_requested' : (isset($rqHas['quantity']) ? 'ir.quantity' : '0');
-    $requestedAtExpr = isset($rqHas['requested_at']) ? 'ir.requested_at' : (isset($rqHas['created_at']) ? 'ir.created_at' : 'NOW()');
-
-    $joinItems = isset($rqHas['item_id']) ? 'LEFT JOIN inventory_items ii ON ir.item_id = ii.id' : '';
-
-    $sql = "SELECT ir.id, $itemLabelExpr AS item_name, $qtyExpr AS quantity_requested, ir.department, ir.priority, ir.status, $requestedAtExpr AS requested_at, ir.notes, u.$userNameCol AS requested_by_name FROM inventory_requests ir LEFT JOIN users u ON ir.requested_by = u.id $joinItems WHERE ir.status = 'pending' ORDER BY CASE ir.priority WHEN 'urgent' THEN 1 WHEN 'high' THEN 2 WHEN 'medium' THEN 3 WHEN 'low' THEN 4 END, $requestedAtExpr ASC";
-    $stmt = $pdo->query($sql);
-    $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    // First, check if the new columns exist
+    $check_columns = $pdo->query("SHOW COLUMNS FROM supply_requests LIKE 'room_number'");
+    $has_room_number = $check_columns->rowCount() > 0;
     
-    echo json_encode(['success' => true, 'requests' => $requests]);
+    $check_columns = $pdo->query("SHOW COLUMNS FROM supply_requests LIKE 'reason'");
+    $has_reason = $check_columns->rowCount() > 0;
     
-} catch (Throwable $e) {
+    // Build query based on available columns
+    if ($has_room_number && $has_reason) {
+        // New schema with room_number and reason columns
+        $stmt = $pdo->prepare("
+            SELECT 
+                sr.id,
+                sr.item_id,
+                sr.quantity_requested,
+                sr.room_number,
+                sr.reason,
+                sr.notes,
+                sr.requested_by,
+                sr.status,
+                sr.created_at,
+                ii.item_name,
+                ii.unit,
+                u.username as requested_by_name,
+                u.name as requested_by_full_name
+            FROM supply_requests sr
+            JOIN inventory_items ii ON sr.item_id = ii.id
+            JOIN users u ON sr.requested_by = u.id
+            WHERE sr.status = 'pending'
+            ORDER BY sr.created_at ASC
+        ");
+        $stmt->execute();
+        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Get request statistics
+        $stmt = $pdo->prepare("
+            SELECT 
+                COUNT(*) as total_pending,
+                COUNT(CASE WHEN DATE(created_at) = CURDATE() THEN 1 END) as today_requests,
+                COUNT(CASE WHEN reason = 'missing' THEN 1 END) as missing_requests,
+                COUNT(CASE WHEN reason = 'damaged' THEN 1 END) as damaged_requests
+            FROM supply_requests 
+            WHERE status = 'pending'
+        ");
+        $stmt->execute();
+        $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    } else {
+        // Old schema without room_number and reason columns
+        $stmt = $pdo->prepare("
+            SELECT 
+                sr.id,
+                sr.item_id,
+                sr.quantity_requested,
+                'N/A' as room_number,
+                'general' as reason,
+                sr.notes,
+                sr.requested_by,
+                sr.status,
+                sr.created_at,
+                ii.item_name,
+                ii.unit,
+                u.username as requested_by_name,
+                u.name as requested_by_full_name
+            FROM supply_requests sr
+            JOIN inventory_items ii ON sr.item_id = ii.id
+            JOIN users u ON sr.requested_by = u.id
+            WHERE sr.status = 'pending'
+            ORDER BY sr.created_at ASC
+        ");
+        $stmt->execute();
+        $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Get request statistics (simplified for old schema)
+        $stmt = $pdo->prepare("
+            SELECT 
+                COUNT(*) as total_pending,
+                COUNT(CASE WHEN DATE(created_at) = CURDATE() THEN 1 END) as today_requests,
+                0 as missing_requests,
+                0 as damaged_requests
+            FROM supply_requests 
+            WHERE status = 'pending'
+        ");
+        $stmt->execute();
+        $stats = $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    
+    echo json_encode([
+        'success' => true,
+        'requests' => $requests,
+        'statistics' => $stats
+    ]);
+    
+} catch (PDOException $e) {
+    error_log("Database error in get-pending-requests.php: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Database error occurred: ' . $e->getMessage()]);
 }
 ?>

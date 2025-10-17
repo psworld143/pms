@@ -266,19 +266,38 @@ $(document).ready(function() {
     function loadEnhancedReportData() {
         // Load enhanced report data
         $.ajax({
-            url: 'api/get-enhanced-report-data.php',
+            url: 'api/get-enhanced-report-data-final.php',
             method: 'GET',
             dataType: 'json',
+            xhrFields: {
+                withCredentials: true
+            },
             success: function(response) {
                 if (response.success) {
                     updateCharts(response.data);
-                    displayExpensiveItems(response.data.expensive_items);
-                    displaySupplierPerformance(response.data.supplier_performance);
-                    displayAnalyticsTable(response.data.analytics);
+                    displayExpensiveItems(response.data.expensive_items || []);
+                    displaySupplierPerformance(response.data.supplier_performance || []);
+                    displayAnalyticsTable(response.data.analytics || []);
                 }
             },
             error: function(xhr, status, error) {
                 console.error('Error loading enhanced report data:', error);
+                console.error('Status:', xhr.status);
+                console.error('Response:', xhr.responseText);
+                
+                // Try to parse the response as JSON
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    if (response.debug) {
+                        console.error('Debug info:', response.debug);
+                        alert('Session issue: ' + response.message + '\nDebug: ' + JSON.stringify(response.debug, null, 2));
+                    } else {
+                        alert('Error: ' + response.message);
+                    }
+                } catch (e) {
+                    console.error('Could not parse response as JSON');
+                    alert('Server error: ' + xhr.status + ' - ' + error);
+                }
             }
         });
     }

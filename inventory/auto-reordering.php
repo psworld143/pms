@@ -163,8 +163,8 @@ $(function(){
                 tbody.append(`<tr>
                     <td class="px-4 py-2 text-sm text-gray-900">${r.name}</td>
                     <td class="px-4 py-2 text-sm text-gray-900">${r.current}</td>
-                    <td class="px-4 py-2 text-sm text-gray-900">${r.min}</td>
-                    <td class="px-4 py-2 text-sm text-gray-900">${r.order_qty}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900">${r.min_level}</td>
+                    <td class="px-4 py-2 text-sm text-gray-900">${r.reorder_qty}</td>
                     <td class="px-4 py-2 text-sm text-gray-900">${r.supplier||'N/A'}</td>
                 </tr>`);
             });
@@ -214,26 +214,50 @@ $(function(){
             const min = row.find('.min-input').val();
             const qty = row.find('.qty-input').val();
             const sup = row.find('.supplier-input').val();
+            console.log('Saving rule for item:', it.id, 'min:', min, 'qty:', qty, 'supplier:', sup);
             $.ajax({
                 url:'api/save-reorder-rule.php',
                 method:'POST',
                 dataType:'json',
                 xhrFields:{withCredentials:true},
-                data:{ item_id: it.id, min_level: min, reorder_qty: qty, supplier_id: sup },
-                success:function(r){ if(!r.success){ alert(r.message||'Save failed'); } else { loadRules(); } },
-                error:function(){ alert('Save failed (session or network).'); }
+                data:{ item_id: it.id, reorder_point: min, reorder_quantity: qty, supplier_id: sup },
+                success:function(r){ 
+                    console.log('Save response:', r);
+                    if(!r.success){ 
+                        alert('Save failed: ' + (r.message||'Unknown error')); 
+                    } else { 
+                        alert('Rule saved successfully!');
+                        loadRules(); 
+                    } 
+                },
+                error:function(xhr, status, error){ 
+                    console.error('Save error:', xhr.responseText);
+                    alert('Save failed: ' + error + ' (Status: ' + xhr.status + ')'); 
+                }
             });
         });
         row.find('.del-btn').on('click', function(){
             if(!confirm('Delete rule for this item?')) return;
+            console.log('Deleting rule for item:', it.id);
             $.ajax({
                 url:'api/delete-reorder-rule.php',
                 method:'POST',
                 dataType:'json',
                 xhrFields:{withCredentials:true},
                 data:{ item_id: it.id },
-                success:function(r){ if(!r.success){ alert(r.message||'Delete failed'); } else { loadRules(); } },
-                error:function(){ alert('Delete failed (session or network).'); }
+                success:function(r){ 
+                    console.log('Delete response:', r);
+                    if(!r.success){ 
+                        alert('Delete failed: ' + (r.message||'Unknown error')); 
+                    } else { 
+                        alert('Rule deleted successfully!');
+                        loadRules(); 
+                    } 
+                },
+                error:function(xhr, status, error){ 
+                    console.error('Delete error:', xhr.responseText);
+                    alert('Delete failed: ' + error + ' (Status: ' + xhr.status + ')'); 
+                }
             });
         });
         $('#rules-tbody').append(row);

@@ -43,7 +43,7 @@ $school_abbreviation = 'Hotel PMS'; // Default abbreviation
 </style>
 
 <!-- Header/Navbar - Matching POS and Booking systems -->
-<header class="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-primary to-secondary text-white flex justify-between items-center px-4 sm:px-6 z-50 shadow-lg">
+<header class="fixed top-0 left-0 right-0 h-16 bg-gradient-to-r from-green-500 to-green-600 text-white flex justify-between items-center px-4 sm:px-6 z-50 shadow-lg">
     <div class="flex items-center min-w-0 flex-1">
         <button id="sidebar-toggle" class="lg:hidden mr-3 sm:mr-4 text-white hover:text-gray-200 transition-colors flex-shrink-0">
             <i class="fas fa-bars text-lg sm:text-xl"></i>

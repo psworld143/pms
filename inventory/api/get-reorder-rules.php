@@ -1,22 +1,37 @@
 <?php
-require_once '../../vps_session_fix.php';
-require_once '../../includes/database.php';
+// Suppress all errors and warnings
+error_reporting(0);
+ini_set('display_errors', 0);
 
-@ini_set('display_errors', 0);
-@error_reporting(E_ALL & ~E_NOTICE & ~E_WARNING);
+// Start output buffering
+ob_start();
+
+// Direct database connection without debug output
+try {
+    $host = 'localhost';
+    $dbname = 'pms_pms_hotel';
+    $username = 'pms_pms_hotel';
+    $password = '020894HotelPMS';
+    
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false
+    ]);
+} catch (PDOException $e) {
+    ob_clean();
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+    exit();
+}
+
+// Clean any output before sending JSON
+ob_clean();
 header('Content-Type: application/json');
 
 try {
-    global $pdo;
 
-    // Ensure rules table exists (safe)
-    $pdo->exec("CREATE TABLE IF NOT EXISTS reorder_rules (
-        item_id INT NOT NULL PRIMARY KEY,
-        min_level INT NOT NULL DEFAULT 0,
-        reorder_qty INT NOT NULL DEFAULT 0,
-        supplier_id INT NULL
-    )");
-
+    // Use existing table structure - reorder_rules table already exists with correct columns
     // Detect columns in inventory_items
     $iCols = $pdo->query("SHOW COLUMNS FROM inventory_items")->fetchAll(PDO::FETCH_COLUMN, 0);
     $hasItemName = in_array('item_name', $iCols, true);
@@ -29,22 +44,26 @@ try {
     $skuExpr = $hasSku ? 'ii.sku' : "''";
     $currentExpr = $hasCurrent ? 'ii.current_stock' : ($hasQuantity ? 'ii.quantity' : '0');
 
-    // Detect columns in reorder_rules (older DBs might not have our exact names)
-    $rCols = $pdo->query("SHOW COLUMNS FROM reorder_rules")->fetchAll(PDO::FETCH_COLUMN, 0);
-    $hasMin = in_array('min_level', $rCols, true);
-    $hasReorder = in_array('reorder_qty', $rCols, true);
-    $hasSupplier = in_array('supplier_id', $rCols, true);
+    // Use correct column names for existing reorder_rules table
+    $minExpr = 'rr.reorder_point';
+    $reorderExpr = 'rr.reorder_quantity';
+    $supplierExpr = 'rr.supplier_id';
 
-    $minExpr = $hasMin ? 'rr.min_level' : '0';
-    $reorderExpr = $hasReorder ? 'rr.reorder_qty' : '0';
-    $supplierExpr = $hasSupplier ? 'rr.supplier_id' : 'NULL';
-
-    // Suppliers (optional)
+    // Suppliers (optional) - try inventory_suppliers first, then fallback to suppliers
     $suppliers = [];
     try {
-        $suppliers = $pdo->query("SELECT id, name FROM suppliers ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+        $suppliers = $pdo->query("SELECT id, name FROM inventory_suppliers ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+        // If no suppliers in inventory_suppliers, use suppliers table
+        if (empty($suppliers)) {
+            $suppliers = $pdo->query("SELECT id, name FROM suppliers ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+        }
     } catch (Throwable $e) {
-        $suppliers = [];
+        // Fallback to suppliers table
+        try {
+            $suppliers = $pdo->query("SELECT id, name FROM suppliers ORDER BY name")->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Throwable $e2) {
+            $suppliers = [];
+        }
     }
 
     $sql = "SELECT 

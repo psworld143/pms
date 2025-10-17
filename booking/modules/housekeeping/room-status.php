@@ -51,7 +51,7 @@ try {
         }
     }
     
-    // Get all rooms
+    // Get all rooms (including capacity)
     $stmt = $pdo->query("
         SELECT 
             id,
@@ -237,7 +237,7 @@ include '../../includes/sidebar-unified.php';
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div class="flex items-center space-x-2">
                                                 <!-- View Icon with Enhanced Design -->
-                                                <button onclick="showRoomModal(<?php echo $room['id']; ?>, '<?php echo htmlspecialchars($room['room_number']); ?>', '<?php echo htmlspecialchars($room['floor']); ?>', '<?php echo htmlspecialchars($room['room_type']); ?>', '<?php echo htmlspecialchars($room['status']); ?>', '<?php echo htmlspecialchars($room['housekeeping_status']); ?>')" 
+                                                <button onclick="showRoomModal(<?php echo $room['id']; ?>, '<?php echo htmlspecialchars($room['room_number']); ?>', '<?php echo htmlspecialchars($room['floor']); ?>', '<?php echo htmlspecialchars($room['room_type']); ?>', '<?php echo htmlspecialchars($room['status']); ?>', '<?php echo htmlspecialchars($room['housekeeping_status']); ?>', <?php echo $room['capacity'] ?? 2; ?>)" 
                                                         class="group relative inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 ease-in-out cursor-pointer"
                                                         title="View Room Details">
                                                     <i class="fas fa-eye text-sm group-hover:scale-110 transition-transform duration-200"></i>
@@ -245,7 +245,7 @@ include '../../includes/sidebar-unified.php';
                                                 </button>
                                                 
                                                 <!-- Edit Icon with Enhanced Design -->
-                                                <button onclick="editRoomStatus(<?php echo $room['id']; ?>, '<?php echo htmlspecialchars($room['room_number']); ?>', '<?php echo htmlspecialchars($room['housekeeping_status']); ?>')" 
+                                                <button onclick="editRoomStatus(<?php echo $room['id']; ?>, '<?php echo htmlspecialchars($room['room_number']); ?>', '<?php echo htmlspecialchars($room['housekeeping_status']); ?>', <?php echo $room['capacity'] ?? 2; ?>)" 
                                                         class="group relative inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 ease-in-out cursor-pointer"
                                                         title="Edit Room Status">
                                                     <i class="fas fa-edit text-sm group-hover:scale-110 transition-transform duration-200"></i>
@@ -293,7 +293,7 @@ include '../../includes/sidebar-unified.php';
         <script src="../../assets/js/main.js"></script>
         <script>
             // Simple working functions for room status
-            function showRoomModal(roomId, roomNumber, floor, roomType, status, housekeepingStatus) {
+            function showRoomModal(roomId, roomNumber, floor, roomType, status, housekeepingStatus, capacity) {
                 try {
                     console.log('Showing room modal for:', roomId);
                     
@@ -385,7 +385,7 @@ include '../../includes/sidebar-unified.php';
                                                     <i class="fas fa-users text-emerald-600"></i>
                                                     <span class="font-medium text-gray-700">Capacity</span>
                                                 </div>
-                                                <p class="text-xl font-bold text-emerald-800">2 Guests</p>
+                                                <p class="text-xl font-bold text-emerald-800">${capacity || 2} ${(capacity || 2) === 1 ? 'Guest' : 'Guests'}</p>
                                             </div>
                                         </div>
                                         
@@ -412,7 +412,7 @@ include '../../includes/sidebar-unified.php';
                                     <button onclick="closeRoomModal()" class="px-6 py-2 bg-gray-500 hover:bg-gray-600 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105">
                                         <i class="fas fa-times mr-2"></i>Close
                                     </button>
-                                    <button onclick="editRoomStatus(${roomId}, '${roomNumber}', '${housekeepingStatus}'); closeRoomModal();" class="px-6 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105">
+                                    <button onclick="editRoomStatus(${roomId}, '${roomNumber}', '${housekeepingStatus}', ${capacity}); closeRoomModal();" class="px-6 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105">
                                         <i class="fas fa-edit mr-2"></i>Edit Status
                                     </button>
                                 </div>
@@ -436,7 +436,7 @@ include '../../includes/sidebar-unified.php';
                 }
             }
             
-            function editRoomStatus(roomId, roomNumber, currentStatus) {
+            function editRoomStatus(roomId, roomNumber, currentStatus, capacity) {
                 try {
                     console.log('Editing room status for:', roomId);
                     

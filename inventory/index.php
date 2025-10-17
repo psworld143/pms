@@ -20,6 +20,12 @@ if (!in_array($_SESSION['user_role'], ['manager', 'housekeeping'])) {
 $user_id = $_SESSION['user_id'];
 $user_role = $_SESSION['user_role'] ?? '';
 
+// Redirect housekeeping users to their dedicated dashboard
+if ($user_role === 'housekeeping') {
+    header('Location: housekeeping-dashboard.php');
+    exit();
+}
+
 // Initialize inventory database
 $inventory_db = new InventoryDatabase();
 
@@ -175,22 +181,10 @@ if (empty($low_stock_items)) {
             <div class="flex items-center justify-between">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">
-                        <?php if ($user_role === 'housekeeping'): ?>
-                            🧹 Housekeeping Inventory Dashboard
-                        <?php elseif ($user_role === 'manager'): ?>
-                            👨‍💼 Manager Inventory Dashboard
-                        <?php else: ?>
-                            Inventory Management Dashboard
-                        <?php endif; ?>
+                        👨‍💼 Manager Inventory Dashboard
                     </h1>
                     <p class="text-gray-600 mt-2">
-                        <?php if ($user_role === 'housekeeping'): ?>
-                            Daily supply management and room inventory updates
-                        <?php elseif ($user_role === 'manager'): ?>
-                            Complete inventory control and monitoring system
-                        <?php else: ?>
-                            Inventory management system
-                        <?php endif; ?>
+                        Complete inventory control and monitoring system
                     </p>
                 </div>
                 <div class="flex items-center space-x-2">
@@ -200,59 +194,8 @@ if (empty($low_stock_items)) {
             </div>
         </div>
 
-        <!-- Role-Based Statistics Cards -->
+        <!-- Manager Statistics Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-            <?php if ($user_role === 'housekeeping'): ?>
-                <!-- Housekeeping Limited View Cards -->
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-purple-500">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-boxes text-purple-500 text-2xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Available Items</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['total_items']); ?></p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-yellow-500">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-exclamation-triangle text-yellow-500 text-2xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Low Stock Alerts</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['low_stock_items']); ?></p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-clipboard-list text-blue-500 text-2xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">My Requests</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['pending_requests']); ?></p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="bg-white rounded-lg shadow p-6 border-l-4 border-green-500">
-                    <div class="flex items-center">
-                        <div class="flex-shrink-0">
-                            <i class="fas fa-bed text-green-500 text-2xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500">Rooms Updated</p>
-                            <p class="text-2xl font-semibold text-gray-900">12</p>
-                        </div>
-                    </div>
-                </div>
-
-            <?php elseif ($user_role === 'manager'): ?>
                 <!-- Manager Full View Cards -->
                 <div class="bg-white rounded-lg shadow p-6 border-l-4 border-blue-500">
                     <div class="flex items-center">
@@ -301,47 +244,17 @@ if (empty($low_stock_items)) {
                         </div>
                     </div>
                 </div>
-            <?php endif; ?>
         </div>
 
         <!-- Role-Based Quick Actions -->
         <div class="bg-white rounded-lg shadow mb-8">
             <div class="px-6 py-4 border-b border-gray-200">
                 <h3 class="text-lg font-medium text-gray-900">
-                    <?php if ($user_role === 'housekeeping'): ?>
-                        🧹 Housekeeping Quick Actions
-                    <?php elseif ($user_role === 'manager'): ?>
-                        👨‍💼 Manager Quick Actions
-                    <?php else: ?>
-                        Quick Actions
-                    <?php endif; ?>
+                    👨‍💼 Manager Quick Actions
                 </h3>
             </div>
             <div class="p-6">
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    <?php if ($user_role === 'housekeeping'): ?>
-                        <!-- Housekeeping Actions -->
-                        <a href="requests.php?action=create" class="bg-purple-500 hover:bg-purple-600 text-white p-4 rounded-lg text-center transition-colors">
-                            <i class="fas fa-clipboard-list text-2xl mb-2"></i>
-                            <p class="font-medium">Create Request</p>
-                            <p class="text-xs opacity-90">Request supplies</p>
-                        </a>
-                        <a href="room-inventory.php" class="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-lg text-center transition-colors">
-                            <i class="fas fa-bed text-2xl mb-2"></i>
-                            <p class="font-medium">Room Inventory</p>
-                            <p class="text-xs opacity-90">Update room items</p>
-                        </a>
-                        <a href="transactions.php?action=record" class="bg-green-500 hover:bg-green-600 text-white p-4 rounded-lg text-center transition-colors">
-                            <i class="fas fa-clipboard-check text-2xl mb-2"></i>
-                            <p class="font-medium">Record Usage</p>
-                            <p class="text-xs opacity-90">Log item usage</p>
-                        </a>
-                        <a href="mobile.php" class="bg-indigo-500 hover:bg-indigo-600 text-white p-4 rounded-lg text-center transition-colors">
-                            <i class="fas fa-mobile-alt text-2xl mb-2"></i>
-                            <p class="font-medium">Mobile Interface</p>
-                            <p class="text-xs opacity-90">Quick updates</p>
-                        </a>
-                    <?php elseif ($user_role === 'manager'): ?>
                         <!-- Manager Actions -->
                         <a href="items.php?action=add" class="bg-blue-500 hover:bg-blue-600 text-white p-4 rounded-lg text-center transition-colors">
                             <i class="fas fa-plus text-2xl mb-2"></i>
@@ -363,7 +276,6 @@ if (empty($low_stock_items)) {
                             <p class="font-medium">Auto Reordering</p>
                             <p class="text-xs opacity-90">Set thresholds</p>
                         </a>
-                    <?php endif; ?>
                 </div>
             </div>
         </div>

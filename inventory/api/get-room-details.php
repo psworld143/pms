@@ -3,8 +3,8 @@
  * Get detailed room information with inventory items
  */
 
-require_once '../../vps_session_fix.php';
-require_once '../../includes/database.php';
+require_once __DIR__ . '/../../vps_session_fix.php';
+require_once __DIR__ . '/../../includes/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -20,11 +20,11 @@ if (empty($room_id)) {
 }
 
 try {
-    global $pdo;
     
-    // Get room details from hotel_rooms table
+    // Get room details from rooms table (including capacity from booking system)
     $stmt = $pdo->prepare("
         SELECT r.*, 
+               r.capacity,
                COUNT(ri.id) as total_items,
                CASE 
                    WHEN COUNT(ri.id) = 0 THEN 'unknown'
@@ -32,16 +32,13 @@ try {
                    WHEN COUNT(CASE WHEN ri.quantity_current = 0 THEN 1 END) > 0 THEN 'critical_stock'
                    ELSE 'needs_restocking'
                END as stock_status
-        FROM hotel_rooms r
-        LEFT JOIN room_inventory_items ri ON r.id = ri.room_id
+        FROM rooms r
+        LEFT JOIN room_inventory ri ON r.id = ri.room_id
         WHERE r.id = ?
         GROUP BY r.id
     ");
     $stmt->execute([$room_id]);
     $room = $stmt->fetch();
-    
-    // The max_occupancy field already exists in hotel_rooms table
-    // No need to map from capacity field
     
     if (!$room) {
         echo json_encode(['success' => false, 'message' => 'Room not found']);
@@ -61,20 +58,24 @@ try {
     $unitExpr = $hasUnit ? 'ii.unit' : "'' AS unit";
     $orderBy = $hasItemName ? 'ii.item_name' : ($hasName ? 'ii.name' : 'ii.id');
 
-    // Get room inventory items (using schema-adaptive fields)
+    // Get room inventory items (using schema-adaptive approach)
     $sqlItems = "
         SELECT ri.*, 
-               $nameExpr AS item_name,
-               $skuExpr,
-               $unitExpr,
+               {$nameExpr} as item_name,
+               {$skuExpr} as sku,
+               {$unitExpr} as unit,
                ri.quantity_allocated,
                ri.quantity_current,
                ri.par_level,
-               ri.updated_at as last_updated
-        FROM room_inventory_items ri
+               ri.last_updated,
+               ii.unit_price,
+               ii.current_stock as main_stock,
+               ii.description,
+               ii.status as item_status
+        FROM room_inventory ri
         JOIN inventory_items ii ON ri.item_id = ii.id
         WHERE ri.room_id = ?
-        ORDER BY $orderBy
+        ORDER BY {$orderBy}
     ";
     $stmt = $pdo->prepare($sqlItems);
     $stmt->execute([$room_id]);
@@ -88,6 +89,7 @@ try {
     ]);
     
 } catch (PDOException $e) {
+    error_log("Database error in get-room-details.php: " . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'Database error: ' . $e->getMessage()

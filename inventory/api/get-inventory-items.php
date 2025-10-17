@@ -4,20 +4,34 @@
  * Hotel PMS Training System - Inventory Module
  */
 
-// Suppress warnings and notices for clean JSON output
-error_reporting(E_ERROR | E_PARSE);
+// Suppress all errors and warnings
+error_reporting(0);
 ini_set('display_errors', 0);
 
-session_start();
-require_once '../../includes/database.php';
+// Start output buffering
+ob_start();
 
-// Check if user is logged in - TEMPORARILY DISABLED FOR DEBUGGING
-// if (!isset($_SESSION['user_id'])) {
-//     http_response_code(401);
-//     echo json_encode(['success' => false, 'message' => 'Unauthorized']);
-//     exit();
-// }
+// Direct database connection without debug output
+try {
+    $host = 'localhost';
+    $dbname = 'pms_pms_hotel';
+    $username = 'pms_pms_hotel';
+    $password = '020894HotelPMS';
+    
+    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        PDO::ATTR_EMULATE_PREPARES => false
+    ]);
+} catch (PDOException $e) {
+    ob_clean();
+    header('Content-Type: application/json');
+    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+    exit();
+}
 
+// Clean any output before sending JSON
+ob_clean();
 header('Content-Type: application/json');
 
 try {

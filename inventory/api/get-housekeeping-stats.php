@@ -1,74 +1,106 @@
 <?php
-require_once '../../vps_session_fix.php';
-require_once '../../includes/database.php';
+/**
+ * Get Housekeeping Statistics
+ * Returns statistics specific to housekeeping users
+ */
 
-header('Content-Type: application/json');
+require_once __DIR__ . '/../../vps_session_fix.php';
+require_once __DIR__ . '/../../includes/database.php';
 
+// Debug session data
+error_log("Session data in get-housekeeping-stats.php: " . print_r($_SESSION, true));
+
+// Check if user is logged in and has housekeeping role
 if (!isset($_SESSION['user_id'])) {
-    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    error_log("No user_id in session. Session data: " . print_r($_SESSION, true));
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Not authenticated', 'debug' => 'No user_id in session']);
     exit();
 }
 
 $user_role = $_SESSION['user_role'] ?? '';
 if ($user_role !== 'housekeeping') {
-    echo json_encode(['success' => false, 'message' => 'Access denied']);
+    error_log("User role is not housekeeping. Role: " . $user_role . ", Session data: " . print_r($_SESSION, true));
+    http_response_code(403);
+    echo json_encode(['success' => false, 'message' => 'Access denied - Housekeeping role required', 'debug' => 'User role: ' . $user_role]);
     exit();
 }
 
 try {
-    global $pdo;
     $user_id = $_SESSION['user_id'];
     
-    $stats = [
-        'usage_reports' => 0,
-        'pending_requests' => 0,
-        'approved_requests' => 0,
-        'low_stock_items' => 0
-    ];
+    // Check if assigned_housekeeping column exists
+    $check_columns = $pdo->query("SHOW COLUMNS FROM rooms LIKE 'assigned_housekeeping'");
+    $has_assigned_housekeeping = $check_columns->rowCount() > 0;
     
-    // Count usage reports submitted by this user
+    // Get rooms assigned to this housekeeping user
+    if ($has_assigned_housekeeping) {
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as my_rooms 
+            FROM rooms r 
+            WHERE r.assigned_housekeeping = ? OR r.assigned_housekeeping IS NULL
+        ");
+        $stmt->execute([$user_id]);
+    } else {
+        // Fallback: count all rooms if column doesn't exist
+        $stmt = $pdo->query("SELECT COUNT(*) as my_rooms FROM rooms");
+    }
+    $my_rooms = $stmt->fetch()['my_rooms'];
+    
+    // Get items used today by this user (using your existing table structure)
     $stmt = $pdo->prepare("
-        SELECT COUNT(*) as count 
-        FROM inventory_usage_reports 
-        WHERE user_id = ?
+        SELECT COUNT(*) as items_used 
+        FROM room_inventory_transactions rit
+        WHERE rit.user_id = ? 
+        AND DATE(rit.created_at) = CURDATE()
+        AND rit.transaction_type = 'usage'
     ");
     $stmt->execute([$user_id]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $stats['usage_reports'] = $result['count'] ?? 0;
+    $items_used = $stmt->fetch()['items_used'];
     
-    // Count pending requests by this user
+    // Get missing items in assigned rooms
+    if ($has_assigned_housekeeping) {
+        $stmt = $pdo->prepare("
+            SELECT COUNT(*) as missing_items 
+            FROM room_inventory ri
+            JOIN rooms r ON ri.room_id = r.id
+            WHERE (r.assigned_housekeeping = ? OR r.assigned_housekeeping IS NULL)
+            AND ri.quantity_current < ri.par_level
+        ");
+        $stmt->execute([$user_id]);
+    } else {
+        // Fallback: count all rooms with low stock
+        $stmt = $pdo->query("
+            SELECT COUNT(*) as missing_items 
+            FROM room_inventory ri
+            WHERE ri.quantity_current < ri.par_level
+        ");
+    }
+    $missing_items = $stmt->fetch()['missing_items'];
+    
+    // Get pending requests by this user
     $stmt = $pdo->prepare("
-        SELECT COUNT(*) as count 
-        FROM inventory_requests 
-        WHERE requested_by = ? AND status = 'pending'
+        SELECT COUNT(*) as my_requests 
+        FROM supply_requests sr
+        WHERE sr.requested_by = ? 
+        AND sr.status IN ('pending', 'approved', 'in_progress')
     ");
     $stmt->execute([$user_id]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $stats['pending_requests'] = $result['count'] ?? 0;
+    $my_requests = $stmt->fetch()['my_requests'];
     
-    // Count approved requests by this user
-    $stmt = $pdo->prepare("
-        SELECT COUNT(*) as count 
-        FROM inventory_requests 
-        WHERE requested_by = ? AND status = 'approved'
-    ");
-    $stmt->execute([$user_id]);
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $stats['approved_requests'] = $result['count'] ?? 0;
+    echo json_encode([
+        'success' => true,
+        'data' => [
+            'total_rooms' => (int)$my_rooms,
+            'total_items' => (int)$items_used,
+            'missing_items' => (int)$missing_items,
+            'pending_requests' => (int)$my_requests
+        ]
+    ]);
     
-    // Count low stock items (items with current_stock <= reorder_level)
-    $stmt = $pdo->query("
-        SELECT COUNT(*) as count 
-        FROM inventory_items 
-        WHERE current_stock <= reorder_level AND current_stock > 0
-    ");
-    $result = $stmt->fetch(PDO::FETCH_ASSOC);
-    $stats['low_stock_items'] = $result['count'] ?? 0;
-    
-    echo json_encode(['success' => true, 'stats' => $stats]);
-    
-} catch (Throwable $e) {
+} catch (PDOException $e) {
+    error_log("Database error in get-housekeeping-stats.php: " . $e->getMessage());
     http_response_code(500);
-    echo json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]);
+    echo json_encode(['success' => false, 'message' => 'Database error occurred: ' . $e->getMessage()]);
 }
 ?>

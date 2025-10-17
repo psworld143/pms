@@ -1,20 +1,12 @@
 <?php
 /**
- * Room Inventory Management
+ * Room Inventory Management - Enhanced with Integrated Requests
  * Hotel PMS Training System - Inventory Module
  */
 
-require_once __DIR__ . '/../vps_session_fix.php';
-require_once __DIR__ . '/../includes/database.php';
-
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit();
-}
-
-// Set page title
-$page_title = 'Room Inventory Management';
+// Redirect to enhanced version
+header('Location: enhanced-room-inventory.php');
+exit();
 
 ?>
 <!DOCTYPE html>
@@ -64,98 +56,209 @@ $page_title = 'Room Inventory Management';
         <!-- Main Content -->
         <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
-                <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Room Inventory Management</h2>
+                <div>
+                    <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">
+                        <?php if ($is_housekeeping): ?>
+                            <i class="fas fa-bed mr-2 text-blue-600"></i>Room Inventory - Housekeeping
+                        <?php else: ?>
+                            <i class="fas fa-cogs mr-2 text-green-600"></i>Room Inventory Management
+                        <?php endif; ?>
+                    </h2>
+                    <p class="text-sm text-gray-600 mt-1">
+                        <?php if ($is_housekeeping): ?>
+                            View and update room inventory for the rooms you clean
+                        <?php else: ?>
+                            Complete inventory management and monitoring system
+                        <?php endif; ?>
+                    </p>
+                </div>
                 <div class="flex items-center space-x-4">
-                    <button id="audit-rooms-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                        <i class="fas fa-clipboard-check mr-2"></i>Audit Rooms
-                    </button>
-                    <button id="restock-rooms-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                        <i class="fas fa-boxes mr-2"></i>Restock Rooms
-                    </button>
+                    <?php if ($is_housekeeping): ?>
+                        <button id="check-rooms-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            <i class="fas fa-clipboard-check mr-2"></i>Check Rooms
+                        </button>
+                        <button id="request-supplies-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            <i class="fas fa-shopping-cart mr-2"></i>Request Supplies
+                        </button>
+                    <?php else: ?>
+                        <button id="audit-rooms-btn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            <i class="fas fa-clipboard-check mr-2"></i>Audit Rooms
+                        </button>
+                        <button id="restock-rooms-btn" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            <i class="fas fa-boxes mr-2"></i>Restock Rooms
+                        </button>
+                        <button id="manage-items-btn" class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                            <i class="fas fa-cog mr-2"></i>Manage Items
+                        </button>
+                    <?php endif; ?>
                 </div>
             </div>
 
             <!-- Enhanced Room Inventory Statistics -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <!-- Total Rooms Card -->
-                <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-blue-200 group">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                    <i class="fas fa-bed text-white text-lg"></i>
+                <?php if ($is_housekeeping): ?>
+                    <!-- Housekeeping Statistics -->
+                    <!-- Rooms to Clean Card -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-blue-200 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <i class="fas fa-bed text-white text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-semibold text-blue-700 uppercase tracking-wide">My Rooms</p>
+                                    <p class="text-3xl font-bold text-blue-900" id="my-rooms">Loading...</p>
                                 </div>
                             </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-semibold text-blue-700 uppercase tracking-wide">Total Rooms</p>
-                                <p class="text-3xl font-bold text-blue-900" id="total-rooms">Loading...</p>
+                            <div class="text-right">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
-                        </div>
                     </div>
-                </div>
 
-                <!-- Fully Stocked Card -->
-                <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-green-200 group">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                    <i class="fas fa-check-circle text-white text-lg"></i>
+                    <!-- Items Used Today Card -->
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-green-200 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <i class="fas fa-clipboard-check text-white text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-semibold text-green-700 uppercase tracking-wide">Items Used</p>
+                                    <p class="text-3xl font-bold text-green-900" id="items-used">Loading...</p>
                                 </div>
                             </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-semibold text-green-700 uppercase tracking-wide">Fully Stocked</p>
-                                <p class="text-3xl font-bold text-green-900" id="fully-stocked">Loading...</p>
+                            <div class="text-right">
+                                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        </div>
                     </div>
-                </div>
 
-                <!-- Need Restocking Card -->
-                <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-yellow-200 group">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                    <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                    <!-- Missing Items Card -->
+                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-yellow-200 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-semibold text-yellow-700 uppercase tracking-wide">Missing Items</p>
+                                    <p class="text-3xl font-bold text-yellow-900" id="missing-items">Loading...</p>
                                 </div>
                             </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-semibold text-yellow-700 uppercase tracking-wide">Need Restocking</p>
-                                <p class="text-3xl font-bold text-yellow-900" id="need-restocking">Loading...</p>
+                            <div class="text-right">
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
-                        </div>
                     </div>
-                </div>
 
-                <!-- Critical Stock Card -->
-                <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-red-200 group">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center">
-                            <div class="flex-shrink-0">
-                                <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
-                                    <i class="fas fa-times-circle text-white text-lg"></i>
+                    <!-- Pending Requests Card -->
+                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-purple-200 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <i class="fas fa-shopping-cart text-white text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-semibold text-purple-700 uppercase tracking-wide">My Requests</p>
+                                    <p class="text-3xl font-bold text-purple-900" id="my-requests">Loading...</p>
                                 </div>
                             </div>
-                            <div class="ml-4">
-                                <p class="text-sm font-semibold text-red-700 uppercase tracking-wide">Critical Stock</p>
-                                <p class="text-3xl font-bold text-red-900" id="critical-stock">Loading...</p>
+                            <div class="text-right">
+                                <div class="w-3 h-3 bg-purple-500 rounded-full animate-pulse"></div>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                    </div>
+                <?php else: ?>
+                    <!-- Manager Statistics -->
+                    <!-- Total Rooms Card -->
+                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-blue-200 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <i class="fas fa-bed text-white text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-semibold text-blue-700 uppercase tracking-wide">Total Rooms</p>
+                                    <p class="text-3xl font-bold text-blue-900" id="total-rooms">Loading...</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="w-3 h-3 bg-blue-500 rounded-full animate-pulse"></div>
+                            </div>
                         </div>
                     </div>
-                </div>
+
+                    <!-- Fully Stocked Card -->
+                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-green-200 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <i class="fas fa-check-circle text-white text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-semibold text-green-700 uppercase tracking-wide">Fully Stocked</p>
+                                    <p class="text-3xl font-bold text-green-900" id="fully-stocked">Loading...</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Need Restocking Card -->
+                    <div class="bg-gradient-to-br from-yellow-50 to-yellow-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-yellow-200 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <i class="fas fa-exclamation-triangle text-white text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-semibold text-yellow-700 uppercase tracking-wide">Need Restocking</p>
+                                    <p class="text-3xl font-bold text-yellow-900" id="need-restocking">Loading...</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Critical Stock Card -->
+                    <div class="bg-gradient-to-br from-red-50 to-red-100 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6 border border-red-200 group">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
+                                    <div class="w-12 h-12 bg-gradient-to-r from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                                        <i class="fas fa-times-circle text-white text-lg"></i>
+                                    </div>
+                                </div>
+                                <div class="ml-4">
+                                    <p class="text-sm font-semibold text-red-700 uppercase tracking-wide">Critical Stock</p>
+                                    <p class="text-3xl font-bold text-red-900" id="critical-stock">Loading...</p>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
             </div>
 
             <!-- Enhanced Floor Selection -->
@@ -285,15 +388,32 @@ $(document).ready(function() {
         startRoomAudit();
     });
     
-    // Restock rooms button
+    // Restock rooms button (Manager only)
     $('#restock-rooms-btn').click(function() {
         startRoomRestock();
     });
     
+    // Housekeeping specific buttons
+    $('#check-rooms-btn').click(function() {
+        startRoomCheck();
+    });
+    
+    $('#request-supplies-btn').click(function() {
+        openRequestModal();
+    });
+    
+    // Manager specific buttons
+    $('#manage-items-btn').click(function() {
+        window.location.href = 'items.php';
+    });
+    
     function loadRoomInventoryStats() {
         console.log('Loading room inventory stats...');
+        const userRole = '<?php echo $user_role; ?>';
+        const apiUrl = userRole === 'housekeeping' ? 'api/get-housekeeping-stats.php' : 'api/get-room-inventory-stats.php';
+        
         $.ajax({
-            url: 'api/get-room-inventory-stats.php',
+            url: apiUrl,
             method: 'GET',
             dataType: 'json',
             xhrFields: {
@@ -303,26 +423,49 @@ $(document).ready(function() {
                 console.log('Room inventory stats response:', response);
                 if (response.success) {
                     const stats = response.statistics;
-                    $('#total-rooms').text(stats.total_rooms);
-                    $('#fully-stocked').text(stats.fully_stocked);
-                    $('#need-restocking').text(stats.need_restocking);
-                    $('#critical-stock').text(stats.critical_stock);
+                    if (userRole === 'housekeeping') {
+                        $('#my-rooms').text(stats.my_rooms || 0);
+                        $('#items-used').text(stats.items_used || 0);
+                        $('#missing-items').text(stats.missing_items || 0);
+                        $('#my-requests').text(stats.my_requests || 0);
+                    } else {
+                        $('#total-rooms').text(stats.total_rooms);
+                        $('#fully-stocked').text(stats.fully_stocked);
+                        $('#need-restocking').text(stats.need_restocking);
+                        $('#critical-stock').text(stats.critical_stock);
+                    }
                     console.log('Room inventory stats loaded successfully');
                 } else {
                     console.error('Error loading room inventory stats:', response.message);
-                    $('#total-rooms').text('Error');
-                    $('#fully-stocked').text('Error');
-                    $('#need-restocking').text('Error');
-                    $('#critical-stock').text('Error');
+                    // Set error text based on role
+                    if (userRole === 'housekeeping') {
+                        $('#my-rooms').text('Error');
+                        $('#items-used').text('Error');
+                        $('#missing-items').text('Error');
+                        $('#my-requests').text('Error');
+                    } else {
+                        $('#total-rooms').text('Error');
+                        $('#fully-stocked').text('Error');
+                        $('#need-restocking').text('Error');
+                        $('#critical-stock').text('Error');
+                    }
                 }
             },
             error: function(xhr, status, error) {
                 console.error('AJAX error loading room inventory stats:', error);
                 console.error('Response:', xhr.responseText);
-                $('#total-rooms').text('Error');
-                $('#fully-stocked').text('Error');
-                $('#need-restocking').text('Error');
-                $('#critical-stock').text('Error');
+                // Set error text based on role
+                if (userRole === 'housekeeping') {
+                    $('#my-rooms').text('Error');
+                    $('#items-used').text('Error');
+                    $('#missing-items').text('Error');
+                    $('#my-requests').text('Error');
+                } else {
+                    $('#total-rooms').text('Error');
+                    $('#fully-stocked').text('Error');
+                    $('#need-restocking').text('Error');
+                    $('#critical-stock').text('Error');
+                }
             }
         });
     }
@@ -628,10 +771,27 @@ $(document).ready(function() {
                         </div>
                         <h4 class="text-xl font-bold text-gray-800">Room Actions</h4>
                     </div>
-                    <button id="audit-this-room-btn" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}">
-                        <i class="fas fa-clipboard-check mr-2"></i>
-                        Audit This Room
-                    </button>
+                    <div class="flex space-x-3">
+                        <?php if ($is_housekeeping): ?>
+                            <button id="check-room-btn" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}">
+                                <i class="fas fa-clipboard-check mr-2"></i>
+                                Check Room
+                            </button>
+                            <button id="request-replacement-btn" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}">
+                                <i class="fas fa-shopping-cart mr-2"></i>
+                                Request Items
+                            </button>
+                        <?php else: ?>
+                            <button id="audit-this-room-btn" class="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}">
+                                <i class="fas fa-clipboard-check mr-2"></i>
+                                Audit This Room
+                            </button>
+                            <button id="manage-room-items-btn" class="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}">
+                                <i class="fas fa-cog mr-2"></i>
+                                Manage Items
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
             
@@ -649,21 +809,23 @@ $(document).ready(function() {
                     </span>
                 </div>
 
-                <!-- Assign Item (always available) -->
-                <div class="mb-6">
-                    <button id="toggle-assign-form" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
-                        <i class="fas fa-plus-circle mr-1"></i>Add Item to Room
-                    </button>
-                    <div id="assign-item-panel" class="mt-3 hidden bg-gray-50 border border-gray-200 rounded p-4">
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
-                            <select id="assign-item-select" class="border border-gray-300 rounded px-2 py-2 md:col-span-2"></select>
-                            <input id="assign-allocated" type="number" min="0" placeholder="Allocated" class="border border-gray-300 rounded px-2 py-2" />
-                            <input id="assign-current" type="number" min="0" placeholder="Current" class="border border-gray-300 rounded px-2 py-2" />
-                            <input id="assign-par" type="number" min="0" placeholder="Par" class="border border-gray-300 rounded px-2 py-2" />
-                            <button id="assign-item-btn" data-room-id="${room.id}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"><i class="fas fa-check mr-1"></i>Assign</button>
+                <?php if ($is_manager): ?>
+                    <!-- Assign Item (Manager only) -->
+                    <div class="mb-6">
+                        <button id="toggle-assign-form" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus-circle mr-1"></i>Add Item to Room
+                        </button>
+                        <div id="assign-item-panel" class="mt-3 hidden bg-gray-50 border border-gray-200 rounded p-4">
+                            <div class="grid grid-cols-1 md:grid-cols-5 gap-3">
+                                <select id="assign-item-select" class="border border-gray-300 rounded px-2 py-2 md:col-span-2"></select>
+                                <input id="assign-allocated" type="number" min="0" placeholder="Allocated" class="border border-gray-300 rounded px-2 py-2" />
+                                <input id="assign-current" type="number" min="0" placeholder="Current" class="border border-gray-300 rounded px-2 py-2" />
+                                <input id="assign-par" type="number" min="0" placeholder="Par" class="border border-gray-300 rounded px-2 py-2" />
+                                <button id="assign-item-btn" data-room-id="${room.id}" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"><i class="fas fa-check mr-1"></i>Assign</button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                <?php endif; ?>
                 
                 ${room.inventory_items && room.inventory_items.length > 0 ? `
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -702,10 +864,32 @@ $(document).ready(function() {
                                     </div>
                                     
                                     <div class="mt-4 pt-4 border-t border-gray-200">
-                                        <div class="flex justify-between items-center">
+                                        <div class="flex justify-between items-center mb-3">
                                             <span class="text-gray-500 text-xs">Last Updated:</span>
                                             <span class="text-gray-500 text-xs">${item.last_updated ? new Date(item.last_updated).toLocaleDateString() : 'Never'}</span>
                                         </div>
+                                        <?php if ($is_housekeeping): ?>
+                                            <div class="flex space-x-2">
+                                                <button onclick="updateItemStatus(${item.id}, 'used')" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">
+                                                    <i class="fas fa-check mr-1"></i>Used
+                                                </button>
+                                                <button onclick="updateItemStatus(${item.id}, 'missing')" class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded text-xs">
+                                                    <i class="fas fa-exclamation-triangle mr-1"></i>Missing
+                                                </button>
+                                                <button onclick="updateItemStatus(${item.id}, 'damaged')" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs">
+                                                    <i class="fas fa-times mr-1"></i>Damaged
+                                                </button>
+                                            </div>
+                                        <?php else: ?>
+                                            <div class="flex space-x-2">
+                                                <button onclick="editRoomItem(${item.id})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded text-xs">
+                                                    <i class="fas fa-edit mr-1"></i>Edit
+                                                </button>
+                                                <button onclick="removeRoomItem(${item.id})" class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs">
+                                                    <i class="fas fa-trash mr-1"></i>Remove
+                                                </button>
+                                            </div>
+                                        <?php endif; ?>
                                     </div>
                                 </div>
                             `;
@@ -882,6 +1066,243 @@ $(document).ready(function() {
                 complete: function() {
                     // Restore button state
                     btn.html(originalText).prop('disabled', false);
+                }
+            });
+        }
+    }
+    
+    // Housekeeping Functions
+    function startRoomCheck() {
+        if (confirm('Start room check for your assigned rooms? This will help you track inventory status.')) {
+            $.ajax({
+                url: 'api/start-room-check.php',
+                method: 'POST',
+                dataType: 'json',
+                xhrFields: {
+                    withCredentials: true
+                },
+                success: function(response) {
+                    console.log('Room check response:', response);
+                    if (response.success) {
+                        alert('Room check started successfully!');
+                        loadRoomInventoryStats();
+                        loadRoomsForFloor(currentFloor);
+                    } else {
+                        alert('Error starting room check: ' + response.message);
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error starting room check:', error);
+                    alert('Error starting room check: ' + xhr.responseText);
+                }
+            });
+        }
+    }
+    
+    function openRequestModal() {
+        // Create a simple request modal
+        const modal = `
+            <div id="request-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+                <div class="bg-white rounded-xl shadow-2xl max-w-md w-full">
+                    <div class="p-6 border-b border-gray-200">
+                        <h3 class="text-xl font-bold text-gray-800">Request Supplies</h3>
+                    </div>
+                    <div class="p-6">
+                        <form id="request-form">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Item</label>
+                                <select id="request-item" class="w-full border border-gray-300 rounded px-3 py-2" required>
+                                    <option value="">Select Item</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
+                                <input type="number" id="request-quantity" class="w-full border border-gray-300 rounded px-3 py-2" min="1" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Room Number</label>
+                                <input type="text" id="request-room" class="w-full border border-gray-300 rounded px-3 py-2" required>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Reason</label>
+                                <select id="request-reason" class="w-full border border-gray-300 rounded px-3 py-2" required>
+                                    <option value="">Select Reason</option>
+                                    <option value="missing">Missing</option>
+                                    <option value="damaged">Damaged</option>
+                                    <option value="low_stock">Low Stock</option>
+                                    <option value="replacement">Replacement</option>
+                                </select>
+                            </div>
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+                                <textarea id="request-notes" class="w-full border border-gray-300 rounded px-3 py-2" rows="3"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                        <button id="cancel-request" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                        <button id="submit-request" class="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">Submit Request</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        $('body').append(modal);
+        
+        // Load items for request
+        loadRequestItems();
+        
+        // Handle form submission
+        $('#submit-request').click(function() {
+            submitRequest();
+        });
+        
+        // Handle cancel
+        $('#cancel-request').click(function() {
+            $('#request-modal').remove();
+        });
+        
+        // Close on outside click
+        $('#request-modal').click(function(e) {
+            if (e.target === this) {
+                $(this).remove();
+            }
+        });
+    }
+    
+    function loadRequestItems() {
+        $.ajax({
+            url: 'api/list-items-simple.php',
+            method: 'GET',
+            dataType: 'json',
+            success: function(response) {
+                const select = $('#request-item');
+                select.empty();
+                select.append('<option value="">Select Item</option>');
+                
+                if (response.items || response.data) {
+                    const items = response.items || response.data;
+                    items.forEach(function(item) {
+                        const id = item.id || item.item_id;
+                        const name = item.label || item.item_name || item.name || ('Item #' + id);
+                        select.append(`<option value="${id}">${name}</option>`);
+                    });
+                }
+            },
+            error: function() {
+                $('#request-item').html('<option value="">Unable to load items</option>');
+            }
+        });
+    }
+    
+    function submitRequest() {
+        const itemId = $('#request-item').val();
+        const quantity = $('#request-quantity').val();
+        const room = $('#request-room').val();
+        const reason = $('#request-reason').val();
+        const notes = $('#request-notes').val();
+        
+        if (!itemId || !quantity || !room || !reason) {
+            alert('Please fill in all required fields');
+            return;
+        }
+        
+        $.ajax({
+            url: 'api/create-supply-request.php',
+            method: 'POST',
+            dataType: 'json',
+            data: {
+                item_id: itemId,
+                quantity: quantity,
+                room_number: room,
+                reason: reason,
+                notes: notes
+            },
+            xhrFields: {
+                withCredentials: true
+            },
+            success: function(response) {
+                if (response.success) {
+                    alert('Request submitted successfully!');
+                    $('#request-modal').remove();
+                    loadRoomInventoryStats();
+                } else {
+                    alert('Error submitting request: ' + response.message);
+                }
+            },
+            error: function(xhr) {
+                alert('Error submitting request: ' + xhr.responseText);
+            }
+        });
+    }
+    
+    // Item Status Update Functions (Housekeeping)
+    function updateItemStatus(itemId, status) {
+        if (confirm(`Mark this item as ${status}?`)) {
+            $.ajax({
+                url: 'api/update-item-status.php',
+                method: 'POST',
+                dataType: 'json',
+                data: {
+                    item_id: itemId,
+                    status: status
+                },
+                xhrFields: {
+                    withCredentials: true
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert(`Item marked as ${status} successfully!`);
+                        // Refresh the room details
+                        const roomId = $('.room-card.active').data('room-id');
+                        if (roomId) {
+                            showRoomDetails(roomId);
+                        }
+                        loadRoomInventoryStats();
+                    } else {
+                        alert('Error updating item status: ' + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    alert('Error updating item status: ' + xhr.responseText);
+                }
+            });
+        }
+    }
+    
+    // Manager Functions
+    function editRoomItem(itemId) {
+        // Open edit modal for room item
+        alert('Edit room item functionality - Item ID: ' + itemId);
+    }
+    
+    function removeRoomItem(itemId) {
+        if (confirm('Remove this item from the room? This action cannot be undone.')) {
+            $.ajax({
+                url: 'api/remove-room-item.php',
+                method: 'POST',
+                dataType: 'json',
+                data: {
+                    item_id: itemId
+                },
+                xhrFields: {
+                    withCredentials: true
+                },
+                success: function(response) {
+                    if (response.success) {
+                        alert('Item removed from room successfully!');
+                        // Refresh the room details
+                        const roomId = $('.room-card.active').data('room-id');
+                        if (roomId) {
+                            showRoomDetails(roomId);
+                        }
+                        loadRoomInventoryStats();
+                    } else {
+                        alert('Error removing item: ' + response.message);
+                    }
+                },
+                error: function(xhr) {
+                    alert('Error removing item: ' + xhr.responseText);
                 }
             });
         }

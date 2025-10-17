@@ -40,13 +40,15 @@ function isActiveUrl($url, $current_url) {
 $navigation_items = [
     // 🧹 HOUSEKEEPING MODULES
     'dashboard' => [
-        'url' => $BASE_INV . 'index.php',
+        'url' => $user_role === 'housekeeping' ? $BASE_INV . 'housekeeping-dashboard.php' : $BASE_INV . 'index.php',
         'icon' => 'fas fa-tachometer-alt',
         'label' => 'Inventory Dashboard',
-        'description' => 'Limited View - Available items & low-stock alerts',
+        'description' => $user_role === 'housekeeping' ? 'Housekeeping Dashboard - Daily tasks & supply management' : 'Manager Dashboard - Complete inventory control',
         'roles' => ['housekeeping', 'manager'],
         'access_level' => ['housekeeping' => 'limited', 'manager' => 'full'],
-        'active' => isActiveUrl($BASE_INV . 'index.php', $current_url)
+        'active' => $user_role === 'housekeeping' ? 
+            (isActiveUrl($BASE_INV . 'housekeeping-dashboard.php', $current_url) || isActiveUrl($BASE_INV . 'index.php', $current_url)) : 
+            isActiveUrl($BASE_INV . 'index.php', $current_url)
     ],
     'requests' => [
         'url' => $BASE_INV . 'requests.php',
@@ -65,6 +67,15 @@ $navigation_items = [
         'roles' => ['housekeeping', 'manager'],
         'access_level' => ['housekeeping' => 'update', 'manager' => 'monitor'],
         'active' => strpos($current_url, 'room-inventory') !== false
+    ],
+    'request-management' => [
+        'url' => $BASE_INV . 'request-management.php',
+        'icon' => 'fas fa-clipboard-check',
+        'label' => 'Request Management',
+        'description' => 'Review and approve supply requests from housekeeping',
+        'roles' => ['manager'],
+        'access_level' => ['manager' => 'full'],
+        'active' => strpos($current_url, 'request-management') !== false
     ],
     'transactions' => [
         'url' => $BASE_INV . 'transactions.php',
@@ -234,9 +245,8 @@ $user_navigation = array_filter($navigation_items, function($item) use ($user_ro
                     <i class="fas fa-plus-circle mr-2 flex-shrink-0"></i>
                     <span class="truncate">Add Item</span>
                 </a>
-                <a href="<?php echo $BASE_INV; ?>requests.php" 
-                   onclick="handleQuickAction('requests', 'pending')"
-                   class="flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors cursor-pointer">
+                <a href="<?php echo $BASE_INV; ?>request-management.php" 
+                   class="flex items-center px-2 sm:px-3 py-2 text-xs sm:text-sm text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded transition-colors">
                     <i class="fas fa-clock mr-2 flex-shrink-0"></i>
                     <span class="truncate">Pending Requests</span>
                 </a>

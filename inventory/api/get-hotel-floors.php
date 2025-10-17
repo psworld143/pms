@@ -3,8 +3,8 @@
  * Get hotel floors
  */
 
-require_once '../../vps_session_fix.php';
-require_once '../../includes/database.php';
+require_once __DIR__ . '/../../vps_session_fix.php';
+require_once __DIR__ . '/../../includes/database.php';
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -13,8 +13,6 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 try {
-    global $pdo;
-    
     // Check if hotel_floors table exists
     $stmt = $pdo->query("SHOW TABLES LIKE 'hotel_floors'");
     $table_exists = $stmt->fetch();
@@ -40,12 +38,16 @@ try {
         }
     }
     
+    // Extract just the floor numbers for the frontend
+    $floor_numbers = array_column($floors, 'floor_number');
+    
     echo json_encode([
         'success' => true,
-        'floors' => $floors
+        'floors' => $floor_numbers
     ]);
     
 } catch (PDOException $e) {
+    error_log("Database error in get-hotel-floors.php: " . $e->getMessage());
     echo json_encode([
         'success' => false,
         'message' => 'Database error: ' . $e->getMessage()
