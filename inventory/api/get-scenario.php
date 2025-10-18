@@ -1,4 +1,27 @@
 <?php
+require_once __DIR__ . '/../../vps_session_fix.php';
+require_once __DIR__ . '/../config/database.php';
+header('Content-Type: application/json');
+
+if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false,'message'=>'Unauthorized']); exit; }
+if (($_SESSION['user_role'] ?? '') !== 'housekeeping') { echo json_encode(['success'=>false,'message'=>'Access denied']); exit; }
+
+try {
+    $db = new InventoryDatabase();
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    if (!$id) { echo json_encode(['success'=>false,'message'=>'Missing id']); exit; }
+    $stmt = $db->getConnection()->prepare("SELECT id, title, description, instructions, expected_outcome, difficulty, estimated_time, points FROM inventory_training_scenarios WHERE id = ? AND active = 1");
+    $stmt->execute([$id]);
+    $scenario = $stmt->fetch();
+    if (!$scenario) { echo json_encode(['success'=>false,'message'=>'Scenario not found']); exit; }
+    echo json_encode(['success'=>true,'scenario'=>$scenario]);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['success'=>false,'message'=>'Server error']);
+}
+?>
+
+<?php
 /**
  * Get Training Scenario Details API
  * Hotel PMS Training System for Students

@@ -31,7 +31,7 @@ $page_title = $user_role === 'housekeeping' ? 'Inventory Transactions' : 'Invent
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $page_title; ?> - Hotel Inventory System</title>
     <link rel="icon" type="image/png" href="../../assets/images/seait-logo.png">
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -42,22 +42,7 @@ $page_title = $user_role === 'housekeeping' ? 'Inventory Transactions' : 'Invent
         .main-content { margin-left: 0; padding-top: 4rem; }
         @media (min-width: 1024px) { .main-content { margin-left: 16rem; } }
     </style>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#10B981',
-                        secondary: '#059669',
-                        success: '#28a745',
-                        danger: '#dc3545',
-                        warning: '#ffc107',
-                        info: '#17a2b8'
-                    }
-                }
-            }
-        }
-    </script>
+    <script></script>
 </head>
 <body class="bg-gray-50">
     <div class="flex min-h-screen">
@@ -291,7 +276,9 @@ $page_title = $user_role === 'housekeeping' ? 'Inventory Transactions' : 'Invent
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Room Number</label>
-                                <input id="usage-room" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500" placeholder="e.g., Room 203">
+                                <select id="usage-room" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500">
+                                    <option value="">Select Room</option>
+                                </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Date Used</label>
@@ -459,8 +446,9 @@ $(document).ready(function() {
             method: 'GET',
             dataType: 'json',
             success: function(response) {
-                if (response.success) {
-                    updateHousekeepingStats(response.stats);
+                if (response && response.success) {
+                    const s = response.data || response.stats || response.statistics || {};
+                    updateHousekeepingStats(s);
                 }
             },
             error: function(xhr, status, error) {
@@ -470,10 +458,10 @@ $(document).ready(function() {
     }
     
     function updateHousekeepingStats(stats) {
-        $('#my-usage-reports').text(stats.usage_reports || 0);
-        $('#pending-requests').text(stats.pending_requests || 0);
-        $('#approved-requests').text(stats.approved_requests || 0);
-        $('#low-stock-items').text(stats.low_stock_items || 0);
+        $('#my-usage-reports').text((stats.usage_reports ?? stats.total_items) ?? 0);
+        $('#pending-requests').text(stats.pending_requests ?? 0);
+        $('#approved-requests').text(stats.approved_requests ?? 0);
+        $('#low-stock-items').text((stats.missing_items ?? stats.low_stock_items) ?? 0);
     }
     
     function loadHousekeepingTransactions() {
@@ -494,8 +482,20 @@ $(document).ready(function() {
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${r.room || ''}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${r.notes || ''}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="openEditUsage(${r.id})">Edit</button>
-                                <button class="text-red-600 hover:text-red-900" onclick="deleteUsage(${r.id})">Delete</button>
+                                <button class="view-usage-btn inline-flex items-center px-3 py-1.5 rounded-md bg-gray-50 text-gray-700 hover:bg-gray-100 mr-2"
+                                    data-id="${r.id}" data-item="${(r.item_name || '').replace(/"/g,'&quot;')}" data-quantity="${r.quantity || ''}"
+                                    data-room="${(r.room || '').replace(/"/g,'&quot;')}" data-date="${r.date_used || r.created_at || ''}" data-notes="${(r.notes || '').replace(/"/g,'&quot;')}">
+                                    <i class="fas fa-eye mr-1"></i>View
+                                </button>
+                                <button class="edit-usage-btn inline-flex items-center px-3 py-1.5 rounded-md bg-blue-50 text-blue-700 hover:bg-blue-100 mr-2"
+                                    data-id="${r.id}" data-item-id="${r.item_id || ''}" data-quantity="${r.quantity || ''}"
+                                    data-room="${r.room || ''}" data-date="${r.date_used || ''}" data-notes="${(r.notes || '').replace(/"/g,'&quot;')}">
+                                    <i class="fas fa-edit mr-1"></i>Edit
+                                </button>
+                                <button class="delete-usage-btn inline-flex items-center px-3 py-1.5 rounded-md bg-red-50 text-red-700 hover:bg-red-100"
+                                    data-id="${r.id}">
+                                    <i class="fas fa-trash mr-1"></i>Delete
+                                </button>
                             </td>
                         </tr>`;
                 }).join('');
@@ -519,7 +519,12 @@ $(document).ready(function() {
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${tx.location || ''}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${tx.notes || ''}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                                        <button class="view-tx-btn inline-flex items-center px-3 py-1.5 rounded-md bg-gray-50 text-gray-700 hover:bg-gray-100 mr-2"
+                                            data-id="${tx.id}" data-type="${tx.transaction_type || ''}" data-created="${tx.created_at || ''}"
+                                            data-item="${(tx.item_name || '').replace(/"/g,'&quot;')}" data-qty="${qty}" data-location="${(tx.location || '').replace(/"/g,'&quot;')}"
+                                            data-notes="${(tx.notes || '').replace(/"/g,'&quot;')}" data-ref="${(tx.reference || '').replace(/"/g,'&quot;')}">
+                                            <i class="fas fa-eye mr-1"></i>View
+                                        </button>
                                         <button class="text-red-600 hover:text-red-900" onclick="deleteTransaction(${tx.id})">Delete</button>
                                     </td>
                                 </tr>`;
@@ -671,6 +676,17 @@ $(document).ready(function() {
                 }
             });
         });
+        // rooms for dropdown
+        $.getJSON('api/get-all-rooms.php', function(resp){
+            const sel = $('#usage-room');
+            if (!sel.length) return;
+            sel.empty();
+            sel.append('<option value="">Select Room</option>');
+            (resp.rooms || []).forEach(function(r){
+                const label = (r.room_number || r.id) + (r.room_type ? (' • ' + r.room_type) : '');
+                sel.append(`<option value="${r.room_number || r.id}">${label}</option>`);
+            });
+        });
     }
 
     // Housekeeping form handlers
@@ -757,51 +773,199 @@ $(document).ready(function() {
             dataType: 'json',
             success: function(response) {
                 if (response.success) {
-                    const link = document.createElement('a');
-                    link.href = response.download_url;
-                    link.download = 'transaction_report_' + new Date().toISOString().split('T')[0] + '.csv';
-                    document.body.appendChild(link);
-                    link.click();
-                    document.body.removeChild(link);
+                    // Open PDF in a new tab for print
+                    window.open(response.download_url, '_blank');
                 } else {
                     alert('Error exporting report: ' + response.message);
                 }
             },
             error: function(xhr, status, error) {
+                let msg = 'Error exporting report';
+                try { const j = JSON.parse(xhr.responseText || '{}'); if (j.debug) msg += ': ' + j.debug; } catch(e) {}
                 console.error('Error exporting report:', error);
-                alert('Error exporting report');
+                alert(msg);
             }
         });
     }
 });
 
-// Usage report edit/delete
-function openEditUsage(id) {
-    // Minimal inline prompt editor for speed; can be improved to modal later
-    const itemId = prompt('New Item ID (leave blank to keep):');
-    const qty = prompt('New Quantity (leave blank to keep):');
-    const room = prompt('Room (leave blank to keep):');
-    const dateUsed = prompt('Date Used YYYY-MM-DD (leave blank to keep):');
-    const notes = prompt('Notes (leave blank to keep):');
-    const payload = { id };
-    if (itemId) payload.item_id = itemId;
-    if (qty) payload.quantity = qty;
-    if (room) payload.room = room;
-    if (dateUsed) payload.date_used = dateUsed;
-    if (notes) payload.notes = notes;
-    $.post('api/update-usage-report.php', payload, function(r){
-        if (r && r.success) { loadHousekeepingTransactions(); }
-        else { alert('Error: ' + (r && r.message)); }
-    }, 'json');
+// Styled edit/delete modals
+function buildModal(html){
+    const wrapper = document.createElement('div');
+    wrapper.innerHTML = `
+    <div class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-lg rounded-lg shadow-xl overflow-hidden">${html}</div>
+    </div>`;
+    document.body.appendChild(wrapper);
+    return wrapper;
 }
 
-function deleteUsage(id) {
-    if (!confirm('Delete this usage report?')) return;
-    $.post('api/delete-usage-report.php', { id }, function(r){
-        if (r && r.success) { loadHousekeepingTransactions(); }
-        else { alert('Error: ' + (r && r.message)); }
-    }, 'json');
+function openViewUsageModal(data){
+    const modal = buildModal(`
+        <div class=\"px-5 py-4 border-b border-gray-200 flex items-center justify-between\"> 
+            <h3 class=\"text-lg font-semibold text-gray-800\"><i class=\"fas fa-eye mr-2 text-gray-600\"></i>Usage Report</h3>
+            <button class=\"close-modal text-gray-500 hover:text-gray-700\"><i class=\"fas fa-times\"></i></button>
+        </div>
+        <div class=\"p-5 space-y-3 text-sm text-gray-700\">
+            <div><span class=\"font-medium\">Item:</span> ${data.item || 'N/A'}</div>
+            <div><span class=\"font-medium\">Quantity:</span> ${data.quantity || 0}</div>
+            <div><span class=\"font-medium\">Room:</span> ${data.room || ''}</div>
+            <div><span class=\"font-medium\">Date:</span> ${(data.date || '').substring(0,10)}</div>
+            <div><span class=\"font-medium\">Notes:</span> ${data.notes || ''}</div>
+        </div>
+        <div class=\"px-5 py-4 border-t border-gray-200 flex justify-end\">
+            <button class=\"close-modal px-4 py-2 border rounded-md\">Close</button>
+        </div>`);
+    $(modal).on('click', '.close-modal', function(){ document.body.removeChild(modal); });
 }
+
+function openViewTransactionModal(data){
+    const modal = buildModal(`
+        <div class=\"px-5 py-4 border-b border-gray-200 flex items-center justify-between\"> 
+            <h3 class=\"text-lg font-semibold text-gray-800\"><i class=\"fas fa-eye mr-2 text-gray-600\"></i>Transaction</h3>
+            <button class=\"close-modal text-gray-500 hover:text-gray-700\"><i class=\"fas fa-times\"></i></button>
+        </div>
+        <div class=\"p-5 space-y-3 text-sm text-gray-700\">
+            <div><span class=\"font-medium\">Type:</span> ${data.type || ''}</div>
+            <div><span class=\"font-medium\">Date:</span> ${data.created || ''}</div>
+            <div><span class=\"font-medium\">Item:</span> ${data.item || ''}</div>
+            <div><span class=\"font-medium\">Quantity:</span> ${data.qty || ''}</div>
+            <div><span class=\"font-medium\">Location:</span> ${data.location || ''}</div>
+            <div><span class=\"font-medium\">Reference:</span> ${data.ref || ''}</div>
+            <div><span class=\"font-medium\">Notes:</span> ${data.notes || ''}</div>
+        </div>
+        <div class=\"px-5 py-4 border-t border-gray-200 flex justify-end\">
+            <button class=\"close-modal px-4 py-2 border rounded-md\">Close</button>
+        </div>`);
+    $(modal).on('click', '.close-modal', function(){ document.body.removeChild(modal); });
+}
+
+function openEditUsageModal(data){
+    const modal = buildModal(`
+        <div class="px-5 py-4 border-b border-gray-200 flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-800"><i class="fas fa-edit mr-2 text-blue-600"></i>Edit Usage Report</h3>
+            <button class="close-modal text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="p-5 space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Item</label>
+                <select id="edit-item" class="w-full px-3 py-2 border rounded-md"></select>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                    <input id="edit-qty" type="number" min="1" class="w-full px-3 py-2 border rounded-md" />
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Date Used</label>
+                    <input id="edit-date" type="date" class="w-full px-3 py-2 border rounded-md" />
+                </div>
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Room</label>
+                <input id="edit-room" type="text" class="w-full px-3 py-2 border rounded-md" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea id="edit-notes" rows="3" class="w-full px-3 py-2 border rounded-md"></textarea>
+            </div>
+        </div>
+        <div class="px-5 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button class="close-modal px-4 py-2 border rounded-md">Cancel</button>
+            <button id="save-edit-usage" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save</button>
+        </div>`);
+
+    // load items
+    $.getJSON('api/list-items-simple.php', function(resp){
+        const sel = $(modal).find('#edit-item');
+        sel.empty(); sel.append('<option value="">Select Item</option>');
+        (resp.items || []).forEach(function(it){ sel.append(`<option value="${it.id}">${it.label}</option>`); });
+        if (data.item_id) sel.val(String(data.item_id));
+    });
+
+    $(modal).find('#edit-qty').val(data.quantity || '');
+    $(modal).find('#edit-date').val((data.date_used || '').substring(0,10));
+    $(modal).find('#edit-room').val(data.room || '');
+    $(modal).find('#edit-notes').val(data.notes || '');
+
+    $(modal).on('click', '.close-modal', function(){ document.body.removeChild(modal); });
+    $(modal).find('#save-edit-usage').on('click', function(){
+        const payload = {
+            id: data.id,
+            item_id: $(modal).find('#edit-item').val(),
+            quantity: $(modal).find('#edit-qty').val(),
+            room: $(modal).find('#edit-room').val(),
+            date_used: $(modal).find('#edit-date').val(),
+            notes: $(modal).find('#edit-notes').val()
+        };
+    $.post('api/update-usage-report.php', payload, function(r){
+        if (r && r.success) { document.body.removeChild(modal); if (typeof loadHousekeepingTransactions === 'function') { loadHousekeepingTransactions(); } }
+            else { alert('Error: ' + (r && r.message)); }
+        }, 'json');
+    });
+}
+
+function openDeleteUsageModal(id){
+    const modal = buildModal(`
+        <div class="px-5 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-semibold text-gray-800"><i class="fas fa-trash mr-2 text-red-600"></i>Delete Usage Report</h3>
+        </div>
+        <div class="p-5 text-gray-700">Are you sure you want to delete this usage report? This action cannot be undone.</div>
+        <div class="px-5 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <button class="close-modal px-4 py-2 border rounded-md">Cancel</button>
+            <button id="confirm-delete-usage" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Delete</button>
+        </div>`);
+    $(modal).on('click', '.close-modal', function(){ document.body.removeChild(modal); });
+    $(modal).find('#confirm-delete-usage').on('click', function(){
+        $.post('api/delete-usage-report.php', { id }, function(r){
+            if (r && r.success) { document.body.removeChild(modal); if (typeof loadHousekeepingTransactions === 'function') { loadHousekeepingTransactions(); } }
+            else { alert('Error: ' + (r && r.message)); }
+        }, 'json');
+    });
+}
+
+// Delegated button handlers
+$(document).on('click', '.edit-usage-btn', function(){
+    const btn = $(this);
+    openEditUsageModal({
+        id: parseInt(btn.data('id'), 10),
+        item_id: btn.data('item-id'),
+        quantity: btn.data('quantity'),
+        room: btn.data('room'),
+        date_used: btn.data('date'),
+        notes: btn.data('notes')
+    });
+});
+
+$(document).on('click', '.delete-usage-btn', function(){
+    openDeleteUsageModal(parseInt($(this).data('id'), 10));
+});
+
+$(document).on('click', '.view-usage-btn', function(){
+    const b = $(this);
+    openViewUsageModal({
+        id: parseInt(b.data('id'), 10),
+        item: b.data('item'),
+        quantity: b.data('quantity'),
+        room: b.data('room'),
+        date: b.data('date'),
+        notes: b.data('notes')
+    });
+});
+
+$(document).on('click', '.view-tx-btn', function(){
+    const b = $(this);
+    openViewTransactionModal({
+        id: parseInt(b.data('id'), 10),
+        type: b.data('type'),
+        created: b.data('created'),
+        item: b.data('item'),
+        qty: b.data('qty'),
+        location: b.data('location'),
+        notes: b.data('notes'),
+        ref: b.data('ref')
+    });
+});
 
 // Global function for approving requests
 function approveRequest(requestId) {

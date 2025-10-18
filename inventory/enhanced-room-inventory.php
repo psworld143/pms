@@ -30,25 +30,9 @@ $is_housekeeping = ($user_role === 'housekeeping');
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enhanced Room Inventory</title>
 	<link rel="icon" type="image/png" href="../assets/images/seait-logo.png">
-	<script src="https://cdn.tailwindcss.com"></script>
+	<link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
 	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-	<script>
-	tailwind.config = {
-		theme: {
-			extend: {
-				colors: {
-					primary: '#10B981',
-					secondary: '#059669',
-					success: '#28a745',
-					danger: '#dc3545',
-					warning: '#ffc107',
-					info: '#17a2b8'
-				}
-			}
-		}
-	}
-	</script>
     <style>
 		#sidebar { transition: transform 0.3s ease-in-out; }
 		@media (max-width: 1023px) { #sidebar { transform: translateX(-100%); z-index: 50; } #sidebar.sidebar-open { transform: translateX(0); } }
@@ -241,20 +225,6 @@ $is_housekeeping = ($user_role === 'housekeeping');
         </div>
 
 
-			<?php if ($is_housekeeping): ?>
-				<!-- Housekeeping: Approved Requests to Confirm -->
-				<div class="mt-10 bg-white rounded-xl shadow-lg p-6 border border-gray-200">
-					<div class="flex items-center justify-between mb-4">
-						<h3 class="text-lg font-bold text-gray-800">
-							<i class="fas fa-box-open mr-2 text-purple-600"></i>Approved Requests - Awaiting Receipt
-						</h3>
-						<a href="requests.php" class="text-sm text-purple-600 hover:text-purple-700">View All Requests</a>
-					</div>
-					<div id="approved-requests" class="space-y-3">
-						<div class="text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading approved requests...</div>
-					</div>
-				</div>
-			<?php endif; ?>
 		</main>
 
 		<!-- Room Details Modal -->
@@ -287,17 +257,59 @@ $is_housekeeping = ($user_role === 'housekeeping');
         </div>
 
 	<script>
+	// Global functions defined before document ready
+	window.loadRoomInventoryStats = function() {
+		const userRole = '<?php echo $user_role; ?>';
+		if (userRole === 'housekeeping') {
+			const apiUrl = 'api/get-housekeeping-stats.php';
+			$.ajax({ url: apiUrl, method: 'GET', dataType: 'json', xhrFields: { withCredentials: true }, success: function(response){ if (response.success) { const stats = response.data || response.statistics || {}; $('#my-rooms').text(stats.total_rooms || 0); $('#items-used').text(stats.total_items || 0); $('#missing-items').text(stats.missing_items || 0); $('#my-requests').text(stats.pending_requests || 0); } } });
+			return;
+		}
+
+		// Manager: try simple stats endpoint first
+		$.ajax({
+			url: 'api/get-room-inventory-stats.php',
+			method: 'GET',
+			dataType: 'json',
+			xhrFields: { withCredentials: true },
+			success: function(r){
+				const s = r && (r.statistics || r.data) ? (r.statistics || r.data) : {};
+				if (s.fully_stocked !== undefined || s.need_restocking !== undefined || s.unknown_rooms !== undefined) {
+					$('#total-rooms').text(s.total_rooms || 0);
+					$('#fully-stocked').text(s.fully_stocked || 0);
+					$('#need-restocking').text(s.need_restocking || 0);
+					$('#unknown-rooms').text(s.unknown_rooms || 0);
+					return;
+				}
+				// Fallback: aggregate by floors/rooms
+				window.aggregateManagerStats();
+			},
+			error: function(){ aggregateManagerStats(); }
+		});
+	}
+
+	window.aggregateManagerStats = function(){
+		// Load room stats
+		$.ajax({ url: 'api/get-hotel-floors.php', method: 'GET', dataType: 'json', xhrFields: { withCredentials: true }, success: function(resp){
+			const floors = resp.floors || [];
+			if (!floors.length) { $('#total-rooms').text(0); $('#fully-stocked').text(0); $('#need-restocking').text(0); $('#unknown-rooms').text(0); return; }
+			let totalRooms = 0, fully = 0, need = 0, unknown = 0;
+			let remaining = floors.length;
+			floors.forEach(function(f){
+				const floorNum = (typeof f === 'object') ? (f.floor_number || f.id || f.floor || f) : f;
+				$.ajax({ url: 'api/get-rooms-for-floor.php', method: 'GET', data: { floor: floorNum }, dataType: 'json', xhrFields: { withCredentials: true }, complete: function(){ remaining--; if (remaining === 0) { $('#total-rooms').text(totalRooms); $('#fully-stocked').text(fully); $('#need-restocking').text(need); $('#unknown-rooms').text(unknown); } }, success: function(r){ if (r.success) { const rooms = r.rooms || []; totalRooms += rooms.length; rooms.forEach(function(room){ switch(room.stock_status){ case 'fully_stocked': fully++; break; case 'needs_restocking': need++; break; case 'critical_stock': unknown++; break; case 'no_inventory': unknown++; break; default: unknown++; break; } }); } } });
+			});
+		}});
+	}
+
 	$(document).ready(function() {
 		let currentFloor = 2; // default floor
 		const userRole = '<?php echo $user_role; ?>';
 
-		loadRoomInventoryStats();
+		window.loadRoomInventoryStats();
 		loadFloors();
 		// remove eager load that assumed floor 2; initial load will happen in loadFloors when data arrives
 		// loadRoomsForFloor(currentFloor);
-		<?php if ($is_housekeeping): ?>
-		loadApprovedRequests();
-		<?php endif; ?>
 
 		$(document).on('click', '.floor-btn', function() {
 			const floorId = $(this).data('floor-id');
@@ -327,49 +339,10 @@ $is_housekeeping = ($user_role === 'housekeeping');
 		$('#check-rooms-btn').click(function() { startRoomCheck(); });
 		$('#request-supplies-btn').click(function() { openRequestModal(); });
 		$(document).on('click', '#request-replacement-btn', function(){ const rn = $(this).data('room-number'); openRequestModal(rn); });
-
-		function loadRoomInventoryStats() {
-			if (userRole === 'housekeeping') {
-				const apiUrl = 'api/get-housekeeping-stats.php';
-				$.ajax({ url: apiUrl, method: 'GET', dataType: 'json', xhrFields: { withCredentials: true }, success: function(response){ if (response.success) { const stats = response.data || response.statistics || {}; $('#my-rooms').text(stats.total_rooms || 0); $('#items-used').text(stats.total_items || 0); $('#missing-items').text(stats.missing_items || 0); $('#my-requests').text(stats.pending_requests || 0); } } });
-				return;
-			}
-
-			// Manager: try simple stats endpoint first
-			$.ajax({
-				url: 'api/get-room-inventory-stats.php',
-				method: 'GET',
-				dataType: 'json',
-				xhrFields: { withCredentials: true },
-				success: function(r){
-					const s = r && (r.statistics || r.data) ? (r.statistics || r.data) : {};
-					if (s.fully_stocked !== undefined || s.need_restocking !== undefined || s.unknown_rooms !== undefined) {
-						$('#total-rooms').text(s.total_rooms || 0);
-						$('#fully-stocked').text(s.fully_stocked || 0);
-						$('#need-restocking').text(s.need_restocking || 0);
-						$('#unknown-rooms').text(s.unknown_rooms || 0);
-						return;
-					}
-					// Fallback: aggregate by floors/rooms
-					aggregateManagerStats();
-				},
-				error: function(){ aggregateManagerStats(); }
-			});
-		}
-
-		function aggregateManagerStats(){
-			// Load room stats
-			$.ajax({ url: 'api/get-hotel-floors.php', method: 'GET', dataType: 'json', xhrFields: { withCredentials: true }, success: function(resp){
-				const floors = resp.floors || [];
-				if (!floors.length) { $('#total-rooms').text(0); $('#fully-stocked').text(0); $('#need-restocking').text(0); $('#unknown-rooms').text(0); return; }
-				let totalRooms = 0, fully = 0, need = 0, unknown = 0;
-				let remaining = floors.length;
-				floors.forEach(function(f){
-					const floorNum = (typeof f === 'object') ? (f.floor_number || f.id || f.floor || f) : f;
-					$.ajax({ url: 'api/get-rooms-for-floor.php', method: 'GET', data: { floor: floorNum }, dataType: 'json', xhrFields: { withCredentials: true }, complete: function(){ remaining--; if (remaining === 0) { $('#total-rooms').text(totalRooms); $('#fully-stocked').text(fully); $('#need-restocking').text(need); $('#unknown-rooms').text(unknown); } }, success: function(r){ if (r.success) { const rooms = r.rooms || []; totalRooms += rooms.length; rooms.forEach(function(room){ switch(room.stock_status){ case 'fully_stocked': fully++; break; case 'needs_restocking': need++; break; case 'critical_stock': unknown++; break; case 'no_inventory': unknown++; break; default: unknown++; break; } }); } } });
-				});
-			}});
-		}
+		$(document).on('click', '#check-room-btn', function(){ 
+			const roomId = $(this).data('room-id');
+			checkSingleRoom(roomId);
+		});
 
 		function loadFloors() {
 			$.ajax({
@@ -510,29 +483,8 @@ $is_housekeeping = ($user_role === 'housekeeping');
 			}
 		}
 
-		function showRoomDetails(roomId) {
-			$.ajax({
-				url: 'api/get-room-details.php',
-				method: 'GET',
-				data: { room_id: roomId },
-				dataType: 'json',
-				xhrFields: { withCredentials: true },
-				success: function(response) {
-					if (response.success) {
-						displayRoomDetails(response.room);
-						$('#room-details-modal').removeClass('hidden');
-						setTimeout(() => { $('#modal-content').removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100'); }, 10);
-					} else {
-						alert('Error loading room details: ' + response.message);
-					}
-				},
-				error: function(xhr) {
-					alert('Error loading room details: ' + xhr.responseText);
-				}
-			});
-		}
 
-		function displayRoomDetails(room) {
+		window.displayRoomDetails = function(room) {
 			$('#modal-room-title').text(`Room ${room.room_number} - Inventory Details`);
 			const getStatusBadgeClass = (status) => {
 				switch(status) {
@@ -610,12 +562,12 @@ $is_housekeeping = ($user_role === 'housekeeping');
 						<div class="bg-purple-100 p-3 rounded-lg mr-4"><i class="fas fa-tasks text-purple-600 text-xl"></i></div>
 						<h4 class="text-xl font-bold text-gray-800">Room Actions</h4>
 					</div>
-					<?php if ($is_housekeeping): ?>
-						<div class="mt-4 flex space-x-3">
-							<button id="check-room-btn" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}"><i class="fas fa-clipboard-check mr-2"></i>Check Room</button>
+					<div class="mt-4 flex space-x-3">
+						<button id="check-room-btn" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}"><i class="fas fa-clipboard-check mr-2"></i>Check Room</button>
+						<?php if ($is_housekeeping): ?>
 							<button id="request-replacement-btn" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}" data-room-number="${room.room_number}"><i class="fas fa-shopping-cart mr-2"></i>Request Items</button>
-						</div>
-					<?php endif; ?>
+						<?php endif; ?>
+					</div>
 				</div>
 				<div class="bg-white rounded-xl shadow-lg p-6">
 					<div class="flex items-center justify-between mb-6">
@@ -778,11 +730,6 @@ $is_housekeeping = ($user_role === 'housekeeping');
 			if (!itemId || !quantity || !room || !reason) { alert('Please fill in all required fields'); return; }
 			$.ajax({ url: 'api/create-supply-request.php', method: 'POST', dataType: 'json', data: { item_id: itemId, quantity: quantity, room_number: room, reason: reason, notes: notes }, xhrFields: { withCredentials: true }, success: function(response){ if (response.success) { alert('Request submitted successfully!'); $('#request-modal').remove(); loadRoomInventoryStats(); } else { alert('Error submitting request: ' + response.message); } }, error: function(xhr){ alert('Error submitting request: ' + xhr.responseText); } });
 		}
-		function updateItemStatus(itemId, status) {
-			if (confirm(`Mark this item as ${status}?`)) {
-				$.ajax({ url: 'api/update-item-status.php', method: 'POST', dataType: 'json', data: { item_id: itemId, status: status }, xhrFields: { withCredentials: true }, success: function(response){ if (response.success) { alert(`Item marked as ${status} successfully!`); const ridBtn = $('#assign-item-btn'); const roomId = ridBtn.length ? ridBtn.data('room-id') : null; if (roomId) { showRoomDetails(roomId); } loadRoomInventoryStats(); } else { alert('Error updating item status: ' + response.message); } }, error: function(xhr){ alert('Error updating item status: ' + xhr.responseText); } });
-			}
-		}
 
 		// Silence Tailwind CDN production warning in console (visual only)
 		(function(){
@@ -795,6 +742,82 @@ $is_housekeeping = ($user_role === 'housekeeping');
 				return _warn.apply(console, arguments);
 			};
 		})();
+
+		// Global functions for housekeeping and manager operations
+		window.showRoomDetails = function(roomId) {
+			$.ajax({
+				url: 'api/get-room-details.php',
+				method: 'GET',
+				data: { room_id: roomId },
+				dataType: 'json',
+				xhrFields: { withCredentials: true },
+				success: function(response) {
+					if (response.success) {
+						displayRoomDetails(response.room);
+						$('#room-details-modal').removeClass('hidden');
+						setTimeout(() => { $('#modal-content').removeClass('scale-95 opacity-0').addClass('scale-100 opacity-100'); }, 10);
+					} else {
+						alert('Error loading room details: ' + response.message);
+					}
+				},
+				error: function(xhr) {
+					alert('Error loading room details: ' + xhr.responseText);
+				}
+			});
+		}
+
+		window.updateItemStatus = function(itemId, status) {
+			if (confirm(`Mark this item as ${status}?`)) {
+				$.ajax({ 
+					url: 'api/update-item-status.php', 
+					method: 'POST', 
+					dataType: 'json', 
+					data: { item_id: itemId, status: status }, 
+					xhrFields: { withCredentials: true }, 
+					success: function(response){ 
+						if (response.success) { 
+							alert(`Item marked as ${status} successfully!`); 
+							const ridBtn = $('#assign-item-btn'); 
+							const roomId = ridBtn.length ? ridBtn.data('room-id') : null; 
+							if (roomId) { 
+								showRoomDetails(roomId); 
+							} 
+							window.loadRoomInventoryStats(); 
+						} else { 
+							alert('Error updating item status: ' + response.message); 
+						} 
+					}, 
+					error: function(xhr){ 
+						alert('Error updating item status: ' + xhr.responseText); 
+					} 
+				});
+			}
+		}
+
+		window.checkSingleRoom = function(roomId) {
+			if (confirm('Start room check for this specific room?')) {
+				$.ajax({ 
+					url: 'api/check-single-room.php', 
+					method: 'POST', 
+					dataType: 'json', 
+					data: { room_id: roomId }, 
+					xhrFields: { withCredentials: true }, 
+					success: function(response){ 
+						if (response.success) { 
+							alert('Room check started successfully!'); 
+							window.loadRoomInventoryStats(); 
+							// Refresh the room details if modal is open
+							showRoomDetails(roomId);
+						} else { 
+							alert('Error starting room check: ' + response.message); 
+						} 
+					}, 
+					error: function(xhr){ 
+						alert('Error starting room check: ' + xhr.responseText); 
+					} 
+				});
+			}
+		}
 
 		// Manager item ops - moved outside document ready for global access
 		window.editRoomItem = function(itemId, allocated, current, par) {
@@ -844,7 +867,7 @@ $is_housekeeping = ($user_role === 'housekeeping');
 							if (roomId) { 
 								showRoomDetails(roomId); 
 							} 
-							loadRoomInventoryStats();
+							window.loadRoomInventoryStats();
 						} else { 
 							alert('Error: ' + (r.message || 'Unable to update item')); 
 						} 
@@ -872,7 +895,7 @@ $is_housekeeping = ($user_role === 'housekeeping');
 							if (roomId) { 
 								showRoomDetails(roomId); 
 							} 
-							loadRoomInventoryStats(); 
+							window.loadRoomInventoryStats(); 
 						} else { 
 							alert('Error removing item: ' + (response.message || 'Unable to remove item')); 
 						} 
@@ -885,22 +908,6 @@ $is_housekeeping = ($user_role === 'housekeeping');
 		}
 
 
-		// Housekeeping: Approved requests awaiting receipt
-		function loadApprovedRequests(){
-			$.ajax({ url: 'api/get-room-supply-requests.php', method: 'GET', dataType: 'json', xhrFields: { withCredentials: true }, success: function(resp){ const wrap = $('#approved-requests'); wrap.empty(); let list = resp.requests || resp.data || []; list = list.filter(function(r){ return String((r.status||'').toLowerCase()) === 'approved'; }); if (!list.length) { wrap.html('<div class="text-gray-500">No approved requests awaiting receipt.</div>'); return; } list.slice(0, 10).forEach(function(req){ const row = `
-			<div class="flex items-center justify-between p-3 bg-purple-50 rounded border border-purple-200">
-				<div class="min-w-0">
-					<div class="text-sm font-semibold text-gray-800 truncate">${req.item_name || 'Item'} • Room ${req.room_number || 'N/A'}</div>
-					<div class="text-xs text-gray-600">Qty: ${req.quantity || 0} • Status: ${req.status || 'approved'}</div>
-				</div>
-				<div class="flex items-center space-x-2">
-					<button class="confirm-received bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs" data-id="${req.id}" data-qty="${req.quantity || 0}"><i class="fas fa-box-open mr-1"></i>Confirm Received</button>
-				</div>
-			</div>`; wrap.append(row); }); bindConfirmReceived(); }, error: function(){ $('#approved-requests').html('<div class="text-red-500">Error loading approved requests.</div>'); } });
-		}
-		function bindConfirmReceived(){
-			$('.confirm-received').off('click').on('click', function(){ const id = $(this).data('id'); const qty = parseInt($(this).data('qty') || '0', 10); $.ajax({ url: 'api/confirm-supply-received.php', method: 'POST', dataType: 'json', data: { request_id: id, increment_room_quantity: qty, notes: 'Confirmed received by housekeeping' }, success: function(r){ if (r.success) { loadApprovedRequests(); loadRoomInventoryStats(); alert('Receipt confirmed'); } else { alert('Error: ' + (r.message||'Unable to confirm')); } } }); });
-		}
 	});
 	</script>
 </body>
