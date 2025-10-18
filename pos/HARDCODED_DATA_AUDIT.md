@@ -37,18 +37,26 @@ This document lists all POS system pages that currently use hardcoded, sample, o
 
 ## 🟡 Medium Priority - Display/UI Functions
 
-### 2. Events Module
+### 2. Events Module ✅ **FIXED**
 
 #### **File:** `/pos/events/bookings.php`
-- **Lines:** 210-280
-- **Hardcoded Data:** Sample event bookings display
-- **Description:** Three hardcoded sample bookings shown instead of database records
-- **Sample Data:**
-  - Johnson Wedding - $8,500 (Confirmed)
-  - Corporate Conference - $12,000 (Pending)
-  - Birthday Celebration (Emma Rodriguez)
-- **Impact:** No real booking data displayed
-- **Recommended Fix:** Create database query to fetch actual bookings from `pos_orders` table
+- **Status:** ✅ COMPLETED - October 17, 2025
+- **Lines:** 209-228, 538-714 (updated)
+- **Previous Issue:** Sample event bookings hardcoded in HTML
+- **Solution Implemented:**
+  - Created dynamic API endpoint: `/pos/api/get-event-bookings.php`
+  - Replaced hardcoded HTML with dynamic container
+  - Added loading and empty states
+  - Implemented real-time booking display from database
+- **Features Added:**
+  - Fetches bookings from `pos_orders` table with service_type = 'events'
+  - Status-based filtering (confirmed, pending, cancelled, etc.)
+  - Pagination support (50 bookings per page)
+  - Smart status icons and color coding
+  - Event details: name, type, date, time, venue, guest count
+  - Dynamic action buttons based on status
+  - XSS protection with HTML escaping
+- **Impact:** ✅ Now displays real event bookings from database with full details
 
 ---
 
