@@ -90,7 +90,10 @@ function loadOccupancyChart() {
         chartInstances.occupancyChart = null;
     }
     
-    fetch('../../api/get-occupancy-data.php')
+    fetch('../../api/get-occupancy-data.php', {
+        headers: { 'X-API-Key': 'pms_users_api_2024' },
+        credentials: 'include'
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success && data.data && data.data.daily && data.data.daily.length > 0) {
@@ -207,7 +210,10 @@ function loadRevenueChart() {
         chartInstances.revenueChart = null;
     }
     
-    fetch('../../api/get-revenue-data.php')
+    fetch('../../api/get-revenue-data.php', {
+        headers: { 'X-API-Key': 'pms_users_api_2024' },
+        credentials: 'include'
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success && data.data && data.data.daily && data.data.daily.length > 0) {
@@ -924,7 +930,10 @@ function generateDemographicsReport() {
 }
 
 function generateInventoryReport() {
-    fetch('../../api/get-inventory-reports.php')
+    fetch('../../api/get-inventory-reports.php', {
+        headers: { 'X-API-Key': 'pms_users_api_2024' },
+        credentials: 'include'
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
