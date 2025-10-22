@@ -358,8 +358,8 @@ function getGuestSentimentMetrics(int $days = 90): array
                 COUNT(*) AS total,
                 SUM(CASE WHEN feedback_type = 'complaint' THEN 1 ELSE 0 END) AS complaints,
                 SUM(CASE WHEN feedback_type = 'compliment' OR rating >= 4 THEN 1 ELSE 0 END) AS positive,
-                SUM(CASE WHEN is_resolved = 1 THEN 1 ELSE 0 END) AS resolved,
-                AVG(CASE WHEN is_resolved = 1 THEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) END) AS avg_response_minutes,
+                SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved,
+                AVG(CASE WHEN status = 'resolved' THEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) END) AS avg_response_minutes,
                 AVG(rating) AS avg_rating
             FROM guest_feedback
             WHERE created_at >= :startDate
@@ -4457,7 +4457,7 @@ function getGuestStatistics() {
         // Pending feedback from guest_feedback table (unresolved)
         $pending_feedback = 0;
         try {
-            $stmt = $pdo->query('SELECT COUNT(*) AS total FROM guest_feedback WHERE is_resolved = 0');
+            $stmt = $pdo->query('SELECT COUNT(*) AS total FROM guest_feedback WHERE status != "resolved"');
             $pending_feedback = (int)($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
         } catch (PDOException $inner) {
             // guest_feedback table might not exist in some training datasets

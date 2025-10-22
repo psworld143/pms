@@ -11,7 +11,7 @@ ini_set('log_errors', 1);
  */
 
 session_start();
-require_once dirname(__DIR__, 2) . '/includes/database.php';
+require_once __DIR__ . '/../config/database.php';
 
 header('Content-Type: application/json');
 

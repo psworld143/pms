@@ -1,16 +1,15 @@
 <?php
 session_start();
-// Error handling
+// Error handling for production
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-
 
 /**
  * Get Occupancy Data API
  */
 
-session_start();
-require_once dirname(__DIR__, 2) . '/includes/database.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json');
 

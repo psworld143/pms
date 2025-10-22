@@ -4,8 +4,6 @@ session_start();
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
 
-
-session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/booking-paths.php';
@@ -41,8 +39,7 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Occupancy Rate</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php
-session_start(); echo number_format($management_stats['occupancy_rate'], 1); ?>%</p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($management_stats['occupancy_rate'], 1); ?>%</p>
                     </div>
                 </div>
             </div>
