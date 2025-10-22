@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
@@ -67,7 +71,11 @@ include '../../includes/sidebar-unified.php';
                         </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600">Pending Requests</p>
-                                <p class="text-2xl font-bold text-gray-900"><?php echo $request_stats['pending']; ?></p>
+                                <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $request_stats['pending']; ?></p>
                             </div>
                         </div>
                     </div>
@@ -78,7 +86,11 @@ include '../../includes/sidebar-unified.php';
                         </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600">Completed Today</p>
-                                <p class="text-2xl font-bold text-gray-900"><?php echo $request_stats['completed']; ?></p>
+                                <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $request_stats['completed']; ?></p>
                             </div>
                         </div>
                     </div>
@@ -89,7 +101,11 @@ include '../../includes/sidebar-unified.php';
                         </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600">Urgent Requests</p>
-                                <p class="text-2xl font-bold text-gray-900"><?php echo $request_stats['urgent']; ?></p>
+                                <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $request_stats['urgent']; ?></p>
                             </div>
                         </div>
                     </div>
@@ -100,7 +116,11 @@ include '../../includes/sidebar-unified.php';
                         </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600">Avg Response Time</p>
-                                <p class="text-2xl font-bold text-gray-900"><?php echo $request_stats['avg_response_time']; ?>m</p>
+                                <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $request_stats['avg_response_time']; ?>m</p>
                             </div>
                         </div>
                     </div>
@@ -130,11 +150,31 @@ include '../../includes/sidebar-unified.php';
                                 <select id="guest_id" name="guest_id" required 
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                             <option value="">Select Guest</option>
-                            <?php foreach (getGuests() as $guest): ?>
-                                <option value="<?php echo $guest['id']; ?>">
-                                    <?php echo htmlspecialchars($guest['name']); ?> - Room <?php echo htmlspecialchars($guest['room_number']); ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); foreach (getGuests() as $guest): ?>
+                                <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['id']; ?>">
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['name']); ?> - Room <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['room_number']); ?>
                                 </option>
-                            <?php endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endforeach; ?>
                         </select>
                     </div>
                     <div>
@@ -177,11 +217,31 @@ include '../../includes/sidebar-unified.php';
                                 <select id="assigned_to" name="assigned_to" 
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                             <option value="">Unassigned</option>
-                            <?php foreach (getStaff() as $staff): ?>
-                                <option value="<?php echo $staff['id']; ?>">
-                                    <?php echo htmlspecialchars($staff['name']); ?> (<?php echo htmlspecialchars($staff['role']); ?>)
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); foreach (getStaff() as $staff): ?>
+                                <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $staff['id']; ?>">
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($staff['name']); ?> (<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($staff['role']); ?>)
                                 </option>
-                            <?php endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endforeach; ?>
                         </select>
                     </div>
                             <div class="md:col-span-2">
@@ -212,4 +272,8 @@ include '../../includes/sidebar-unified.php';
     <script src="../../assets/js/main.js"></script>
     <script src="../../assets/js/requests.js"></script>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>

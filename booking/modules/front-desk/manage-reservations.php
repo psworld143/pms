@@ -1,4 +1,10 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
@@ -86,7 +92,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Today's Arrivals</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $today_reservations; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $today_reservations; ?></p>
                         </div>
                     </div>
                 </div>
@@ -100,7 +107,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Check-ins Today</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $checkins_today; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $checkins_today; ?></p>
                         </div>
                     </div>
                 </div>
@@ -114,7 +122,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Check-outs Today</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $checkouts_today; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $checkouts_today; ?></p>
                         </div>
                     </div>
                 </div>
@@ -128,7 +137,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active Reservations</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $active_reservations; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $active_reservations; ?></p>
                         </div>
                     </div>
                 </div>
@@ -216,8 +226,10 @@ include '../../includes/sidebar-unified.php';
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <form id="edit-reservation-form" class="space-y-6" data-uuid="<?php echo uniqid(); ?>">
-                <input type="hidden" id="edit_reservation_id" name="reservation_id" data-uuid="<?php echo uniqid(); ?>">
+            <form id="edit-reservation-form" class="space-y-6" data-uuid="<?php
+session_start(); echo uniqid(); ?>">
+                <input type="hidden" id="edit_reservation_id" name="reservation_id" data-uuid="<?php
+session_start(); echo uniqid(); ?>">
                 
                 <!-- Guest Information -->
                 <div class="border-b border-gray-200 pb-6">
@@ -331,7 +343,8 @@ include '../../includes/sidebar-unified.php';
         </div>
     </div>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+session_start(); include '../../includes/footer.php'; ?>
 
 <script>
     // Update current date and time

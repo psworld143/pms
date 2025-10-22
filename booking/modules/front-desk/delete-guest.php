@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
@@ -89,9 +93,17 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4">
                         <h3 class="text-lg font-medium text-gray-900">
-                            <?php echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?>
                         </h3>
-                        <p class="text-sm text-gray-500"><?php echo htmlspecialchars($guest['email']); ?></p>
+                        <p class="text-sm text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['email']); ?></p>
                     </div>
                 </div>
                 
@@ -122,4 +134,8 @@ include '../../includes/sidebar-unified.php';
     </div>
 </main>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>

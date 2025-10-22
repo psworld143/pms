@@ -1,8 +1,14 @@
 <?php
+session_start();
+// Error handling
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 
 declare(strict_types=1);
 
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+session_start();
 require_once __DIR__ . '/../config/database.php';
 require_once __DIR__ . '/../includes/booking-paths.php';
 require_once __DIR__ . '/../includes/guest-feedback-helpers.php';

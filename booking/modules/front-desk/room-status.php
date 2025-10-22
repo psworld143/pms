@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 require_once '../../includes/session-config.php';
 session_start();
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
@@ -36,32 +39,56 @@ include '../../includes/sidebar-unified.php';
             <div class="bg-white rounded-lg shadow-md p-6 mb-8">
                 <h3 class="text-xl font-semibold text-gray-800 mb-6">Room Status Summary</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <?php foreach ($room_status_overview as $overview): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($room_status_overview as $overview): ?>
                         <div class="bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-4">
                             <div class="flex items-center justify-between mb-2">
-                                <h4 class="text-lg font-semibold text-blue-800"><?php echo htmlspecialchars($overview['room_type']); ?></h4>
-                                <span class="text-2xl font-bold text-blue-600"><?php echo $overview['total']; ?></span>
+                                <h4 class="text-lg font-semibold text-blue-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($overview['room_type']); ?></h4>
+                                <span class="text-2xl font-bold text-blue-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $overview['total']; ?></span>
                             </div>
                             <div class="space-y-1 text-sm">
                                 <div class="flex justify-between">
                                     <span class="text-green-600">Available:</span>
-                                    <span class="font-medium"><?php echo $overview['available']; ?></span>
+                                    <span class="font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $overview['available']; ?></span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-red-600">Occupied:</span>
-                                    <span class="font-medium"><?php echo $overview['occupied']; ?></span>
+                                    <span class="font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $overview['occupied']; ?></span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-yellow-600">Reserved:</span>
-                                    <span class="font-medium"><?php echo $overview['reserved']; ?></span>
+                                    <span class="font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $overview['reserved']; ?></span>
                                 </div>
                                 <div class="flex justify-between">
                                     <span class="text-orange-600">Maintenance:</span>
-                                    <span class="font-medium"><?php echo $overview['maintenance']; ?></span>
+                                    <span class="font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $overview['maintenance']; ?></span>
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                 </div>
             </div>
 
@@ -73,9 +100,21 @@ include '../../includes/sidebar-unified.php';
                         <div class="flex space-x-2">
                             <select id="status-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">All Status</option>
-                                <?php foreach ($room_status_options as $key => $value): ?>
-                                    <option value="<?php echo $key; ?>"><?php echo $value; ?></option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($room_status_options as $key => $value): ?>
+                                    <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $key; ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $value; ?></option>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </select>
                             <input type="text" id="search-room" placeholder="Search rooms..." 
                                    class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -98,53 +137,110 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200" id="rooms-table-body">
-                            <?php foreach ($all_rooms as $room): ?>
-                                <tr class="hover:bg-gray-50" data-room-id="<?php echo $room['id']; ?>">
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($all_rooms as $room): ?>
+                                <tr class="hover:bg-gray-50" data-room-id="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $room['id']; ?>">
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($room['room_number']); ?></div>
+                                        <div class="text-sm font-medium text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($room['room_number']); ?></div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900"><?php echo htmlspecialchars($room['room_type']); ?></div>
+                                        <div class="text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($room['room_type']); ?></div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full <?php echo getStatusBadgeClass($room['status']); ?>">
-                                            <?php echo getStatusLabel($room['status']); ?>
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo getStatusBadgeClass($room['status']); ?>">
+                                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo getStatusLabel($room['status']); ?>
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900" id="guest-<?php echo $room['id']; ?>">
-                                            <?php echo getCurrentGuest($room['id']); ?>
+                                        <div class="text-sm text-gray-900" id="guest-<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $room['id']; ?>">
+                                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo getCurrentGuest($room['id']); ?>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="checkin-<?php echo $room['id']; ?>">
-                                        <?php echo getCheckInDate($room['id']); ?>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="checkin-<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $room['id']; ?>">
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo getCheckInDate($room['id']); ?>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="checkout-<?php echo $room['id']; ?>">
-                                        <?php echo getCheckOutDate($room['id']); ?>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" id="checkout-<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $room['id']; ?>">
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo getCheckOutDate($room['id']); ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        ₱<?php echo number_format($room['rate'], 2); ?>
+                                        ₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($room['rate'], 2); ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div class="flex space-x-2">
-                                            <button onclick="viewRoomDetails(<?php echo $room['id']; ?>)" 
+                                            <button onclick="viewRoomDetails(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $room['id']; ?>)" 
                                                     class="text-blue-600 hover:text-blue-900">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <?php if ($room['status'] === 'available'): ?>
-                                                <button onclick="assignRoom(<?php echo $room['id']; ?>)" 
+                                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if ($room['status'] === 'available'): ?>
+                                                <button onclick="assignRoom(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $room['id']; ?>)" 
                                                         class="text-green-600 hover:text-green-900">
                                                     <i class="fas fa-user-plus"></i>
                                                 </button>
-                                            <?php endif; ?>
-                                            <button onclick="createMaintenanceRequest(<?php echo $room['id']; ?>)" 
+                                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
+                                            <button onclick="createMaintenanceRequest(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $room['id']; ?>)" 
                                                     class="text-orange-600 hover:text-orange-900">
                                                 <i class="fas fa-tools"></i>
                                             </button>
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                         </tbody>
                     </table>
                 </div>
@@ -168,8 +264,14 @@ include '../../includes/sidebar-unified.php';
     <script src="../../assets/js/main.js"></script>
     <script src="../../assets/js/front-desk-room-status.js?v=1"></script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
 
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 // Helper functions are now in functions.php
 ?>

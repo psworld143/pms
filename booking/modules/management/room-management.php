@@ -1,5 +1,8 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/booking-paths.php';
@@ -467,4 +470,7 @@ function getStatusLabel(status) {
 }
 </script>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>

@@ -1,10 +1,13 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Housekeeping Dashboard
  * Hotel PMS Training System for Students
  */
 
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
@@ -84,7 +87,10 @@ include '../../includes/sidebar-unified.php';
 
             <!-- Room Status Overview -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <?php 
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                 $statusConfig = [
                     'clean' => ['label' => 'Clean', 'color' => 'green', 'icon' => 'fas fa-check-circle'],
                     'dirty' => ['label' => 'Dirty', 'color' => 'red', 'icon' => 'fas fa-times-circle'],
@@ -104,17 +110,32 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow p-6">
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
-                            <div class="w-8 h-8 bg-<?php echo $config['color']; ?>-500 rounded-md flex items-center justify-center">
-                                <i class="<?php echo $config['icon']; ?> text-white"></i>
+                            <div class="w-8 h-8 bg-<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $config['color']; ?>-500 rounded-md flex items-center justify-center">
+                                <i class="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $config['icon']; ?> text-white"></i>
                             </div>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-500"><?php echo $config['label']; ?></p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $count; ?></p>
+                            <p class="text-sm font-medium text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $config['label']; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $count; ?></p>
                         </div>
                     </div>
                 </div>
-                <?php endforeach; ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
             </div>
 
             <!-- Statistics Cards -->
@@ -128,7 +149,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Tasks</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $totalTasks; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $totalTasks; ?></p>
                         </div>
                     </div>
                 </div>
@@ -142,7 +166,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Completed Tasks</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $completedTasks; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $completedTasks; ?></p>
                         </div>
                     </div>
                 </div>
@@ -156,7 +183,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Pending Tasks</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $pendingTasks; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $pendingTasks; ?></p>
                         </div>
                     </div>
                 </div>
@@ -170,7 +200,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active Maintenance</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $activeMaintenance; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $activeMaintenance; ?></p>
                         </div>
                     </div>
                 </div>
@@ -193,8 +226,14 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <?php if (!empty($recentTasks)): ?>
-                                <?php foreach ($recentTasks as $task): 
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (!empty($recentTasks)): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($recentTasks as $task): 
                                     $statusClass = '';
                                     $statusText = '';
                                     switch($task['status']) {
@@ -215,19 +254,43 @@ include '../../includes/sidebar-unified.php';
                                 ?>
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $task['task_type']))); ?></div>
+                                        <div class="text-sm font-medium text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucwords(str_replace('_', ' ', $task['task_type']))); ?></div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($task['room_number'] ?? 'N/A'); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($task['staff_name'] ?? 'Unassigned'); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($task['room_number'] ?? 'N/A'); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($task['staff_name'] ?? 'Unassigned'); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $statusClass; ?>">
-                                            <?php echo $statusText; ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $statusClass; ?>">
+                                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $statusText; ?>
                                         </span>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo date('M j, Y', strtotime($task['created_at'])); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo date('M j, Y', strtotime($task['created_at'])); ?></td>
                                 </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                                 <tr>
                                     <td colspan="5" class="px-6 py-12 text-center text-gray-500">
                                         <div class="flex flex-col items-center">
@@ -237,7 +300,10 @@ include '../../includes/sidebar-unified.php';
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endif; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                         </tbody>
                     </table>
                 </div>

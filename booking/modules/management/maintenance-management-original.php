@@ -1,13 +1,16 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 // Start output buffering to prevent premature output
 ob_start();
 
 // Suppress warnings that might cause premature output
 error_reporting(E_ERROR | E_PARSE | E_CORE_ERROR | E_CORE_WARNING | E_COMPILE_ERROR | E_COMPILE_WARNING | E_USER_ERROR);
 
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/config/database.php';
-require_once dirname(__DIR__, 2) . '/includes/functions.php';
+session_start();
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
 require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
 require_once dirname(__DIR__, 2) . '/includes/maintenance-helpers.php';
 
@@ -96,7 +99,10 @@ ob_end_flush();
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active Requests</p>
-                            <p id="maintenance-summary-active" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['active'] ?? 0); ?></p>
+                            <p id="maintenance-summary-active" class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($summary['active'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -109,7 +115,10 @@ ob_end_flush();
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Completed Today</p>
-                            <p id="maintenance-summary-completed-today" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['completed_today'] ?? 0); ?></p>
+                            <p id="maintenance-summary-completed-today" class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($summary['completed_today'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -122,7 +131,10 @@ ob_end_flush();
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Urgent</p>
-                            <p id="maintenance-summary-urgent" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['urgent'] ?? 0); ?></p>
+                            <p id="maintenance-summary-urgent" class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($summary['urgent'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -135,7 +147,10 @@ ob_end_flush();
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Avg. Completion (min)</p>
-                            <p id="maintenance-summary-average" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['average_completion_minutes'] ?? 0, 1); ?></p>
+                            <p id="maintenance-summary-average" class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($summary['average_completion_minutes'] ?? 0, 1); ?></p>
                         </div>
                     </div>
                 </div>
@@ -148,21 +163,57 @@ ob_end_flush();
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
                             <select id="maintenance-filter-status" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                                 <option value="">All Statuses</option>
-                                <?php foreach ($statusOptions as $status): ?>
-                                    <option value="<?php echo $status; ?>"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($statusOptions as $status): ?>
+                                    <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $status; ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </select>
                             <select id="maintenance-filter-priority" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                                 <option value="">All Priorities</option>
-                                <?php foreach ($priorities as $priority): ?>
-                                    <option value="<?php echo $priority; ?>"><?php echo htmlspecialchars(ucfirst($priority), ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($priorities as $priority): ?>
+                                    <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $priority; ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($priority), ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </select>
                             <select id="maintenance-filter-assignee" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                                 <option value="">All Assignees</option>
-                                <?php foreach ($assignees as $assignee): ?>
-                                    <option value="<?php echo (int)$assignee['id']; ?>"><?php echo htmlspecialchars($assignee['name'], ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($assignees as $assignee): ?>
+                                    <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (int)$assignee['id']; ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($assignee['name'], ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </select>
                             <input type="text" id="maintenance-filter-search" placeholder="Search description, room, user" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                         </div>
@@ -178,13 +229,25 @@ ob_end_flush();
                                 </tr>
                             </thead>
                             <tbody id="maintenance-table-body" class="bg-white divide-y divide-gray-200">
-                                <?php if (empty($initialRequests)): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($initialRequests)): ?>
                                     <tr>
                                         <td colspan="4" class="px-6 py-6 text-center text-sm text-gray-500">No maintenance requests found.</td>
                                     </tr>
-                                <?php else: ?>
-                                    <?php foreach ($initialRequests as $request): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($initialRequests as $request): ?>
                                         <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
                                             $roomLabel = $request['room_number'] ? 'Room ' . $request['room_number'] : 'Room #' . $request['room_id'];
                                             $priorityLabel = ucfirst($request['priority'] ?? 'medium');
                                             $statusLabel = ucwords(str_replace('_', ' ', $request['status'] ?? 'reported'));
@@ -196,32 +259,98 @@ ob_end_flush();
                                                 default => 'bg-green-100 text-green-700'
                                             };
                                         ?>
-                                        <tr data-request-id="<?php echo (int)$request['id']; ?>">
+                                        <tr data-request-id="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (int)$request['id']; ?>">
                                             <td class="px-6 py-4 align-top text-sm text-gray-700">
-                                                <div class="font-semibold text-gray-900"><?php echo htmlspecialchars($roomLabel, ENT_QUOTES, 'UTF-8'); ?> &middot; <?php echo htmlspecialchars($issueLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                                                <div class="font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($roomLabel, ENT_QUOTES, 'UTF-8'); ?> &middot; <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($issueLabel, ENT_QUOTES, 'UTF-8'); ?></div>
                                                 <div class="text-xs text-gray-500 mb-1 flex flex-wrap gap-2">
-                                                    <span class="px-2 py-0.5 rounded-full text-xs <?php echo $priorityBadge; ?>"><?php echo htmlspecialchars($priorityLabel, ENT_QUOTES, 'UTF-8'); ?></span>
-                                                    <span class="text-gray-500">Reported by: <?php echo htmlspecialchars($request['reported_by_name'] ?? 'System', ENT_QUOTES, 'UTF-8'); ?></span>
-                                                    <span class="text-gray-400"><?php echo htmlspecialchars(date('M j, Y g:i A', strtotime($request['created_at'] ?? 'now')), ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    <span class="px-2 py-0.5 rounded-full text-xs <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $priorityBadge; ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($priorityLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    <span class="text-gray-500">Reported by: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($request['reported_by_name'] ?? 'System', ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    <span class="text-gray-400"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(date('M j, Y g:i A', strtotime($request['created_at'] ?? 'now')), ENT_QUOTES, 'UTF-8'); ?></span>
                                                 </div>
-                                                <div class="text-sm text-gray-600"><?php echo nl2br(htmlspecialchars($request['description'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
-                                                <?php if (!empty($request['notes'])): ?>
-                                                    <div class="mt-2 text-xs text-gray-500">Notes: <?php echo nl2br(htmlspecialchars($request['notes'], ENT_QUOTES, 'UTF-8')); ?></div>
-                                                <?php endif; ?>
+                                                <div class="text-sm text-gray-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo nl2br(htmlspecialchars($request['description'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
+                                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (!empty($request['notes'])): ?>
+                                                    <div class="mt-2 text-xs text-gray-500">Notes: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo nl2br(htmlspecialchars($request['notes'], ENT_QUOTES, 'UTF-8')); ?></div>
+                                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                                             </td>
                                             <td class="px-6 py-4 align-top text-sm text-gray-700">
                                                 <select class="maintenance-assignee-select w-full border border-gray-300 rounded-md text-sm px-2 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
                                                     <option value="">Unassigned</option>
-                                                    <?php foreach ($assignees as $assignee): ?>
-                                                        <option value="<?php echo (int)$assignee['id']; ?>" <?php echo (int)$assignee['id'] === (int)($request['assigned_to'] ?? 0) ? 'selected' : ''; ?>><?php echo htmlspecialchars($assignee['name'], ENT_QUOTES, 'UTF-8'); ?> (<?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $assignee['role'])), ENT_QUOTES, 'UTF-8'); ?>)</option>
-                                                    <?php endforeach; ?>
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($assignees as $assignee): ?>
+                                                        <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (int)$assignee['id']; ?>" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (int)$assignee['id'] === (int)($request['assigned_to'] ?? 0) ? 'selected' : ''; ?>><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($assignee['name'], ENT_QUOTES, 'UTF-8'); ?> (<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucwords(str_replace('_', ' ', $assignee['role'])), ENT_QUOTES, 'UTF-8'); ?>)</option>
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                                                 </select>
                                             </td>
                                             <td class="px-6 py-4 align-top text-sm text-gray-700">
                                                 <select class="maintenance-status-select w-full border border-gray-300 rounded-md text-sm px-2 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
-                                                    <?php foreach ($statusOptions as $status): ?>
-                                                        <option value="<?php echo $status; ?>" <?php echo $status === ($request['status'] ?? 'reported') ? 'selected' : ''; ?>><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></option>
-                                                    <?php endforeach; ?>
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($statusOptions as $status): ?>
+                                                        <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $status; ?>" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $status === ($request['status'] ?? 'reported') ? 'selected' : ''; ?>><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></option>
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                                                 </select>
                                             </td>
                                             <td class="px-6 py-4 align-top text-right text-sm text-gray-600">
@@ -231,8 +360,14 @@ ob_end_flush();
                                                 </button>
                                             </td>
                                         </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -240,13 +375,34 @@ ob_end_flush();
                         <div class="flex items-center gap-2 text-sm text-gray-500">
                             <span>Rows per page</span>
                             <select id="maintenance-limit" class="border border-gray-300 rounded-md text-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary">
-                                <?php foreach ([10, 25, 50, 100] as $optionLimit): ?>
-                                    <option value="<?php echo $optionLimit; ?>" <?php echo $optionLimit === $limit ? 'selected' : ''; ?>><?php echo $optionLimit; ?></option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ([10, 25, 50, 100] as $optionLimit): ?>
+                                    <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $optionLimit; ?>" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $optionLimit === $limit ? 'selected' : ''; ?>><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $optionLimit; ?></option>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </select>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600">
-                            <span>Page <span id="maintenance-page-current"><?php echo $initialPage; ?></span> of <span id="maintenance-page-total"><?php echo $totalPages; ?></span></span>
+                            <span>Page <span id="maintenance-page-current"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $initialPage; ?></span> of <span id="maintenance-page-total"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $totalPages; ?></span></span>
                             <div class="flex items-center gap-2">
                                 <button id="maintenance-page-prev" class="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i class="fas fa-chevron-left"></i>
@@ -266,6 +422,9 @@ ob_end_flush();
                             <select id="maintenance-room" name="room_id" class="w-full border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" required>
                                 <option value="">Select room</option>
                                 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
                                 try {
                                     $roomsStmt = $pdo->query("SELECT id, room_number FROM rooms ORDER BY room_number");
                                     foreach ($roomsStmt->fetchAll() as $room) {
@@ -278,17 +437,44 @@ ob_end_flush();
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1" for="maintenance-issue">Issue Type</label>
                             <select id="maintenance-issue" name="issue_type" class="w-full border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" required>
-                                <?php foreach ($issueTypes as $type): ?>
-                                    <option value="<?php echo $type; ?>"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $type)), ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($issueTypes as $type): ?>
+                                    <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $type; ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucwords(str_replace('_', ' ', $type)), ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1" for="maintenance-priority">Priority</label>
                             <select id="maintenance-priority" name="priority" class="w-full border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" required>
-                                <?php foreach ($priorities as $priority): ?>
-                                    <option value="<?php echo $priority; ?>" <?php echo $priority === 'medium' ? 'selected' : ''; ?>><?php echo htmlspecialchars(ucfirst($priority), ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($priorities as $priority): ?>
+                                    <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $priority; ?>" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $priority === 'medium' ? 'selected' : ''; ?>><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($priority), ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </select>
                         </div>
                         <div>
@@ -307,7 +493,10 @@ ob_end_flush();
             </div>
         </main>
 
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
     </body>
 </html>
 

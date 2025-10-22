@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Billing Reports
  * Hotel PMS Training System for Students
@@ -54,7 +57,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Revenue</p>
-                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($invoiceMetrics['total_revenue'], 2); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['total_revenue'], 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -68,7 +74,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Invoices Generated</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($invoiceMetrics['total_invoices']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['total_invoices']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -82,7 +91,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Collection Rate</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php 
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                                 $paid = (int)$invoiceMetrics['paid_count'];
                                 $total = max(1, (int)$invoiceMetrics['total_invoices']);
                                 echo number_format(($paid / $total) * 100, 1); 
@@ -100,7 +112,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Outstanding</p>
-                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($invoiceMetrics['outstanding_amount'], 2); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['outstanding_amount'], 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -155,7 +170,10 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Revenue Trend</h3>
                 <div class="h-64 bg-gray-50 rounded-lg p-4 overflow-y-auto">
-                    <?php if (!empty($revenueTrend)): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (!empty($revenueTrend)): ?>
                         <table class="min-w-full text-sm">
                             <thead>
                                 <tr class="text-gray-500">
@@ -164,17 +182,35 @@ include '../../includes/sidebar-unified.php';
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($revenueTrend as $row): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($revenueTrend as $row): ?>
                                 <tr class="border-t border-gray-200">
-                                    <td class="py-1"><?php echo htmlspecialchars($row['revenue_date']); ?></td>
-                                    <td class="py-1 text-right">₱<?php echo number_format($row['total'], 2); ?></td>
+                                    <td class="py-1"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($row['revenue_date']); ?></td>
+                                    <td class="py-1 text-right">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($row['total'], 2); ?></td>
                                 </tr>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </tbody>
                         </table>
-                    <?php else: ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                         <div class="h-full flex items-center justify-center text-gray-500">No revenue data for the selected period.</div>
-                    <?php endif; ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                 </div>
                 </div>
 
@@ -182,7 +218,10 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Payment Methods Distribution</h3>
                     <div class="space-y-4">
-                        <?php 
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                             $totalCnt = 0; foreach ($methodDistribution as $m) { $totalCnt += (int)$m['count']; }
                             foreach ($methodDistribution as $m): 
                                 $pct = $totalCnt > 0 ? round(((int)$m['count'] / $totalCnt) * 100) : 0;
@@ -192,19 +231,37 @@ include '../../includes/sidebar-unified.php';
                         <div class="flex items-center justify-between">
                             <div class="flex items-center">
                                 <div class="w-4 h-4 bg-blue-500 rounded mr-3"></div>
-                                <span class="text-sm text-gray-700"><?php echo htmlspecialchars($label); ?></span>
+                                <span class="text-sm text-gray-700"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($label); ?></span>
                             </div>
                             <div class="flex items-center">
-                                <span class="text-sm font-medium text-gray-900 mr-2"><?php echo $pct; ?>%</span>
+                                <span class="text-sm font-medium text-gray-900 mr-2"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $pct; ?>%</span>
                                 <div class="w-20 bg-gray-200 rounded-full h-2">
-                                    <div class="bg-blue-500 h-2 rounded-full" style="width: <?php echo $bar; ?>%"></div>
+                                    <div class="bg-blue-500 h-2 rounded-full" style="width: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $bar; ?>%"></div>
                                 </div>
                             </div>
                         </div>
-                        <?php endforeach; ?>
-                        <?php if (empty($methodDistribution)): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($methodDistribution)): ?>
                         <div class="text-center text-gray-500">No payment method data.</div>
-                        <?php endif; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                     </div>
                 </div>
             </div>
@@ -216,10 +273,16 @@ include '../../includes/sidebar-unified.php';
                         <h3 class="text-lg font-semibold text-gray-800">Daily Revenue</h3>
                         <i class="fas fa-calendar-day text-blue-600"></i>
                     </div>
-                    <div class="text-3xl font-bold text-gray-900 mb-2">₱<?php echo number_format($paymentMetrics['today_amount'] ?? 0, 2); ?></div>
+                    <div class="text-3xl font-bold text-gray-900 mb-2">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($paymentMetrics['today_amount'] ?? 0, 2); ?></div>
                     <div class="flex items-center text-sm text-green-600">
                         <i class="fas fa-arrow-up mr-1"></i>
-                        <span><?php echo number_format((float)0, 1); ?>% vs. yesterday</span>
+                        <span><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format((float)0, 1); ?>% vs. yesterday</span>
                     </div>
                 </div>
 
@@ -228,7 +291,10 @@ include '../../includes/sidebar-unified.php';
                         <h3 class="text-lg font-semibold text-gray-800">Weekly Revenue</h3>
                         <i class="fas fa-calendar-week text-green-600"></i>
                     </div>
-                    <div class="text-3xl font-bold text-gray-900 mb-2">₱<?php echo number_format($invoiceMetrics['total_revenue'], 2); ?></div>
+                    <div class="text-3xl font-bold text-gray-900 mb-2">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['total_revenue'], 2); ?></div>
                     <div class="flex items-center text-sm text-green-600">
                         <i class="fas fa-arrow-up mr-1"></i>
                         <span>Summary based on paid bills</span>
@@ -240,7 +306,10 @@ include '../../includes/sidebar-unified.php';
                         <h3 class="text-lg font-semibold text-gray-800">Monthly Revenue</h3>
                         <i class="fas fa-calendar-alt text-purple-600"></i>
                     </div>
-                    <div class="text-3xl font-bold text-gray-900 mb-2">₱<?php echo number_format($invoiceMetrics['total_amount'], 2); ?></div>
+                    <div class="text-3xl font-bold text-gray-900 mb-2">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['total_amount'], 2); ?></div>
                     <div class="flex items-center text-sm text-green-600">
                         <i class="fas fa-arrow-up mr-1"></i>
                         <span>Total billed amount (all statuses)</span>
@@ -254,7 +323,10 @@ include '../../includes/sidebar-unified.php';
                     <h3 class="text-lg font-semibold text-gray-800">Detailed Billing Report</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <?php $recentBills = getBills('', '', 10); if (!empty($recentBills)): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); $recentBills = getBills('', '', 10); if (!empty($recentBills)): ?>
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -268,33 +340,72 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <?php foreach ($recentBills as $b): ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($recentBills as $b): ?>
                             <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($b['bill_date']); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#<?php echo htmlspecialchars($b['bill_number']); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($b['guest_name']); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱<?php echo number_format($b['total_amount'], 2); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo '—'; ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($b['bill_date']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($b['bill_number']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($b['guest_name']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($b['total_amount'], 2); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo '—'; ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <?php $cls = $b['status']==='paid'?'bg-green-100 text-green-800':($b['status']==='pending'?'bg-yellow-100 text-yellow-800':($b['status']==='overdue'?'bg-red-100 text-red-800':'bg-gray-100 text-gray-800')); ?>
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $cls; ?>"><?php echo htmlspecialchars(ucfirst($b['status'])); ?></span>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); $cls = $b['status']==='paid'?'bg-green-100 text-green-800':($b['status']==='pending'?'bg-yellow-100 text-yellow-800':($b['status']==='overdue'?'bg-red-100 text-red-800':'bg-gray-100 text-gray-800')); ?>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $cls; ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($b['status'])); ?></span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                     <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
                                     <button class="text-green-600 hover:text-green-900">Export</button>
                                 </td>
                             </tr>
-                            <?php endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                         </tbody>
                     </table>
-                    <?php else: ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                         <div class="p-6 text-center text-gray-500">No billing data available.</div>
-                    <?php endif; ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                 </div>
             </div>
         </main>
 
         <!-- Include footer -->
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
     </body>
 </html>

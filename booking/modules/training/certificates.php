@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 session_start();
 require_once '../../config/database.php';;
 require_once '../../includes/functions.php';
@@ -185,7 +188,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Total Certificates</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $cert_stats['total_certificates']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $cert_stats['total_certificates']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -196,7 +202,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Completion</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $cert_stats['completion_certificates']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $cert_stats['completion_certificates']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -207,7 +216,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Achievements</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $cert_stats['achievement_certificates']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $cert_stats['achievement_certificates']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -218,7 +230,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Mastery</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $cert_stats['mastery_certificates']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $cert_stats['mastery_certificates']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -230,74 +245,122 @@ include '../../includes/sidebar-unified.php';
                 <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-4">
                     <!-- Perfect Scores Badge -->
                     <div class="text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center <?php echo $achievements['perfect_scores'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
+                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-full flex items-center justify-center <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['perfect_scores'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
                             <i class="fas fa-trophy text-white text-xl"></i>
                         </div>
                         <p class="text-xs font-medium text-gray-800">Perfect Scores</p>
-                        <p class="text-xs text-gray-500"><?php echo $achievements['perfect_scores']; ?></p>
+                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['perfect_scores']; ?></p>
                     </div>
 
                     <!-- Excellent Performance Badge -->
                     <div class="text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center <?php echo $achievements['excellent_scores'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
+                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['excellent_scores'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
                             <i class="fas fa-medal text-white text-xl"></i>
                         </div>
                         <p class="text-xs font-medium text-gray-800">Excellent</p>
-                        <p class="text-xs text-gray-500"><?php echo $achievements['excellent_scores']; ?></p>
+                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['excellent_scores']; ?></p>
                     </div>
 
                     <!-- Good Performance Badge -->
                     <div class="text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center <?php echo $achievements['good_scores'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
+                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['good_scores'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
                             <i class="fas fa-star text-white text-xl"></i>
                         </div>
                         <p class="text-xs font-medium text-gray-800">Good</p>
-                        <p class="text-xs text-gray-500"><?php echo $achievements['good_scores']; ?></p>
+                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['good_scores']; ?></p>
                     </div>
 
                     <!-- Training Scenarios Badge -->
                     <div class="text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-purple-400 to-purple-600 rounded-full flex items-center justify-center <?php echo $achievements['training_scenarios_completed'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
+                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-purple-400 to-purple-600 rounded-full flex items-center justify-center <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['training_scenarios_completed'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
                             <i class="fas fa-play-circle text-white text-xl"></i>
                         </div>
                         <p class="text-xs font-medium text-gray-800">Training</p>
-                        <p class="text-xs text-gray-500"><?php echo $achievements['training_scenarios_completed']; ?></p>
+                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['training_scenarios_completed']; ?></p>
                     </div>
 
                     <!-- Customer Service Badge -->
                     <div class="text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center <?php echo $achievements['customer_service_completed'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
+                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full flex items-center justify-center <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['customer_service_completed'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
                             <i class="fas fa-headset text-white text-xl"></i>
                         </div>
                         <p class="text-xs font-medium text-gray-800">Service</p>
-                        <p class="text-xs text-gray-500"><?php echo $achievements['customer_service_completed']; ?></p>
+                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['customer_service_completed']; ?></p>
                     </div>
 
                     <!-- Problem Solving Badge -->
                     <div class="text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center <?php echo $achievements['problem_solving_completed'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
+                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['problem_solving_completed'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
                             <i class="fas fa-puzzle-piece text-white text-xl"></i>
                         </div>
                         <p class="text-xs font-medium text-gray-800">Problem Solving</p>
-                        <p class="text-xs text-gray-500"><?php echo $achievements['problem_solving_completed']; ?></p>
+                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['problem_solving_completed']; ?></p>
                     </div>
 
                     <!-- Speed Learner Badge -->
                     <div class="text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-red-400 to-red-600 rounded-full flex items-center justify-center <?php echo $achievements['speed_learner'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
+                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-red-400 to-red-600 rounded-full flex items-center justify-center <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['speed_learner'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
                             <i class="fas fa-bolt text-white text-xl"></i>
                         </div>
                         <p class="text-xs font-medium text-gray-800">Speed Learner</p>
-                        <p class="text-xs text-gray-500"><?php echo $achievements['speed_learner']; ?></p>
+                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['speed_learner']; ?></p>
                     </div>
 
                     <!-- Thorough Learner Badge -->
                     <div class="text-center">
-                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center <?php echo $achievements['thorough_learner'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
+                        <div class="w-16 h-16 mx-auto mb-2 bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-full flex items-center justify-center <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['thorough_learner'] > 0 ? 'opacity-100' : 'opacity-30'; ?>">
                             <i class="fas fa-book text-white text-xl"></i>
                         </div>
                         <p class="text-xs font-medium text-gray-800">Thorough</p>
-                        <p class="text-xs text-gray-500"><?php echo $achievements['thorough_learner']; ?></p>
+                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $achievements['thorough_learner']; ?></p>
                     </div>
                 </div>
             </div>
@@ -308,35 +371,62 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Earned Certificates</h3>
                     <div class="space-y-4">
-                        <?php if (empty($certificates)): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($certificates)): ?>
                             <div class="text-center py-8">
                                 <i class="fas fa-certificate text-4xl text-gray-400 mb-4"></i>
                                 <p class="text-gray-500">No certificates earned yet</p>
                                 <p class="text-sm text-gray-400">Complete training scenarios to earn certificates</p>
                             </div>
-                        <?php else: ?>
-                            <?php foreach ($certificates as $cert): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($certificates as $cert): ?>
                                 <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
                                     <div class="flex items-center">
                                         <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-lg flex items-center justify-center mr-4">
                                             <i class="fas fa-certificate text-white text-lg"></i>
                                         </div>
                                         <div>
-                                            <p class="font-medium text-gray-800"><?php echo htmlspecialchars($cert['scenario_title']); ?></p>
-                                            <p class="text-sm text-gray-500"><?php echo date('M j, Y', strtotime($cert['issued_date'])); ?></p>
+                                            <p class="font-medium text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($cert['scenario_title']); ?></p>
+                                            <p class="text-sm text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo date('M j, Y', strtotime($cert['issued_date'])); ?></p>
                                         </div>
                                     </div>
                                     <div class="text-right">
                                         <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
-                                            <?php echo number_format($cert['score'] ?? 0, 1); ?>%
+                                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($cert['score'] ?? 0, 1); ?>%
                                         </span>
-                                        <button onclick="downloadCertificate(<?php echo $cert['id']; ?>)" class="ml-2 text-blue-600 hover:text-blue-800">
+                                        <button onclick="downloadCertificate(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $cert['id']; ?>)" class="ml-2 text-blue-600 hover:text-blue-800">
                                             <i class="fas fa-download"></i>
                                         </button>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                     </div>
                 </div>
 
@@ -344,31 +434,58 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Achievements</h3>
                     <div class="space-y-3">
-                        <?php if (empty($recent_achievements)): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($recent_achievements)): ?>
                             <p class="text-sm text-gray-500">No recent achievements</p>
-                        <?php else: ?>
-                            <?php foreach ($recent_achievements as $achievement): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($recent_achievements as $achievement): ?>
                                 <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                                     <div class="flex items-center">
                                         <div class="w-10 h-10 bg-gradient-to-r from-green-500 to-blue-600 rounded-full flex items-center justify-center mr-3">
                                             <i class="fas fa-trophy text-white text-sm"></i>
                                         </div>
                                         <div>
-                                            <p class="font-medium text-gray-800"><?php echo htmlspecialchars($achievement['scenario_title']); ?></p>
-                                            <p class="text-sm text-gray-500"><?php echo date('M j, Y', strtotime($achievement['completed_at'])); ?></p>
+                                            <p class="font-medium text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($achievement['scenario_title']); ?></p>
+                                            <p class="text-sm text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo date('M j, Y', strtotime($achievement['completed_at'])); ?></p>
                                         </div>
                                     </div>
                                     <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                                        <?php 
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                                         if ($achievement['score'] >= 95) echo 'bg-yellow-100 text-yellow-800';
                                         elseif ($achievement['score'] >= 90) echo 'bg-green-100 text-green-800';
                                         else echo 'bg-blue-100 text-blue-800';
                                         ?>">
-                                        <?php echo number_format($achievement['score'] ?? 0, 1); ?>%
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($achievement['score'] ?? 0, 1); ?>%
                                     </span>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                     </div>
                 </div>
             </div>
@@ -377,24 +494,48 @@ include '../../includes/sidebar-unified.php';
             <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Learning Milestones</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <?php if (empty($milestones)): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($milestones)): ?>
                         <div class="col-span-full text-center py-8">
                             <i class="fas fa-flag text-4xl text-gray-400 mb-4"></i>
                             <p class="text-gray-500">No milestones achieved yet</p>
                             <p class="text-sm text-gray-400">Keep training to unlock milestones</p>
                         </div>
-                    <?php else: ?>
-                        <?php foreach ($milestones as $milestone): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($milestones as $milestone): ?>
                             <div class="text-center p-4 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg border border-purple-200">
                                 <div class="w-16 h-16 mx-auto mb-3 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center">
                                     <i class="fas fa-flag text-white text-xl"></i>
                                 </div>
-                                <h4 class="font-semibold text-gray-800 mb-1"><?php echo $milestone['milestone']; ?></h4>
-                                <p class="text-sm text-gray-600 mb-2"><?php echo $milestone['description']; ?></p>
-                                <p class="text-xs text-gray-500"><?php echo date('M j, Y', strtotime($milestone['achieved_date'])); ?></p>
+                                <h4 class="font-semibold text-gray-800 mb-1"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $milestone['milestone']; ?></h4>
+                                <p class="text-sm text-gray-600 mb-2"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $milestone['description']; ?></p>
+                                <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo date('M j, Y', strtotime($milestone['achieved_date'])); ?></p>
                             </div>
-                        <?php endforeach; ?>
-                    <?php endif; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                 </div>
             </div>
 
@@ -428,7 +569,10 @@ include '../../includes/sidebar-unified.php';
         </main>
     </div>
 
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
 
     <script>
         // Download certificate function

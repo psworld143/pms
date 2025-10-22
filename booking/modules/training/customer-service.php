@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 session_start();
 require_once '../../config/database.php';;
 require_once '../../includes/functions.php';
@@ -166,7 +169,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Completed</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $user_stats['completed_scenarios']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $user_stats['completed_scenarios']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -177,7 +183,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Average Score</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo number_format($user_stats['avg_score'] ?? 0, 1); ?>%</p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($user_stats['avg_score'] ?? 0, 1); ?>%</p>
                         </div>
                     </div>
                 </div>
@@ -188,7 +197,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">High Performance</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $user_stats['high_performance_count']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $user_stats['high_performance_count']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -199,7 +211,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Training Time</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo round($user_stats['total_time'] / 60, 1); ?>h</p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo round($user_stats['total_time'] / 60, 1); ?>h</p>
                         </div>
                     </div>
                 </div>
@@ -211,11 +226,17 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Performance by Type</h3>
                     <div class="space-y-4">
-                        <?php foreach ($performance_by_type as $performance): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($performance_by_type as $performance): ?>
                             <div class="flex items-center justify-between">
                                 <div class="flex items-center">
                                     <div class="w-3 h-3 rounded-full mr-3 
-                                        <?php 
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                                         switch($performance['type']) {
                                             case 'complaints': echo 'bg-red-500'; break;
                                             case 'requests': echo 'bg-blue-500'; break;
@@ -223,14 +244,26 @@ include '../../includes/sidebar-unified.php';
                                             default: echo 'bg-gray-500';
                                         }
                                         ?>"></div>
-                                    <span class="text-sm font-medium text-gray-600"><?php echo ucfirst($performance['type']); ?></span>
+                                    <span class="text-sm font-medium text-gray-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst($performance['type']); ?></span>
                                 </div>
                                 <div class="text-right">
-                                    <p class="text-sm font-semibold text-gray-900"><?php echo number_format($performance['avg_score'] ?? 0, 1); ?>%</p>
-                                    <p class="text-xs text-gray-500"><?php echo $performance['attempts']; ?> attempts</p>
+                                    <p class="text-sm font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($performance['avg_score'] ?? 0, 1); ?>%</p>
+                                    <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $performance['attempts']; ?> attempts</p>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                     </div>
                 </div>
 
@@ -273,21 +306,42 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
                     <div class="space-y-3">
-                        <?php 
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                         $recent_attempts = array_slice($user_attempts, 0, 3);
                         if (empty($recent_attempts)): ?>
                             <p class="text-sm text-gray-500">No recent activity</p>
-                        <?php else: ?>
-                            <?php foreach ($recent_attempts as $attempt): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($recent_attempts as $attempt): ?>
                                 <div class="flex items-center justify-between">
                                     <div>
                                         <p class="text-sm font-medium text-gray-800">Scenario completed</p>
-                                        <p class="text-xs text-gray-500"><?php echo date('M j, Y', strtotime($attempt['created_at'])); ?></p>
+                                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo date('M j, Y', strtotime($attempt['created_at'])); ?></p>
                                     </div>
-                                    <span class="text-sm font-semibold text-green-600"><?php echo number_format($attempt['score'] ?? 0, 1); ?>%</span>
+                                    <span class="text-sm font-semibold text-green-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($attempt['score'] ?? 0, 1); ?>%</span>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                     </div>
                 </div>
             </div>
@@ -300,15 +354,33 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <select id="type-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <option value="">All Types</option>
-                        <option value="complaints" <?php echo $type_filter === 'complaints' ? 'selected' : ''; ?>>Complaints</option>
-                        <option value="requests" <?php echo $type_filter === 'requests' ? 'selected' : ''; ?>>Requests</option>
-                        <option value="emergencies" <?php echo $type_filter === 'emergencies' ? 'selected' : ''; ?>>Emergencies</option>
+                        <option value="complaints" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $type_filter === 'complaints' ? 'selected' : ''; ?>>Complaints</option>
+                        <option value="requests" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $type_filter === 'requests' ? 'selected' : ''; ?>>Requests</option>
+                        <option value="emergencies" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $type_filter === 'emergencies' ? 'selected' : ''; ?>>Emergencies</option>
                     </select>
                     <select id="difficulty-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <option value="">All Difficulties</option>
-                        <option value="beginner" <?php echo $difficulty_filter === 'beginner' ? 'selected' : ''; ?>>Beginner</option>
-                        <option value="intermediate" <?php echo $difficulty_filter === 'intermediate' ? 'selected' : ''; ?>>Intermediate</option>
-                        <option value="advanced" <?php echo $difficulty_filter === 'advanced' ? 'selected' : ''; ?>>Advanced</option>
+                        <option value="beginner" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $difficulty_filter === 'beginner' ? 'selected' : ''; ?>>Beginner</option>
+                        <option value="intermediate" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $difficulty_filter === 'intermediate' ? 'selected' : ''; ?>>Intermediate</option>
+                        <option value="advanced" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $difficulty_filter === 'advanced' ? 'selected' : ''; ?>>Advanced</option>
                     </select>
                     <button id="clear-filters" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
                         <i class="fas fa-times mr-2"></i>Clear
@@ -318,15 +390,27 @@ include '../../includes/sidebar-unified.php';
 
             <!-- Scenarios Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <?php if (empty($scenarios)): ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($scenarios)): ?>
                     <div class="col-span-full text-center py-12">
                         <i class="fas fa-headset text-4xl text-gray-400 mb-4"></i>
                         <h3 class="text-lg font-medium text-gray-900 mb-2">No scenarios found</h3>
                         <p class="text-gray-500">Try adjusting your filters or check back later for new scenarios.</p>
                     </div>
-                <?php else: ?>
-                    <?php foreach ($scenarios as $scenario): ?>
-                        <?php 
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($scenarios as $scenario): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                         $user_attempt = isset($user_attempts_map[$scenario['id']]) ? $user_attempts_map[$scenario['id']] : null;
                         $is_completed = $user_attempt && $user_attempt['status'] === 'completed';
                         $best_score = $user_attempt ? $user_attempt['score'] : 0;
@@ -353,36 +437,72 @@ include '../../includes/sidebar-unified.php';
                         ?>
                         
                         <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-300 scenario-card flex flex-col" 
-                             data-type="<?php echo $scenario['type']; ?>" 
-                             data-difficulty="<?php echo $scenario['difficulty']; ?>"
-                             data-title="<?php echo strtolower($scenario['title']); ?>">
+                             data-type="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['type']; ?>" 
+                             data-difficulty="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['difficulty']; ?>"
+                             data-title="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo strtolower($scenario['title']); ?>">
                             
                             <!-- Scenario Header -->
                             <div class="p-6 border-b border-gray-200">
                                 <div class="flex items-start justify-between mb-4">
                                     <div class="flex items-center">
-                                        <i class="<?php echo $type_icons[$scenario['type']]; ?> text-blue-600 text-xl mr-3"></i>
+                                        <i class="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $type_icons[$scenario['type']]; ?> text-blue-600 text-xl mr-3"></i>
                                         <div>
-                                            <h3 class="text-lg font-semibold text-gray-900"><?php echo htmlspecialchars($scenario['title']); ?></h3>
-                                            <p class="text-sm text-gray-500"><?php echo ucfirst($scenario['type']); ?></p>
+                                            <h3 class="text-lg font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($scenario['title']); ?></h3>
+                                            <p class="text-sm text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst($scenario['type']); ?></p>
                                         </div>
                                     </div>
-                                    <?php if ($is_completed): ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if ($is_completed): ?>
                                         <div class="flex items-center">
                                             <i class="fas fa-check-circle text-green-500 text-xl"></i>
                                         </div>
-                                    <?php endif; ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                                 </div>
                                 
-                                <p class="text-gray-600 text-sm mb-4"><?php echo htmlspecialchars(substr($scenario['description'], 0, 100) . (strlen($scenario['description']) > 100 ? '...' : '')); ?></p>
+                                <p class="text-gray-600 text-sm mb-4"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(substr($scenario['description'], 0, 100) . (strlen($scenario['description']) > 100 ? '...' : '')); ?></p>
                                 
                                 <div class="flex items-center justify-between">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php echo $difficulty_colors[$scenario['difficulty']]; ?>">
-                                        <?php echo ucfirst($scenario['difficulty']); ?>
+                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $difficulty_colors[$scenario['difficulty']]; ?>">
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst($scenario['difficulty']); ?>
                                     </span>
                                     <div class="flex items-center text-sm text-gray-500">
                                         <i class="fas fa-clock mr-1"></i>
-                                        <?php echo $scenario['estimated_time']; ?> min
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['estimated_time']; ?> min
                                     </div>
                                 </div>
                             </div>
@@ -391,31 +511,52 @@ include '../../includes/sidebar-unified.php';
                             <div class="p-6 flex-grow">
                                 <div class="mb-4">
                                     <h4 class="text-sm font-medium text-gray-800 mb-2">Situation:</h4>
-                                    <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars(substr($scenario['situation'], 0, 80) . (strlen($scenario['situation']) > 80 ? '...' : '')); ?></p>
+                                    <p class="text-sm text-gray-600 mb-3"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(substr($scenario['situation'], 0, 80) . (strlen($scenario['situation']) > 80 ? '...' : '')); ?></p>
                                     
                                     <h4 class="text-sm font-medium text-gray-800 mb-2">Guest Request:</h4>
-                                    <p class="text-sm text-gray-600"><?php echo htmlspecialchars(substr($scenario['guest_request'], 0, 80) . (strlen($scenario['guest_request']) > 80 ? '...' : '')); ?></p>
+                                    <p class="text-sm text-gray-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(substr($scenario['guest_request'], 0, 80) . (strlen($scenario['guest_request']) > 80 ? '...' : '')); ?></p>
                                 </div>
                                 
                                 <div class="grid grid-cols-2 gap-4 mb-4">
                                     <div class="text-center">
                                         <p class="text-sm text-gray-500">Points</p>
-                                        <p class="text-lg font-semibold text-gray-900"><?php echo $scenario['points']; ?></p>
+                                        <p class="text-lg font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['points']; ?></p>
                                     </div>
                                     <div class="text-center">
                                         <p class="text-sm text-gray-500">Avg Score</p>
-                                        <p class="text-lg font-semibold text-gray-900"><?php echo number_format($scenario['avg_score'] ?? 0, 1); ?>%</p>
+                                        <p class="text-lg font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($scenario['avg_score'] ?? 0, 1); ?>%</p>
                                     </div>
                                 </div>
                                 
-                                <?php if ($is_completed): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if ($is_completed): ?>
                                     <div class="mb-4 p-3 bg-green-50 rounded-lg">
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm font-medium text-green-800">Your Score</span>
-                                            <span class="text-lg font-bold text-green-600"><?php echo number_format($best_score, 1); ?>%</span>
+                                            <span class="text-lg font-bold text-green-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($best_score, 1); ?>%</span>
                                         </div>
                                     </div>
-                                <?php else: ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                                     <!-- Empty space to maintain consistent height -->
                                     <div class="mb-4 p-3 bg-transparent rounded-lg">
                                         <div class="flex items-center justify-between">
@@ -423,37 +564,70 @@ include '../../includes/sidebar-unified.php';
                                             <span class="text-lg font-bold text-transparent">0%</span>
                                         </div>
                                     </div>
-                                <?php endif; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                             </div>
                             
                             <!-- Action Buttons - Always at bottom -->
                             <div class="p-6 pt-0">
                                 <div class="flex space-x-2">
-                                    <?php if ($is_completed): ?>
-                                        <button onclick="retakeScenario(<?php echo $scenario['id']; ?>)" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if ($is_completed): ?>
+                                        <button onclick="retakeScenario(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['id']; ?>)" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
                                             <i class="fas fa-redo mr-2"></i>Retake
                                         </button>
-                                        <button onclick="viewResults(<?php echo $scenario['id']; ?>)" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                                        <button onclick="viewResults(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['id']; ?>)" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
                                             <i class="fas fa-chart-bar mr-2"></i>Results
                                         </button>
-                                    <?php else: ?>
-                                        <button onclick="startScenario(<?php echo $scenario['id']; ?>)" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                                        <button onclick="startScenario(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['id']; ?>)" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
                                             <i class="fas fa-play mr-2"></i>Start
                                         </button>
-                                        <button onclick="previewScenario(<?php echo $scenario['id']; ?>)" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
+                                        <button onclick="previewScenario(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['id']; ?>)" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
                                             <i class="fas fa-eye mr-2"></i>Preview
                                         </button>
-                                    <?php endif; ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
             </div>
         </main>
     </div>
 
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
 
     <script>
         // Wait for document to be ready

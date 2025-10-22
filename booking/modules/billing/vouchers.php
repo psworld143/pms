@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Voucher System
  * Hotel PMS Training System for Students
@@ -52,7 +55,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Vouchers</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($voucherMetrics['total_vouchers']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($voucherMetrics['total_vouchers']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -66,7 +72,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Used</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($voucherMetrics['used_vouchers']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($voucherMetrics['used_vouchers']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -80,7 +89,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($voucherMetrics['active_vouchers']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($voucherMetrics['active_vouchers']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -94,7 +106,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Expired</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($voucherMetrics['expired_vouchers']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($voucherMetrics['expired_vouchers']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -251,7 +266,10 @@ include '../../includes/sidebar-unified.php';
                     <h3 class="text-lg font-semibold text-gray-800">All Vouchers</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <?php if (!empty($vouchers)): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (!empty($vouchers)): ?>
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -264,29 +282,71 @@ include '../../includes/sidebar-unified.php';
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <?php foreach ($vouchers as $v): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($vouchers as $v): ?>
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?php echo htmlspecialchars($v['voucher_code']); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars(ucfirst($v['voucher_type'])); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($v['voucher_value']); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo number_format($v['used_count']); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($v['valid_from']); ?> to <?php echo htmlspecialchars($v['valid_until']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($v['voucher_code']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($v['voucher_type'])); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($v['voucher_value']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($v['used_count']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($v['valid_from']); ?> to <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($v['valid_until']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <?php $cls = $v['status'] === 'active' ? 'bg-green-100 text-green-800' : ($v['status'] === 'used' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'); ?>
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $cls; ?>"><?php echo htmlspecialchars(ucfirst($v['status'])); ?></span>
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); $cls = $v['status'] === 'active' ? 'bg-green-100 text-green-800' : ($v['status'] === 'used' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'); ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $cls; ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($v['status'])); ?></span>
                                     </td>
                                 </tr>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </tbody>
                         </table>
-                    <?php else: ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                         <div class="p-6 text-center text-gray-500">No vouchers found.</div>
-                    <?php endif; ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                 </div>
             </div>
         </main>
 
         <!-- Include footer -->
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
     </body>
 </html>

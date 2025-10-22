@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
@@ -166,11 +170,31 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mt-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Debug Information</h3>
                     <div class="text-sm text-gray-600">
-                        <p><strong>User ID:</strong> <?php echo $user_id; ?></p>
-                        <p><strong>User Name:</strong> <?php echo htmlspecialchars($user_name); ?></p>
-                        <p><strong>User Role:</strong> <?php echo $_SESSION['user_role']; ?></p>
-                        <p><strong>Current URL:</strong> <?php echo $_SERVER['REQUEST_URI']; ?></p>
-                        <p><strong>Session Status:</strong> <?php echo session_status() === PHP_SESSION_ACTIVE ? 'Active' : 'Inactive'; ?></p>
+                        <p><strong>User ID:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $user_id; ?></p>
+                        <p><strong>User Name:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($user_name); ?></p>
+                        <p><strong>User Role:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $_SESSION['user_role']; ?></p>
+                        <p><strong>Current URL:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $_SERVER['REQUEST_URI']; ?></p>
+                        <p><strong>Session Status:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo session_status() === PHP_SESSION_ACTIVE ? 'Active' : 'Inactive'; ?></p>
                     </div>
                 </div>
             </div>
@@ -178,4 +202,8 @@ include '../../includes/sidebar-unified.php';
 
     <script src="../../assets/js/main.js"></script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>

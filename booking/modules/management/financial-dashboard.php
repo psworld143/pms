@@ -1,5 +1,11 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/booking-paths.php';
@@ -50,7 +56,8 @@ include '../../includes/sidebar-unified.php';
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Financial Dashboard</h2>
                 <div class="text-sm text-gray-600">
-                    <i class="fas fa-calendar-alt mr-1"></i><?php echo date('F Y'); ?>
+                    <i class="fas fa-calendar-alt mr-1"></i><?php
+session_start(); echo date('F Y'); ?>
                 </div>
             </div>
 
@@ -63,7 +70,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Monthly Revenue (Paid)</p>
-                            <p class="text-2xl font-bold text-gray-900">₱<?php echo number_format($monthly_revenue, 2); ?></p>
+                            <p class="text-2xl font-bold text-gray-900">₱<?php
+session_start(); echo number_format($monthly_revenue, 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -75,7 +83,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Unpaid Bills</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo number_format($unpaid_bills); ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+session_start(); echo number_format($unpaid_bills); ?></p>
                         </div>
                     </div>
                 </div>
@@ -87,7 +96,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Paid Transactions</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo number_format($paid_tx_count); ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+session_start(); echo number_format($paid_tx_count); ?></p>
                         </div>
                     </div>
                 </div>
@@ -99,7 +109,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div>
                             <p class="text-sm text-gray-500">Outstanding Balance</p>
-                            <p class="text-2xl font-bold text-gray-900">₱<?php echo number_format($outstanding_balance, 2); ?></p>
+                            <p class="text-2xl font-bold text-gray-900">₱<?php
+session_start(); echo number_format($outstanding_balance, 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -142,7 +153,8 @@ include '../../includes/sidebar-unified.php';
             </div>
         </main>
 
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+session_start(); include '../../includes/footer.php'; ?>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
@@ -237,5 +249,6 @@ include '../../includes/sidebar-unified.php';
             }
         }
         </script>
-<?php // end file ?>
+<?php
+session_start(); // end file ?>
 

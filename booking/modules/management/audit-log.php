@@ -1,10 +1,16 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 /**
  * Audit Log
  * Hotel PMS Training System for Students
  */
 
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/booking-paths.php';
@@ -70,9 +76,13 @@ include '../../includes/sidebar-unified.php';
                             <label for="audit-action-filter" class="text-xs text-gray-500 uppercase tracking-wide mb-1">Action</label>
                             <select id="audit-action-filter" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                                 <option value="">All Actions</option>
-                                <?php foreach ($actions as $actionOption): ?>
-                                    <option value="<?php echo htmlspecialchars($actionOption, ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $actionOption)), ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach ($actions as $actionOption): ?>
+                                    <option value="<?php
+session_start(); echo htmlspecialchars($actionOption, ENT_QUOTES, 'UTF-8'); ?>"><?php
+session_start(); echo htmlspecialchars(ucwords(str_replace('_', ' ', $actionOption)), ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                         </div>
                         <div class="flex flex-col">
@@ -107,7 +117,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Log Entries</p>
-                            <p id="audit-total-entries" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['total_entries'] ?? 0); ?></p>
+                            <p id="audit-total-entries" class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($summary['total_entries'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -120,7 +131,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Today's Activities</p>
-                            <p id="audit-today-entries" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['today_entries'] ?? 0); ?></p>
+                            <p id="audit-today-entries" class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($summary['today_entries'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -133,7 +145,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Security Events</p>
-                            <p id="audit-security-events" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['security_events'] ?? 0); ?></p>
+                            <p id="audit-security-events" class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($summary['security_events'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -146,7 +159,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active Users (24h)</p>
-                            <p id="audit-active-users" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['active_users'] ?? 0); ?></p>
+                            <p id="audit-active-users" class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($summary['active_users'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -155,7 +169,9 @@ include '../../includes/sidebar-unified.php';
             <div class="bg-white rounded-lg shadow">
                 <div class="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <h3 class="text-lg font-semibold text-gray-800">System Activity Log</h3>
-                    <p id="audit-pagination-summary" class="text-sm text-gray-500">Showing <?php echo count($initialLogs); ?> of <?php echo number_format($totalLogs); ?> entries</p>
+                    <p id="audit-pagination-summary" class="text-sm text-gray-500">Showing <?php
+session_start(); echo count($initialLogs); ?> of <?php
+session_start(); echo number_format($totalLogs); ?> entries</p>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -170,13 +186,17 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody id="audit-table-body" class="bg-white divide-y divide-gray-200">
-                            <?php if (empty($initialLogs)): ?>
+                            <?php
+session_start(); if (empty($initialLogs)): ?>
                                 <tr>
                                     <td colspan="6" class="px-6 py-6 text-center text-sm text-gray-500">No audit logs recorded yet.</td>
                                 </tr>
-                            <?php else: ?>
-                                <?php foreach ($initialLogs as $log): ?>
+                            <?php
+session_start(); else: ?>
+                                <?php
+session_start(); foreach ($initialLogs as $log): ?>
                                     <?php
+session_start();
                                         $actionText = (string)($log['action'] ?? '');
                                         $actionLower = strtolower($actionText);
                                         $isAlert = str_contains($actionLower, 'fail') || str_contains($actionLower, 'error') || str_contains($actionLower, 'denied') || str_contains($actionLower, 'warning');
@@ -187,31 +207,43 @@ include '../../includes/sidebar-unified.php';
                                         $roleLabel = $log['user_role'] ? ucwords(str_replace('_', ' ', $log['user_role'])) : '—';
                                     ?>
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars(date('M j, Y g:i A', strtotime($log['created_at'] ?? 'now')), ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+session_start(); echo htmlspecialchars(date('M j, Y g:i A', strtotime($log['created_at'] ?? 'now')), ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="flex-shrink-0 h-9 w-9">
                                                     <div class="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
-                                                        <?php echo htmlspecialchars($initials, ENT_QUOTES, 'UTF-8'); ?>
+                                                        <?php
+session_start(); echo htmlspecialchars($initials, ENT_QUOTES, 'UTF-8'); ?>
                                                     </div>
                                                 </div>
                                                 <div class="ml-3">
-                                                    <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?></div>
-                                                    <div class="text-xs text-gray-500"><?php echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                                                    <div class="text-sm font-medium text-gray-900"><?php
+session_start(); echo htmlspecialchars($name, ENT_QUOTES, 'UTF-8'); ?></div>
+                                                    <div class="text-xs text-gray-500"><?php
+session_start(); echo htmlspecialchars($roleLabel, ENT_QUOTES, 'UTF-8'); ?></div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $actionText)), ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+session_start(); echo htmlspecialchars(ucwords(str_replace('_', ' ', $actionText)), ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td class="px-6 py-4 text-sm text-gray-600 max-w-xs">
-                                            <span class="line-clamp-2" title="<?php echo htmlspecialchars($log['details'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($log['details'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <span class="line-clamp-2" title="<?php
+session_start(); echo htmlspecialchars($log['details'] ?? '', ENT_QUOTES, 'UTF-8'); ?>"><?php
+session_start(); echo htmlspecialchars($log['details'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></span>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($log['ip_address'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php
+session_start(); echo htmlspecialchars($log['ip_address'] ?? '—', ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $statusClass; ?>"><?php echo $statusLabel; ?></span>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+session_start(); echo $statusClass; ?>"><?php
+session_start(); echo $statusLabel; ?></span>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                                <?php
+session_start(); endforeach; ?>
+                            <?php
+session_start(); endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -219,16 +251,23 @@ include '../../includes/sidebar-unified.php';
                     <div class="flex items-center gap-2 text-sm text-gray-500">
                         <span>Rows per page</span>
                         <select id="audit-limit-select" class="border border-gray-300 rounded-md text-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary">
-                            <?php foreach ([10, 25, 50, 100] as $optionLimit): ?>
-                                <option value="<?php echo $optionLimit; ?>" <?php echo $optionLimit === $limit ? 'selected' : ''; ?>><?php echo $optionLimit; ?></option>
-                            <?php endforeach; ?>
+                            <?php
+session_start(); foreach ([10, 25, 50, 100] as $optionLimit): ?>
+                                <option value="<?php
+session_start(); echo $optionLimit; ?>" <?php
+session_start(); echo $optionLimit === $limit ? 'selected' : ''; ?>><?php
+session_start(); echo $optionLimit; ?></option>
+                            <?php
+session_start(); endforeach; ?>
                         </select>
                     </div>
                     <div class="flex items-center gap-2">
                         <button id="audit-prev-page" class="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                             <i class="fas fa-chevron-left"></i>
                         </button>
-                        <span class="text-sm text-gray-600">Page <span id="audit-current-page"><?php echo $initialPage; ?></span> of <span id="audit-total-pages"><?php echo $totalPages; ?></span></span>
+                        <span class="text-sm text-gray-600">Page <span id="audit-current-page"><?php
+session_start(); echo $initialPage; ?></span> of <span id="audit-total-pages"><?php
+session_start(); echo $totalPages; ?></span></span>
                         <button id="audit-next-page" class="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                             <i class="fas fa-chevron-right"></i>
                         </button>
@@ -237,4 +276,5 @@ include '../../includes/sidebar-unified.php';
             </div>
         </main>
 
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+session_start(); include '../../includes/footer.php'; ?>

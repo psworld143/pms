@@ -1,7 +1,13 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/config/database.php';
-require_once dirname(__DIR__, 2) . '/includes/functions.php';
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
+session_start();
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
 require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
 
 booking_initialize_paths();
@@ -41,7 +47,8 @@ include '../../includes/sidebar-unified.php';
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Total Guests</p>
-                    <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['total_guests']); ?></p>
+                    <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($stats['total_guests']); ?></p>
                 </div>
             </div>
         </div>
@@ -54,7 +61,8 @@ include '../../includes/sidebar-unified.php';
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">VIP Guests</p>
-                    <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['vip_guests']); ?></p>
+                    <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($stats['vip_guests']); ?></p>
                 </div>
             </div>
         </div>
@@ -67,7 +75,8 @@ include '../../includes/sidebar-unified.php';
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Active Stays</p>
-                    <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['active_guests']); ?></p>
+                    <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($stats['active_guests']); ?></p>
                 </div>
             </div>
         </div>
@@ -80,7 +89,8 @@ include '../../includes/sidebar-unified.php';
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">New This Month</p>
-                    <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['new_guests']); ?></p>
+                    <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($stats['new_guests']); ?></p>
                 </div>
             </div>
         </div>
@@ -93,7 +103,8 @@ include '../../includes/sidebar-unified.php';
                 </div>
                 <div class="ml-4">
                     <p class="text-sm font-medium text-gray-500">Pending Feedback</p>
-                    <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($stats['pending_feedback']); ?></p>
+                    <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($stats['pending_feedback']); ?></p>
                 </div>
             </div>
         </div>
@@ -280,4 +291,5 @@ include '../../includes/sidebar-unified.php';
     </div>
 </div>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+session_start(); include '../../includes/footer.php'; ?>

@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Invoice Management
  * Hotel PMS Training System for Students
@@ -52,7 +55,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Invoices</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($invoiceMetrics['total_invoices']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['total_invoices']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -66,7 +72,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Paid Invoices</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($invoiceMetrics['paid_count']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['paid_count']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -80,7 +89,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Pending</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($invoiceMetrics['pending_count']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['pending_count']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -94,7 +106,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Overdue</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($invoiceMetrics['overdue_count']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['overdue_count']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -178,19 +193,31 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Total Revenue:</span>
-                        <span class="font-semibold text-gray-900">₱<?php echo number_format($invoiceMetrics['total_revenue'], 2); ?></span>
+                        <span class="font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['total_revenue'], 2); ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Outstanding Amount:</span>
-                        <span class="font-semibold text-red-600">₱<?php echo number_format($invoiceMetrics['outstanding_amount'], 2); ?></span>
+                        <span class="font-semibold text-red-600">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['outstanding_amount'], 2); ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Average Invoice:</span>
-                        <span class="font-semibold text-gray-900">₱<?php echo number_format($invoiceMetrics['average_invoice'], 2); ?></span>
+                        <span class="font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($invoiceMetrics['average_invoice'], 2); ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Payment Rate:</span>
                         <span class="font-semibold text-green-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
                             $paid = max(0, (int)$invoiceMetrics['paid_count']);
                             $total = max(1, (int)$invoiceMetrics['total_invoices']);
                             echo number_format(($paid / $total) * 100, 1); ?>%</span>
@@ -205,7 +232,10 @@ include '../../includes/sidebar-unified.php';
                     <h3 class="text-lg font-semibold text-gray-800">All Invoices</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <?php if (!empty($invoices)): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (!empty($invoices)): ?>
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -220,34 +250,67 @@ include '../../includes/sidebar-unified.php';
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <?php foreach ($invoices as $inv): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($invoices as $inv): ?>
                                 <tr>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#<?php echo htmlspecialchars($inv['bill_number']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($inv['bill_number']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <div class="flex-shrink-0 h-8 w-8">
                                                 <div class="h-8 w-8 rounded-full bg-blue-500 flex items-center justify-center">
-                                                    <span class="text-white text-xs font-medium"><?php echo strtoupper(substr($inv['guest_name'],0,1)); ?></span>
+                                                    <span class="text-white text-xs font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo strtoupper(substr($inv['guest_name'],0,1)); ?></span>
                                                 </div>
                                             </div>
                                             <div class="ml-3">
-                                                <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($inv['guest_name']); ?></div>
+                                                <div class="text-sm font-medium text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($inv['guest_name']); ?></div>
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room <?php echo htmlspecialchars($inv['room_number']); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱<?php echo number_format($inv['total_amount'], 2); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($inv['bill_date']); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($inv['due_date']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($inv['room_number']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($inv['total_amount'], 2); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($inv['bill_date']); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($inv['due_date']); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
                                             $cls = 'bg-gray-100 text-gray-800';
                                             if ($inv['status'] === 'paid') $cls = 'bg-green-100 text-green-800';
                                             elseif ($inv['status'] === 'pending') $cls = 'bg-yellow-100 text-yellow-800';
                                             elseif ($inv['status'] === 'overdue') $cls = 'bg-red-100 text-red-800';
                                         ?>
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $cls; ?>">
-                                            <?php echo htmlspecialchars(ucfirst($inv['status'])); ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $cls; ?>">
+                                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($inv['status'])); ?>
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
@@ -255,17 +318,29 @@ include '../../includes/sidebar-unified.php';
                                         <button class="text-green-600 hover:text-green-900">Download</button>
                                     </td>
                                 </tr>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </tbody>
                         </table>
-                    <?php else: ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                         <div class="p-6 text-center text-gray-500">No invoices found.</div>
-                    <?php endif; ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                 </div>
             </div>
         </main>
 
         <!-- Include footer -->
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
     </body>
 </html>

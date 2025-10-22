@@ -1,5 +1,8 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/booking-paths.php';
@@ -41,7 +44,10 @@ include '../../includes/sidebar-unified.php';
                             <i class="fas fa-percentage text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800"><?php echo $stats['occupancy_rate']; ?>%</h3>
+                            <h3 class="text-3xl font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $stats['occupancy_rate']; ?>%</h3>
                             <p class="text-gray-600">Occupancy Rate</p>
                         </div>
                     </div>
@@ -53,7 +59,10 @@ include '../../includes/sidebar-unified.php';
                             <i class="fas fa-dollar-sign text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800">₱<?php echo number_format($stats['today_revenue'], 2); ?></h3>
+                            <h3 class="text-3xl font-bold text-gray-800">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($stats['today_revenue'], 2); ?></h3>
                             <p class="text-gray-600">Today's Revenue</p>
                         </div>
                     </div>
@@ -65,7 +74,10 @@ include '../../includes/sidebar-unified.php';
                             <i class="fas fa-calendar-check text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800"><?php echo $stats['pending_checkins']; ?></h3>
+                            <h3 class="text-3xl font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $stats['pending_checkins']; ?></h3>
                             <p class="text-gray-600">Pending Check-ins</p>
                         </div>
                     </div>
@@ -77,7 +89,10 @@ include '../../includes/sidebar-unified.php';
                             <i class="fas fa-sign-out-alt text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800"><?php echo $stats['today_checkouts']; ?></h3>
+                            <h3 class="text-3xl font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $stats['today_checkouts']; ?></h3>
                             <p class="text-gray-600">Today's Check-outs</p>
                         </div>
                     </div>
@@ -91,15 +106,24 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Today's Revenue:</span>
-                            <span class="font-semibold text-green-600">₱<?php echo number_format($stats['today_revenue'], 2); ?></span>
+                            <span class="font-semibold text-green-600">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($stats['today_revenue'], 2); ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">This Month's Revenue:</span>
-                            <span class="font-semibold text-blue-600">₱<?php echo number_format($stats['month_revenue'], 2); ?></span>
+                            <span class="font-semibold text-blue-600">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($stats['month_revenue'], 2); ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Average Daily Revenue:</span>
-                            <span class="font-semibold text-purple-600">₱<?php echo number_format($stats['month_revenue'] / max(1, date('j')), 2); ?></span>
+                            <span class="font-semibold text-purple-600">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($stats['month_revenue'] / max(1, date('j')), 2); ?></span>
                         </div>
                     </div>
                 </div>
@@ -109,15 +133,24 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-4">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Total Rooms:</span>
-                            <span class="font-semibold"><?php echo $stats['total_rooms']; ?></span>
+                            <span class="font-semibold"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $stats['total_rooms']; ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Occupied Rooms:</span>
-                            <span class="font-semibold text-green-600"><?php echo $stats['occupied_rooms']; ?></span>
+                            <span class="font-semibold text-green-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $stats['occupied_rooms']; ?></span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600">Available Rooms:</span>
-                            <span class="font-semibold text-blue-600"><?php echo $stats['total_rooms'] - $stats['occupied_rooms']; ?></span>
+                            <span class="font-semibold text-blue-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $stats['total_rooms'] - $stats['occupied_rooms']; ?></span>
                         </div>
                     </div>
                 </div>
@@ -127,19 +160,31 @@ include '../../includes/sidebar-unified.php';
             <div class="bg-white rounded-lg p-6 shadow-md mb-8">
                 <h3 class="text-xl font-semibold text-gray-800 mb-6">Quick Actions</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <a href="<?php echo booking_url('modules/front-desk/manage-reservations.php'); ?>" class="flex items-center p-4 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-300">
+                    <a href="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo booking_url('modules/front-desk/manage-reservations.php'); ?>" class="flex items-center p-4 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-300">
                         <i class="fas fa-calendar-alt text-blue-600 text-xl mr-3"></i>
                         <span class="font-medium text-blue-800">Manage Reservations</span>
                     </a>
-                    <a href="<?php echo booking_url('modules/housekeeping/index.php'); ?>" class="flex items-center p-4 bg-green-50 border-2 border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-all duration-300">
+                    <a href="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo booking_url('modules/housekeeping/index.php'); ?>" class="flex items-center p-4 bg-green-50 border-2 border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-all duration-300">
                         <i class="fas fa-broom text-green-600 text-xl mr-3"></i>
                         <span class="font-medium text-green-800">Housekeeping</span>
                     </a>
-                    <a href="<?php echo booking_url('modules/management/reports-dashboard.php'); ?>" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
+                    <a href="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo booking_url('modules/management/reports-dashboard.php'); ?>" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
                         <i class="fas fa-chart-bar text-purple-600 text-xl mr-3"></i>
                         <span class="font-medium text-purple-800">View Reports</span>
                     </a>
-                    <a href="<?php echo booking_url('modules/management/staff.php'); ?>" class="flex items-center p-4 bg-orange-50 border-2 border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 transition-all duration-300">
+                    <a href="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo booking_url('modules/management/staff.php'); ?>" class="flex items-center p-4 bg-orange-50 border-2 border-orange-200 rounded-lg hover:bg-orange-100 hover:border-orange-300 transition-all duration-300">
                         <i class="fas fa-users text-orange-600 text-xl mr-3"></i>
                         <span class="font-medium text-orange-800">Staff Management</span>
                     </a>
@@ -150,7 +195,10 @@ include '../../includes/sidebar-unified.php';
             <div class="bg-white rounded-lg p-6 shadow-md">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-semibold text-gray-800">Recent Activity</h3>
-                    <a href="<?php echo booking_url('modules/management/audit-log.php'); ?>" class="text-primary hover:text-primary-dark">View All</a>
+                    <a href="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo booking_url('modules/management/audit-log.php'); ?>" class="text-primary hover:text-primary-dark">View All</a>
                 </div>
                 <div id="recent-activity" class="overflow-x-auto">
                     <!-- Recent activity will be loaded here -->
@@ -158,9 +206,18 @@ include '../../includes/sidebar-unified.php';
             </div>
     </div>
 
-    <script src="<?php echo booking_url('assets/js/main.js'); ?>"></script>
-    <script src="<?php echo booking_url('assets/js/manager-dashboard.js'); ?>"></script>
+    <script src="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo booking_url('assets/js/main.js'); ?>"></script>
+    <script src="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo booking_url('assets/js/manager-dashboard.js'); ?>"></script>
 
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
 </body>
 </html>

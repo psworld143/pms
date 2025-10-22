@@ -1,10 +1,16 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 /**
  * Room Status Management
  * Hotel PMS Training System for Students
  */
 
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
@@ -108,7 +114,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Available</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="available-count"><?php echo $availableCount; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" id="available-count"><?php
+session_start(); echo $availableCount; ?></p>
                         </div>
                     </div>
                 </div>
@@ -122,7 +129,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Occupied</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="occupied-count"><?php echo $occupiedCount; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" id="occupied-count"><?php
+session_start(); echo $occupiedCount; ?></p>
                         </div>
                     </div>
                 </div>
@@ -136,7 +144,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Maintenance</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="maintenance-count"><?php echo $maintenanceCount; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" id="maintenance-count"><?php
+session_start(); echo $maintenanceCount; ?></p>
                         </div>
                     </div>
                 </div>
@@ -150,7 +159,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Cleaning</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="cleaning-count"><?php echo $cleaningCount; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" id="cleaning-count"><?php
+session_start(); echo $cleaningCount; ?></p>
                         </div>
                     </div>
                 </div>
@@ -173,9 +183,12 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200" id="rooms-table-body">
-                            <?php if (!empty($rooms)): ?>
-                                <?php foreach ($rooms as $room): ?>
+                            <?php
+session_start(); if (!empty($rooms)): ?>
+                                <?php
+session_start(); foreach ($rooms as $room): ?>
                                     <?php
+session_start();
                                     $statusClass = '';
                                     switch($room['status']) {
                                         case 'available':
@@ -218,26 +231,40 @@ include '../../includes/sidebar-unified.php';
                                                     </div>
                                                 </div>
                                                 <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900">Room <?php echo htmlspecialchars($room['room_number']); ?></div>
-                                                    <div class="text-sm text-gray-500">Floor <?php echo htmlspecialchars($room['floor']); ?></div>
+                                                    <div class="text-sm font-medium text-gray-900">Room <?php
+session_start(); echo htmlspecialchars($room['room_number']); ?></div>
+                                                    <div class="text-sm text-gray-500">Floor <?php
+session_start(); echo htmlspecialchars($room['floor']); ?></div>
                                                 </div>
                                             </div>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($room['room_type']); ?></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+session_start(); echo htmlspecialchars($room['room_type']); ?></td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $statusClass; ?>">
-                                                <?php echo htmlspecialchars($room['status']); ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+session_start(); echo $statusClass; ?>">
+                                                <?php
+session_start(); echo htmlspecialchars($room['status']); ?>
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $housekeepingClass; ?>">
-                                                <?php echo htmlspecialchars($room['housekeeping_status'] ?? 'Unknown'); ?>
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+session_start(); echo $housekeepingClass; ?>">
+                                                <?php
+session_start(); echo htmlspecialchars($room['housekeeping_status'] ?? 'Unknown'); ?>
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div class="flex items-center space-x-2">
                                                 <!-- View Icon with Enhanced Design -->
-                                                <button onclick="showRoomModal(<?php echo $room['id']; ?>, '<?php echo htmlspecialchars($room['room_number']); ?>', '<?php echo htmlspecialchars($room['floor']); ?>', '<?php echo htmlspecialchars($room['room_type']); ?>', '<?php echo htmlspecialchars($room['status']); ?>', '<?php echo htmlspecialchars($room['housekeeping_status']); ?>', <?php echo $room['capacity'] ?? 2; ?>)" 
+                                                <button onclick="showRoomModal(<?php
+session_start(); echo $room['id']; ?>, '<?php
+session_start(); echo htmlspecialchars($room['room_number']); ?>', '<?php
+session_start(); echo htmlspecialchars($room['floor']); ?>', '<?php
+session_start(); echo htmlspecialchars($room['room_type']); ?>', '<?php
+session_start(); echo htmlspecialchars($room['status']); ?>', '<?php
+session_start(); echo htmlspecialchars($room['housekeeping_status']); ?>', <?php
+session_start(); echo $room['capacity'] ?? 2; ?>)" 
                                                         class="group relative inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 ease-in-out cursor-pointer"
                                                         title="View Room Details">
                                                     <i class="fas fa-eye text-sm group-hover:scale-110 transition-transform duration-200"></i>
@@ -245,7 +272,11 @@ include '../../includes/sidebar-unified.php';
                                                 </button>
                                                 
                                                 <!-- Edit Icon with Enhanced Design -->
-                                                <button onclick="editRoomStatus(<?php echo $room['id']; ?>, '<?php echo htmlspecialchars($room['room_number']); ?>', '<?php echo htmlspecialchars($room['housekeeping_status']); ?>', <?php echo $room['capacity'] ?? 2; ?>)" 
+                                                <button onclick="editRoomStatus(<?php
+session_start(); echo $room['id']; ?>, '<?php
+session_start(); echo htmlspecialchars($room['room_number']); ?>', '<?php
+session_start(); echo htmlspecialchars($room['housekeeping_status']); ?>', <?php
+session_start(); echo $room['capacity'] ?? 2; ?>)" 
                                                         class="group relative inline-flex items-center justify-center w-10 h-10 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 ease-in-out cursor-pointer"
                                                         title="Edit Room Status">
                                                     <i class="fas fa-edit text-sm group-hover:scale-110 transition-transform duration-200"></i>
@@ -254,8 +285,10 @@ include '../../includes/sidebar-unified.php';
                                             </div>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
+                                <?php
+session_start(); endforeach; ?>
+                            <?php
+session_start(); else: ?>
                                 <tr>
                                     <td colspan="5" class="px-6 py-12 text-center text-gray-500">
                                         <div class="flex flex-col items-center">
@@ -265,7 +298,8 @@ include '../../includes/sidebar-unified.php';
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endif; ?>
+                            <?php
+session_start(); endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -290,7 +324,8 @@ include '../../includes/sidebar-unified.php';
         </div>
 
         <!-- Scripts -->
-        <script src="../../assets/js/main.js?v=<?php echo time(); ?>"></script>
+        <script src="../../assets/js/main.js?v=<?php
+session_start(); echo time(); ?>"></script>
         <script>
             // Simple working functions for room status
             function showRoomModal(roomId, roomNumber, floor, roomType, status, housekeepingStatus, capacity) {

@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 require_once '../../includes/session-config.php';
 session_start();
 require_once '../../config/database.php';
@@ -22,23 +25,47 @@ include '../../includes/sidebar-unified.php';
             <div class="bg-white rounded-lg shadow p-6 mb-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h1 class="text-2xl font-bold text-gray-900"><?php echo htmlspecialchars($item['title'] ?? 'Problem'); ?></h1>
-                        <p class="text-gray-600 mt-1"><?php echo htmlspecialchars($item['description'] ?? ''); ?></p>
+                        <h1 class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($item['title'] ?? 'Problem'); ?></h1>
+                        <p class="text-gray-600 mt-1"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($item['description'] ?? ''); ?></p>
                     </div>
                     <div class="text-right">
-                        <a href="problem-solving-start.php?id=<?php echo (int)$scenario_id; ?>" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"><i class="fas fa-play mr-2"></i>Start</a>
+                        <a href="problem-solving-start.php?id=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (int)$scenario_id; ?>" class="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700"><i class="fas fa-play mr-2"></i>Start</a>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div><strong>Severity:</strong> <?php echo htmlspecialchars(ucfirst($item['severity'] ?? '')); ?></div>
-                    <div><strong>Difficulty:</strong> <?php echo htmlspecialchars(ucfirst($item['difficulty'] ?? '')); ?></div>
-                    <div><strong>Time Limit:</strong> <?php echo (int)($item['time_limit'] ?? 0); ?> min</div>
-                    <div><strong>Points:</strong> <?php echo (int)($item['points'] ?? 0); ?></div>
+                    <div><strong>Severity:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($item['severity'] ?? '')); ?></div>
+                    <div><strong>Difficulty:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($item['difficulty'] ?? '')); ?></div>
+                    <div><strong>Time Limit:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (int)($item['time_limit'] ?? 0); ?> min</div>
+                    <div><strong>Points:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (int)($item['points'] ?? 0); ?></div>
                 </div>
             </div>
         </main>
     </div>
 
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
 

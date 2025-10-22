@@ -1,10 +1,13 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Get Guest Reservations API
  * Hotel PMS - Guest Management Module
  */
 
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+session_start();
 require_once dirname(__DIR__, 2) . '/includes/database.php';
 
 // Check if user is logged in

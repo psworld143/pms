@@ -1,4 +1,9 @@
 <?php
+// Error handling
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 /**
  * Check-in Reservation API
  * Handles guest check-in process for walk-in reservations

@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 require_once '../includes/session-config.php';
 session_start();
 require_once "../config/database.php";

@@ -7,7 +7,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 header('Content-Type: application/json');
 
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+session_start();
 require_once dirname(__DIR__, 2) . '/includes/database.php';
 
 if (!isset($_SESSION['user_id'])) {

@@ -1,10 +1,16 @@
 <?php
+session_start();
+// Error handling
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 /**
  * Get Guest Feedback API
  * Hotel PMS - Guest Management Module
  */
 
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+session_start();
 require_once __DIR__ . '/../config/database.php';
 
 // Check if user is logged in - handle both session and API key authentication

@@ -1,4 +1,10 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
@@ -49,6 +55,7 @@ include '../../includes/sidebar-unified.php';
                                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                     <option value="">Select a guest...</option>
                                     <?php
+session_start();
                                     // Get all guests for dropdown
                                     $guests = getAllGuests();
                                     foreach ($guests as $guest) {
@@ -73,13 +80,15 @@ include '../../includes/sidebar-unified.php';
                                 <div>
                                     <label for="check_in_date" class="block text-sm font-medium text-gray-700 mb-2">Check-in Date *</label>
                                     <input type="date" id="check_in_date" name="check_in_date" required 
-                                           min="<?php echo date('Y-m-d'); ?>"
+                                           min="<?php
+session_start(); echo date('Y-m-d'); ?>"
                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                 </div>
                                 <div>
                                     <label for="check_out_date" class="block text-sm font-medium text-gray-700 mb-2">Check-out Date *</label>
                                     <input type="date" id="check_out_date" name="check_out_date" required 
-                                           min="<?php echo date('Y-m-d', strtotime('+1 day')); ?>"
+                                           min="<?php
+session_start(); echo date('Y-m-d', strtotime('+1 day')); ?>"
                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                 </div>
                                 <div>
@@ -97,11 +106,17 @@ include '../../includes/sidebar-unified.php';
                                     <select id="room_type" name="room_type" required 
                                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
                                         <option value="">Select Room Type</option>
-                                        <?php foreach ($room_types as $type => $info): ?>
-                                        <option value="<?php echo $type; ?>" data-rate="<?php echo $info['rate']; ?>">
-                                            <?php echo $info['name']; ?> - $<?php echo $info['rate']; ?>/night
+                                        <?php
+session_start(); foreach ($room_types as $type => $info): ?>
+                                        <option value="<?php
+session_start(); echo $type; ?>" data-rate="<?php
+session_start(); echo $info['rate']; ?>">
+                                            <?php
+session_start(); echo $info['name']; ?> - $<?php
+session_start(); echo $info['rate']; ?>/night
                                         </option>
-                                        <?php endforeach; ?>
+                                        <?php
+session_start(); endforeach; ?>
                                     </select>
                                 </div>
                                 <div>
@@ -239,4 +254,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+session_start(); include '../../includes/footer.php'; ?>

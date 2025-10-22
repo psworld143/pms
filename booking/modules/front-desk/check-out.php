@@ -1,4 +1,10 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 require_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'vps_session_fix.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'functions.php';
@@ -74,7 +80,8 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Checked-in Guests</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $checked_in_count; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $checked_in_count; ?></p>
                         </div>
                     </div>
                 </div>
@@ -88,7 +95,8 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Check-outs Today</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $checkouts_today; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $checkouts_today; ?></p>
                         </div>
                     </div>
                 </div>
@@ -102,7 +110,8 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Pending Check-outs</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $pending_checkouts; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $pending_checkouts; ?></p>
                         </div>
                     </div>
                 </div>
@@ -116,7 +125,8 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Overdue Check-outs</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $overdue_checkouts; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $overdue_checkouts; ?></p>
                         </div>
                     </div>
                 </div>
@@ -176,7 +186,8 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                 <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                     <h2 class="text-xl font-semibold text-gray-800 mb-4">Currently Checked-in Guests</h2>
                     <div id="checked-in-guests" class="overflow-x-auto">
-                        <?php if (!empty($checked_in_guests)): ?>
+                        <?php
+session_start(); if (!empty($checked_in_guests)): ?>
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -189,74 +200,94 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <?php foreach ($checked_in_guests as $guest): ?>
+                                <?php
+session_start(); foreach ($checked_in_guests as $guest): ?>
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <div class="flex-shrink-0 h-10 w-10">
                                                 <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
                                                     <span class="text-white font-medium">
-                                                        <?php echo strtoupper(substr($guest['guest_name'], 0, 1)); ?>
+                                                        <?php
+session_start(); echo strtoupper(substr($guest['guest_name'], 0, 1)); ?>
                                                     </span>
                                                 </div>
                                             </div>
                                             <div class="ml-4">
                                                 <div class="text-sm font-medium text-gray-900">
-                                                    <?php echo htmlspecialchars($guest['guest_name']); ?>
-                                                    <?php if ($guest['is_vip']): ?>
+                                                    <?php
+session_start(); echo htmlspecialchars($guest['guest_name']); ?>
+                                                    <?php
+session_start(); if ($guest['is_vip']): ?>
                                                         <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                                                             VIP
                                                         </span>
-                                                    <?php endif; ?>
+                                                    <?php
+session_start(); endif; ?>
                                                 </div>
-                                                <div class="text-sm text-gray-500"><?php echo htmlspecialchars($guest['email'] ?? ''); ?></div>
+                                                <div class="text-sm text-gray-500"><?php
+session_start(); echo htmlspecialchars($guest['email'] ?? ''); ?></div>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <?php echo htmlspecialchars($guest['reservation_number']); ?>
+                                        <?php
+session_start(); echo htmlspecialchars($guest['reservation_number']); ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        Room <?php echo htmlspecialchars($guest['room_number']); ?>
+                                        Room <?php
+session_start(); echo htmlspecialchars($guest['room_number']); ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <?php echo date('M j, Y', strtotime($guest['check_out_date'])); ?>
+                                        <?php
+session_start(); echo date('M j, Y', strtotime($guest['check_out_date'])); ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <?php 
+                                        <?php
+session_start(); 
                                         $days_remaining = $guest['days_remaining'];
                                         if ($days_remaining < 0): ?>
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
                                                 Overdue
                                             </span>
-                                        <?php elseif ($days_remaining == 0): ?>
+                                        <?php
+session_start(); elseif ($days_remaining == 0): ?>
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                                 Due Today
                                             </span>
-                                        <?php else: ?>
+                                        <?php
+session_start(); else: ?>
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                <?php echo $days_remaining; ?> day<?php echo $days_remaining != 1 ? 's' : ''; ?> left
+                                                <?php
+session_start(); echo $days_remaining; ?> day<?php
+session_start(); echo $days_remaining != 1 ? 's' : ''; ?> left
                                             </span>
-                                        <?php endif; ?>
+                                        <?php
+session_start(); endif; ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button onclick="startCheckOut(<?php echo $guest['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">
+                                        <button onclick="startCheckOut(<?php
+session_start(); echo $guest['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">
                                             <i class="fas fa-sign-out-alt mr-1"></i>Check Out
                                         </button>
-                                        <button onclick="viewReservationDetails(<?php echo $guest['id']; ?>)" class="text-gray-600 hover:text-gray-900">
+                                        <button onclick="viewReservationDetails(<?php
+session_start(); echo $guest['id']; ?>)" class="text-gray-600 hover:text-gray-900">
                                             <i class="fas fa-eye mr-1"></i>View
                                         </button>
                                     </td>
                                 </tr>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); endforeach; ?>
                             </tbody>
                         </table>
-                        <?php else: ?>
+                        <?php
+session_start(); else: ?>
                         <div class="px-6 py-12 text-center text-gray-500">
                             <i class="fas fa-bed text-4xl mb-4"></i>
                             <p>No checked-in guests found</p>
                         </div>
-                        <?php endif; ?>
+                        <?php
+session_start(); endif; ?>
                     </div>
                 </div>
 
@@ -350,7 +381,8 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
     </div>
 
     <script src="../../assets/js/main.js"></script>
-    <script src="../../assets/js/checkout.js?v=<?php echo time(); ?>"></script>
+    <script src="../../assets/js/checkout.js?v=<?php
+session_start(); echo time(); ?>"></script>
     
     <script>
         // Update current time
@@ -466,4 +498,5 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
         }, 30000);
     </script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+session_start(); include '../../includes/footer.php'; ?>

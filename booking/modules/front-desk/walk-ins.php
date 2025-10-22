@@ -1,12 +1,18 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 /**
  * Walk-in Reservations
  * Hotel PMS Training System for Students
  */
 
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/config/database.php';
-require_once dirname(__DIR__, 2) . '/includes/functions.php';
+session_start();
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
 require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
 
 booking_initialize_paths();
@@ -52,7 +58,8 @@ include dirname(__DIR__, 2) . '/includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Today's Walk-ins</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format(count($todayWalkIns)); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format(count($todayWalkIns)); ?></p>
                         </div>
                     </div>
                 </div>
@@ -66,7 +73,8 @@ include dirname(__DIR__, 2) . '/includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Successful Check-ins</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format(count($successfulCheckins)); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format(count($successfulCheckins)); ?></p>
                         </div>
                     </div>
                 </div>
@@ -80,7 +88,8 @@ include dirname(__DIR__, 2) . '/includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Pending</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format(count($pendingWalkIns)); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format(count($pendingWalkIns)); ?></p>
                         </div>
                     </div>
                 </div>
@@ -94,7 +103,8 @@ include dirname(__DIR__, 2) . '/includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Revenue</p>
-                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($walkInRevenue, 2); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php
+session_start(); echo number_format($walkInRevenue, 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -107,7 +117,8 @@ include dirname(__DIR__, 2) . '/includes/sidebar-unified.php';
                     <h3 class="text-lg font-semibold text-gray-800">Recent Walk-ins</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <?php if (!empty($recentWalkIns)): ?>
+                    <?php
+session_start(); if (!empty($recentWalkIns)): ?>
                     <table class="min-w-full divide-y divide-gray-200">
                         <thead class="bg-gray-50">
                             <tr>
@@ -120,51 +131,69 @@ include dirname(__DIR__, 2) . '/includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <?php foreach ($recentWalkIns as $row): ?>
+                            <?php
+session_start(); foreach ($recentWalkIns as $row): ?>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10">
                                             <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
-                                                <span class="text-white font-medium"><?php echo strtoupper(substr($row['guest_name'],0,2)); ?></span>
+                                                <span class="text-white font-medium"><?php
+session_start(); echo strtoupper(substr($row['guest_name'],0,2)); ?></span>
                                             </div>
                                         </div>
                                         <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($row['guest_name']); ?></div>
-                                            <div class="text-sm text-gray-500"><?php echo htmlspecialchars($row['email'] ?? ''); ?></div>
+                                            <div class="text-sm font-medium text-gray-900"><?php
+session_start(); echo htmlspecialchars($row['guest_name']); ?></div>
+                                            <div class="text-sm text-gray-500"><?php
+session_start(); echo htmlspecialchars($row['email'] ?? ''); ?></div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room <?php echo htmlspecialchars($row['room_number']); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($row['check_in_date']); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($row['check_out_date']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room <?php
+session_start(); echo htmlspecialchars($row['room_number']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+session_start(); echo htmlspecialchars($row['check_in_date']); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+session_start(); echo htmlspecialchars($row['check_out_date']); ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <?php $cls = $row['status']==='checked_in'?'bg-green-100 text-green-800':($row['status']==='pending'?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-800'); ?>
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $cls; ?>"><?php echo htmlspecialchars(getStatusLabel($row['status'])); ?></span>
+                                    <?php
+session_start(); $cls = $row['status']==='checked_in'?'bg-green-100 text-green-800':($row['status']==='pending'?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-800'); ?>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+session_start(); echo $cls; ?>"><?php
+session_start(); echo htmlspecialchars(getStatusLabel($row['status'])); ?></span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button onclick="viewWalkIn(<?php echo $row['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">
+                                    <button onclick="viewWalkIn(<?php
+session_start(); echo $row['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">
                                         <i class="fas fa-eye mr-1"></i>View
                                     </button>
-                                    <?php if (($row['status'] ?? '') !== 'checked_in'): ?>
-                                    <button onclick="checkInWalkIn(<?php echo $row['id']; ?>)" class="text-green-600 hover:text-green-900">
+                                    <?php
+session_start(); if (($row['status'] ?? '') !== 'checked_in'): ?>
+                                    <button onclick="checkInWalkIn(<?php
+session_start(); echo $row['id']; ?>)" class="text-green-600 hover:text-green-900">
                                         <i class="fas fa-sign-in-alt mr-1"></i>Check-in
                                     </button>
-                                    <?php endif; ?>
+                                    <?php
+session_start(); endif; ?>
                                 </td>
                             </tr>
-                            <?php endforeach; ?>
+                            <?php
+session_start(); endforeach; ?>
                         </tbody>
                     </table>
-                    <?php else: ?>
+                    <?php
+session_start(); else: ?>
                         <div class="p-6 text-center text-gray-500">No recent walk-ins.</div>
-                    <?php endif; ?>
+                    <?php
+session_start(); endif; ?>
                 </div>
             </div>
         </main>
 
         <!-- Include footer -->
-        <?php include dirname(__DIR__, 2) . '/includes/footer.php'; ?>
+        <?php
+session_start(); include dirname(__DIR__, 2) . '/includes/footer.php'; ?>
         <script>
         // View walk-in reservation details
         function viewWalkIn(reservationId) {

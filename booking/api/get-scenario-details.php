@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 // Configure session cookie parameters for better compatibility
 session_set_cookie_params([
     'lifetime' => 0,

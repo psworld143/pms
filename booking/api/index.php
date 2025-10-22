@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 /**
  * Booking Module API Index
  * Lists all available API endpoints

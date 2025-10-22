@@ -1,12 +1,15 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Recent Activities API Endpoint
  * Returns recent system activities for analytics dashboard
  */
 
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
-require_once dirname(__DIR__) . '/config/database.php';
-require_once dirname(__DIR__) . '/includes/functions.php';
+session_start();
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json');
 

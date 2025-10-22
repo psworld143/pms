@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'vps_session_fix.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'functions.php';
@@ -80,17 +84,41 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
         <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
         
         <!-- Success/Error Messages -->
-        <?php if ($success_message): ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); if ($success_message): ?>
             <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded">
-                <?php echo htmlspecialchars($success_message); ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($success_message); ?>
             </div>
-        <?php endif; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endif; ?>
         
-        <?php if ($error_message): ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); if ($error_message): ?>
             <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                <?php echo htmlspecialchars($error_message); ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($error_message); ?>
             </div>
-        <?php endif; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endif; ?>
         
         <!-- Statistics Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
@@ -103,7 +131,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Total Guests</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($guest_stats['total_guests'] ?? 0); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($guest_stats['total_guests'] ?? 0); ?></p>
                     </div>
                 </div>
             </div>
@@ -117,7 +149,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">VIP Guests</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($guest_stats['vip_guests'] ?? 0); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($guest_stats['vip_guests'] ?? 0); ?></p>
                     </div>
                 </div>
             </div>
@@ -131,7 +167,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Active Guests</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($guest_stats['active_guests'] ?? 0); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($guest_stats['active_guests'] ?? 0); ?></p>
                     </div>
                 </div>
             </div>
@@ -145,7 +185,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Pending Feedback</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($guest_stats['pending_feedback'] ?? 0); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($guest_stats['pending_feedback'] ?? 0); ?></p>
                     </div>
                 </div>
             </div>
@@ -160,7 +204,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                             <i class="fas fa-search text-gray-400"></i>
                         </div>
                         <input type="text" id="search-input" placeholder="Search guests by name, email, or phone..." 
-                               value="<?php echo htmlspecialchars($search); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($search); ?>"
                                class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-primary focus:border-primary">
                     </div>
                 </div>
@@ -168,15 +216,35 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                 <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4">
                     <select id="vip-filter" onchange="window.location.href='?vip='+this.value" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                         <option value="">All VIP Status</option>
-                        <option value="1" <?php echo $vip_filter === '1' ? 'selected' : ''; ?>>VIP Only</option>
-                        <option value="0" <?php echo $vip_filter === '0' ? 'selected' : ''; ?>>Non-VIP Only</option>
+                        <option value="1" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $vip_filter === '1' ? 'selected' : ''; ?>>VIP Only</option>
+                        <option value="0" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $vip_filter === '0' ? 'selected' : ''; ?>>Non-VIP Only</option>
                     </select>
                     
                     <select id="status-filter" onchange="window.location.href='?status='+this.value" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                         <option value="">All Status</option>
-                        <option value="active" <?php echo $status_filter === 'active' ? 'selected' : ''; ?>>Currently Staying</option>
-                        <option value="recent" <?php echo $status_filter === 'recent' ? 'selected' : ''; ?>>Recent Guests</option>
-                        <option value="frequent" <?php echo $status_filter === 'frequent' ? 'selected' : ''; ?>>Frequent Guests</option>
+                        <option value="active" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $status_filter === 'active' ? 'selected' : ''; ?>>Currently Staying</option>
+                        <option value="recent" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $status_filter === 'recent' ? 'selected' : ''; ?>>Recent Guests</option>
+                        <option value="frequent" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $status_filter === 'frequent' ? 'selected' : ''; ?>>Frequent Guests</option>
                     </select>
                     
                     <button onclick="addNewGuest()" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
@@ -193,12 +261,20 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
             </div>
             
             <div id="guests-table-container">
-                <?php if (empty($guests_data)): ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); if (empty($guests_data)): ?>
                     <div class="px-6 py-12 text-center text-gray-500">
                         <i class="fas fa-users text-4xl mb-4"></i>
                         <p>No guests found</p>
                     </div>
-                <?php else: ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); else: ?>
                     <div class="overflow-x-auto">
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
@@ -212,7 +288,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <?php foreach ($guests_data as $guest): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); foreach ($guests_data as $guest): ?>
                                 <tr class="hover:bg-gray-50">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
@@ -223,53 +303,109 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                                             </div>
                                             <div class="ml-4">
                                                 <div class="text-sm font-medium text-gray-900">
-                                                    <?php echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?>
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?>
                                                 </div>
                                                 <div class="text-sm text-gray-500">
-                                                    ID: <?php echo htmlspecialchars($guest['id_number'] ?? 'N/A'); ?>
+                                                    ID: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['id_number'] ?? 'N/A'); ?>
                                                 </div>
                                             </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm text-gray-900"><?php echo htmlspecialchars($guest['email']); ?></div>
-                                        <div class="text-sm text-gray-500"><?php echo htmlspecialchars($guest['phone']); ?></div>
+                                        <div class="text-sm text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['email']); ?></div>
+                                        <div class="text-sm text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['phone']); ?></div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <?php if ($guest['is_vip']): ?>
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); if ($guest['is_vip']): ?>
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                                                 <i class="fas fa-crown mr-1"></i>
                                                 VIP
                                             </span>
-                                        <?php else: ?>
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); else: ?>
                                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
                                                 Regular
                                             </span>
-                                        <?php endif; ?>
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endif; ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        <?php echo $guest['total_stays']; ?>
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['total_stays']; ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                        ₱<?php echo number_format($guest['total_spent'], 2); ?>
+                                        ₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($guest['total_spent'], 2); ?>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button onclick="viewGuestDetails(<?php echo $guest['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">
+                                        <button onclick="viewGuestDetails(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">
                                             <i class="fas fa-eye"></i>
                                         </button>
-                                        <button onclick="editGuestForm(<?php echo $guest['id']; ?>)" class="text-indigo-600 hover:text-indigo-900 mr-3">
+                                        <button onclick="editGuestForm(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['id']; ?>)" class="text-indigo-600 hover:text-indigo-900 mr-3">
                                             <i class="fas fa-edit"></i>
                                         </button>
-                                        <button onclick="deleteGuestConfirm(<?php echo $guest['id']; ?>)" class="text-red-600 hover:text-red-900">
+                                        <button onclick="deleteGuestConfirm(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['id']; ?>)" class="text-red-600 hover:text-red-900">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </td>
                                 </tr>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endforeach; ?>
                             </tbody>
                         </table>
                     </div>
-                <?php endif; ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endif; ?>
             </div>
         </div>
 
@@ -629,4 +765,8 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
         }
     </script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>

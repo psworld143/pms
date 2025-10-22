@@ -1,5 +1,11 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/booking-paths.php';
@@ -21,7 +27,8 @@ include '../../includes/sidebar-unified.php';
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Staff Scheduling</h2>
                 <div class="text-sm text-gray-600">
-                    <i class="fas fa-calendar-day mr-1"></i><?php echo date('l, F j, Y'); ?>
+                    <i class="fas fa-calendar-day mr-1"></i><?php
+session_start(); echo date('l, F j, Y'); ?>
                 </div>
             </div>
 
@@ -67,7 +74,8 @@ include '../../includes/sidebar-unified.php';
             </div>
         </main>
 
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+session_start(); include '../../includes/footer.php'; ?>
 
         <script>
         document.addEventListener('DOMContentLoaded', ()=>{
@@ -170,5 +178,6 @@ include '../../includes/sidebar-unified.php';
             }catch(e){ box.className='mt-3 text-sm text-red-600'; box.textContent='Error assigning task'; }
         });
         </script>
-<?php // end file ?>
+<?php
+session_start(); // end file ?>
 

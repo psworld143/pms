@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 // Configure session cookie parameters for better compatibility
 session_set_cookie_params([
     'lifetime' => 0,
@@ -98,7 +101,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4 flex-1">
                             <p class="text-sm font-medium text-blue-700">Completed Scenarios</p>
-                            <p class="text-3xl font-bold text-blue-900"><?php echo number_format($training_stats['completed_scenarios'] ?? 0); ?></p>
+                            <p class="text-3xl font-bold text-blue-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($training_stats['completed_scenarios'] ?? 0); ?></p>
                             <p class="text-xs text-blue-600 mt-1">Total completed</p>
                         </div>
                     </div>
@@ -114,7 +120,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4 flex-1">
                             <p class="text-sm font-medium text-green-700">Average Score</p>
-                            <p class="text-3xl font-bold text-green-900"><?php echo number_format($training_stats['average_score'] ?? 0, 1); ?>%</p>
+                            <p class="text-3xl font-bold text-green-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($training_stats['average_score'] ?? 0, 1); ?>%</p>
                             <p class="text-xs text-green-600 mt-1">Overall performance</p>
                         </div>
                     </div>
@@ -130,7 +139,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4 flex-1">
                             <p class="text-sm font-medium text-purple-700">Training Hours</p>
-                            <p class="text-3xl font-bold text-purple-900"><?php echo number_format($training_stats['training_hours'] ?? 0, 1); ?>h</p>
+                            <p class="text-3xl font-bold text-purple-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($training_stats['training_hours'] ?? 0, 1); ?>h</p>
                             <p class="text-xs text-purple-600 mt-1">Time invested</p>
                         </div>
                     </div>
@@ -146,7 +158,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4 flex-1">
                             <p class="text-sm font-medium text-yellow-700">Certificates</p>
-                            <p class="text-3xl font-bold text-yellow-900"><?php echo number_format($training_stats['certificates_earned'] ?? 0); ?></p>
+                            <p class="text-3xl font-bold text-yellow-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($training_stats['certificates_earned'] ?? 0); ?></p>
                             <p class="text-xs text-yellow-600 mt-1">Achievements earned</p>
                         </div>
                     </div>
@@ -166,7 +181,10 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4 flex-1">
                         <p class="text-sm font-medium text-indigo-700">Current Streak</p>
-                        <p class="text-3xl font-bold text-indigo-900"><?php echo number_format($current_streak); ?> days</p>
+                        <p class="text-3xl font-bold text-indigo-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($current_streak); ?> days</p>
                         <p class="text-xs text-indigo-600 mt-1">Consistent training</p>
                     </div>
                 </div>
@@ -182,7 +200,10 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4 flex-1">
                         <p class="text-sm font-medium text-pink-700">Achievement Points</p>
-                        <p class="text-3xl font-bold text-pink-900"><?php echo number_format($achievement_points); ?></p>
+                        <p class="text-3xl font-bold text-pink-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($achievement_points); ?></p>
                         <p class="text-xs text-pink-600 mt-1">Total earned</p>
                     </div>
                 </div>
@@ -198,7 +219,10 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4 flex-1">
                         <p class="text-sm font-medium text-teal-700">Team Rank</p>
-                        <p class="text-3xl font-bold text-teal-900">#<?php echo number_format($team_rank); ?></p>
+                        <p class="text-3xl font-bold text-teal-900">#<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($team_rank); ?></p>
                         <p class="text-xs text-teal-600 mt-1">Among colleagues</p>
                     </div>
                 </div>
@@ -218,6 +242,9 @@ include '../../includes/sidebar-unified.php';
             </div>
             <div id="trivia-content" class="text-gray-700">
                 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
                 $trivia_facts = [
                     "The world's largest hotel is the First World Hotel in Malaysia with 7,351 rooms.",
                     "The Burj Al Arab in Dubai has a helipad on its roof, 210 meters above the ground.",
@@ -282,19 +309,31 @@ include '../../includes/sidebar-unified.php';
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Scenarios Completed</span>
-                        <span class="font-semibold text-green-600"><?php echo number_format($week_completed); ?></span>
+                        <span class="font-semibold text-green-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($week_completed); ?></span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Average Score</span>
-                        <span class="font-semibold text-blue-600"><?php echo number_format($week_avg); ?>%</span>
+                        <span class="font-semibold text-blue-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($week_avg); ?>%</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Time Spent</span>
-                        <span class="font-semibold text-purple-600"><?php echo number_format(round($week_minutes/60,1),1); ?>h</span>
+                        <span class="font-semibold text-purple-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format(round($week_minutes/60,1),1); ?>h</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Streak Days</span>
-                        <span class="font-semibold text-orange-600"><?php echo number_format($current_streak); ?> days</span>
+                        <span class="font-semibold text-orange-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($current_streak); ?> days</span>
                     </div>
                 </div>
             </div>
@@ -306,6 +345,9 @@ include '../../includes/sidebar-unified.php';
                 </h3>
                 <div id="motivation-content" class="text-gray-700">
                     <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
                     $motivational_quotes = [
                         "Excellence is not a skill. It's an attitude. - Ralph Marston",
                         "The only way to do great work is to love what you do. - Steve Jobs",
@@ -655,4 +697,7 @@ include '../../includes/sidebar-unified.php';
         }
     </script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>

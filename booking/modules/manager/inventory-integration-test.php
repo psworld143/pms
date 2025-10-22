@@ -1,10 +1,13 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Inventory Integration Test Page
  * Tests the connection between booking and inventory systems
  */
 
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+session_start();
 require_once '../../../includes/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/booking-paths.php';
@@ -245,6 +248,9 @@ async function testInventoryApi() {
 }
 </script>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
 </body>
 </html>

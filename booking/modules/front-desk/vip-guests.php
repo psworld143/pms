@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
 // Check if user is logged in and has front desk role
@@ -115,7 +119,11 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Total VIP Guests</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $stats['total_vip']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $stats['total_vip']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -126,7 +134,11 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Currently Staying</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $stats['currently_staying']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $stats['currently_staying']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -137,7 +149,11 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Arriving Today</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $stats['arriving_today']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $stats['arriving_today']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -148,7 +164,11 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-600">Special Requests</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $stats['special_requests']; ?></p>
+                            <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $stats['special_requests']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -187,7 +207,11 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <?php if (empty($vip_guests)): ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); if (empty($vip_guests)): ?>
                                 <tr>
                                     <td colspan="6" class="px-6 py-4 text-center text-gray-500">
                                         <i class="fas fa-crown text-2xl mb-2"></i>
@@ -195,27 +219,59 @@ include '../../includes/sidebar-unified.php';
                                         <p class="text-sm">VIP guests will appear here when they are added to the system</p>
                                     </td>
                                 </tr>
-                            <?php else: ?>
-                                <?php foreach ($vip_guests as $guest): ?>
-                                    <tr class="hover:bg-gray-50 vip-guest-row" data-status="<?php echo $guest['current_status']; ?>">
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); else: ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); foreach ($vip_guests as $guest): ?>
+                                    <tr class="hover:bg-gray-50 vip-guest-row" data-status="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['current_status']; ?>">
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center">
                                                 <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
-                                                    <span class="text-white font-medium"><?php echo strtoupper(substr($guest['first_name'], 0, 1) . substr($guest['last_name'], 0, 1)); ?></span>
+                                                    <span class="text-white font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo strtoupper(substr($guest['first_name'], 0, 1) . substr($guest['last_name'], 0, 1)); ?></span>
                                                 </div>
                                                 <div class="ml-4">
-                                                    <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?></div>
-                                                    <div class="text-sm text-gray-500"><?php echo htmlspecialchars($guest['email']); ?></div>
+                                                    <div class="text-sm font-medium text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?></div>
+                                                    <div class="text-sm text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['email']); ?></div>
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="text-sm text-gray-900">
-                                                <?php echo $guest['room_number'] ? htmlspecialchars($guest['room_number']) : 'Not assigned'; ?>
+                                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['room_number'] ? htmlspecialchars($guest['room_number']) : 'Not assigned'; ?>
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
                                             $status_class = '';
                                             $status_text = '';
                                             switch ($guest['current_status']) {
@@ -236,8 +292,16 @@ include '../../includes/sidebar-unified.php';
                                                     $status_text = 'Other';
                                             }
                                             ?>
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php echo $status_class; ?>">
-                                                <?php echo $status_text; ?>
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $status_class; ?>">
+                                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $status_text; ?>
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
@@ -248,25 +312,49 @@ include '../../includes/sidebar-unified.php';
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="text-sm text-gray-900">
-                                                <?php echo $guest['preferences'] ? htmlspecialchars(substr($guest['preferences'], 0, 50) . (strlen($guest['preferences']) > 50 ? '...' : '')) : 'No special requests'; ?>
+                                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['preferences'] ? htmlspecialchars(substr($guest['preferences'], 0, 50) . (strlen($guest['preferences']) > 50 ? '...' : '')) : 'No special requests'; ?>
                                             </span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                             <div class="flex space-x-2">
-                                                <button class="text-blue-600 hover:text-blue-900" onclick="editGuest(<?php echo $guest['id']; ?>)">
+                                                <button class="text-blue-600 hover:text-blue-900" onclick="editGuest(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['id']; ?>)">
                                                     <i class="fas fa-edit"></i>
                                                 </button>
-                                                <button class="text-green-600 hover:text-green-900" onclick="viewGuest(<?php echo $guest['id']; ?>)">
+                                                <button class="text-green-600 hover:text-green-900" onclick="viewGuest(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['id']; ?>)">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
-                                                <button class="text-red-600 hover:text-red-900" onclick="deleteGuest(<?php echo $guest['id']; ?>)">
+                                                <button class="text-red-600 hover:text-red-900" onclick="deleteGuest(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['id']; ?>)">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </div>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -274,7 +362,11 @@ include '../../includes/sidebar-unified.php';
                 <div class="px-6 py-4 border-t border-gray-200">
                     <div class="flex items-center justify-between">
                         <div class="text-sm text-gray-700">
-                            Showing <span class="font-medium"><?php echo count($vip_guests); ?></span> VIP guests
+                            Showing <span class="font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo count($vip_guests); ?></span> VIP guests
                         </div>
                     </div>
                 </div>
@@ -282,7 +374,11 @@ include '../../includes/sidebar-unified.php';
         </main>
     </div>
 
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>
 
     <script>
         // Search functionality

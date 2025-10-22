@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Payment Processing
  * Hotel PMS Training System for Students
@@ -123,8 +126,14 @@ include '../../includes/sidebar-unified.php';
 
             <!-- Payment Methods -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <?php if (!empty($paymentMethods)): ?>
-                    <?php foreach ($paymentMethods as $method): ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (!empty($paymentMethods)): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($paymentMethods as $method): ?>
                         <div class="bg-white rounded-lg shadow p-6">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="text-lg font-semibold text-gray-800"><?= htmlspecialchars($resolvePaymentMethodLabel($method['method'] ?? '')); ?></h3>
@@ -141,12 +150,21 @@ include '../../includes/sidebar-unified.php';
                                 </div>
                             </div>
                         </div>
-                    <?php endforeach; ?>
-                <?php else: ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                     <div class="col-span-1 lg:col-span-3 bg-white rounded-lg shadow p-6 text-center text-gray-500">
                         No payment method data available yet.
                     </div>
-                <?php endif; ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
             </div>
 
             <!-- Process Payment Form -->
@@ -158,20 +176,32 @@ include '../../includes/sidebar-unified.php';
                             <label class="block text-sm font-medium text-gray-700 mb-2">Guest/Invoice</label>
                             <select name="bill_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                                 <option value="">Select Outstanding Bill</option>
-                                <?php foreach ($pendingBills as $bill): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($pendingBills as $bill): ?>
                                     <option value="<?= (int)$bill['id']; ?>">
                                         <?= htmlspecialchars($bill['bill_number']); ?> — <?= htmlspecialchars($bill['guest_name']); ?> (<?= formatCurrency($bill['total_amount']); ?>)
                                     </option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
                             <select name="payment_method" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                                 <option value="">Select Payment Method</option>
-                                <?php foreach ($paymentMethodOptions as $value => $label): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($paymentMethodOptions as $value => $label): ?>
                                     <option value="<?= htmlspecialchars($value); ?>"><?= htmlspecialchars($label); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </select>
                         </div>
                         <div>
@@ -204,7 +234,10 @@ include '../../includes/sidebar-unified.php';
                     <h3 class="text-lg font-semibold text-gray-800">Recent Payments</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <?php if (!empty($recentPayments)): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (!empty($recentPayments)): ?>
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -218,7 +251,10 @@ include '../../includes/sidebar-unified.php';
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <?php foreach ($recentPayments as $payment): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($recentPayments as $payment): ?>
                                     <tr>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"><?= htmlspecialchars($payment['payment_number']); ?></td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -235,18 +271,30 @@ include '../../includes/sidebar-unified.php';
                                             </span>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </tbody>
                         </table>
-                    <?php else: ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                         <div class="p-6 text-center text-gray-500">No payments recorded yet.</div>
-                    <?php endif; ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                 </div>
             </div>
         </main>
 
         <!-- Include footer -->
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
 
         <script>
             document.getElementById('process-payment-form').addEventListener('submit', async function (event) {

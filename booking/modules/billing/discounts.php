@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Discount Management
  * Hotel PMS Training System for Students
@@ -52,7 +55,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Discounts</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($discountMetrics['total_discounts']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($discountMetrics['total_discounts']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -66,7 +72,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Savings</p>
-                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($discountMetrics['total_amount'], 2); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($discountMetrics['total_amount'], 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -80,7 +89,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Avg. Discount</p>
-                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($discountMetrics['average_amount'], 2); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($discountMetrics['average_amount'], 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -94,7 +106,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Types Tracked</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo count($discountMetrics['type_counts']); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo count($discountMetrics['type_counts']); ?></p>
                         </div>
                     </div>
                 </div>
@@ -237,7 +252,10 @@ include '../../includes/sidebar-unified.php';
                     <h3 class="text-lg font-semibold text-gray-800">All Discounts</h3>
                 </div>
                 <div class="overflow-x-auto">
-                    <?php if (!empty($discounts)): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (!empty($discounts)): ?>
                         <table class="min-w-full divide-y divide-gray-200">
                             <thead class="bg-gray-50">
                                 <tr>
@@ -250,7 +268,10 @@ include '../../includes/sidebar-unified.php';
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <?php foreach ($discounts as $d): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($discounts as $d): ?>
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($d['reason'] ?? ($d['description'] ?? 'Discount')); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars(ucfirst($d['discount_type'])); ?></td>
@@ -259,17 +280,29 @@ include '../../includes/sidebar-unified.php';
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($d['guest_name']); ?> (Room <?= htmlspecialchars($d['room_number']); ?>)</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?= htmlspecialchars($d['created_at']); ?></td>
                                 </tr>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                             </tbody>
                         </table>
-                    <?php else: ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                         <div class="p-6 text-center text-gray-500">No discounts found.</div>
-                    <?php endif; ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                 </div>
             </div>
         </main>
 
         <!-- Include footer -->
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
     </body>
 </html>
