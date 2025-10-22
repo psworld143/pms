@@ -54,10 +54,10 @@ try {
     $notes = $input['notes'] ?? '';
     $created_by = $_SESSION['user_id'] ?? null;
     
-    if (!$room_id || !$task_type || !$assigned_to || !$scheduled_time || !$created_by) {
+    if (!$room_id || !$task_type || !$scheduled_time || !$created_by) {
         echo json_encode([
             'success' => false,
-            'message' => 'Missing required fields: room_id, task_type, assigned_to, scheduled_time, and created_by are required'
+            'message' => 'Missing required fields: room_id, task_type, scheduled_time, and created_by are required'
         ]);
         exit();
     }
@@ -82,7 +82,7 @@ try {
     $stmt->execute([
         $room_id,
         $task_type,
-        $assigned_to,
+        $assigned_to ?: null, // Convert empty string to null
         $scheduled_time,
         $notes,
         $created_by

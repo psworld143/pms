@@ -1,8 +1,8 @@
 <?php
 require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
-require_once '../config/database.php';
-require_once '../includes/booking-paths.php';
-require_once '../includes/maintenance-helpers.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/booking-paths.php';
+require_once __DIR__ . '/../includes/maintenance-helpers.php';
 
 booking_initialize_paths();
 

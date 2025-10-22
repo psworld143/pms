@@ -1,5 +1,5 @@
 (function () {
-    const API_BASE = '../api/';
+    const API_BASE = '../../api/';
     const ENDPOINTS = {
         list: API_BASE + 'get-guest-feedback.php',
         stats: API_BASE + 'get-guest-feedback-stats.php'

@@ -9,8 +9,8 @@ class GuestManager {
     }
 
     init() {
-        // Don't load guests automatically since they're loaded in PHP
         this.setupEventListeners();
+        this.loadGuests(); // Load guests on page load
     }
 
     // Load guests
@@ -25,18 +25,21 @@ class GuestManager {
                 this.displayGuests(data.guests);
             } else {
                 console.error('Error loading guests:', data.message);
-                // Don't show error notification since data is already loaded in PHP
+                this.showError('Failed to load guests: ' + data.message);
             }
         } catch (error) {
             console.error('Error loading guests:', error);
-            // Don't show error notification since data is already loaded in PHP
+            this.showError('Failed to load guests. Please try again.');
         }
     }
 
     // Display guests
     displayGuests(guests) {
         const container = document.getElementById('guests-table-container');
-        if (!container) return;
+        if (!container) {
+            console.error('Guest table container not found');
+            return;
+        }
 
         if (guests.length === 0) {
             container.innerHTML = `
@@ -191,6 +194,13 @@ class GuestManager {
         event.preventDefault();
         
         const formData = new FormData(event.target);
+        
+        // Debug: Log all form data
+        console.log('All form data entries:');
+        for (let [key, value] of formData.entries()) {
+            console.log(`${key}: ${value}`);
+        }
+        
         const data = {
             guest_id: formData.get('guest_id'),
             reservation_id: formData.get('reservation_id'),
@@ -200,11 +210,28 @@ class GuestManager {
             comments: formData.get('comments')
         };
 
+        // Debug logging
+        console.log('Feedback form data:', data);
+        console.log('JSON data being sent:', JSON.stringify(data));
+        
+        // Validate required fields
+        if (!data.guest_id) {
+            console.error('Missing guest_id!');
+            this.showNotification('Error: Guest ID is missing', 'error');
+            return;
+        }
+        if (!data.comments) {
+            console.error('Missing comments!');
+            this.showNotification('Error: Comments are required', 'error');
+            return;
+        }
+
         try {
             const response = await fetch('../../api/create-feedback.php', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-API-Key': 'pms_feedback_api_2024'
                 },
                 credentials: 'same-origin',
                 body: JSON.stringify(data)
@@ -212,10 +239,13 @@ class GuestManager {
 
             const result = await response.json();
             
+            console.log('Feedback API response:', result);
+            
             if (result.success) {
                 this.showNotification('Feedback submitted successfully!', 'success');
                 this.closeFeedbackModal();
             } else {
+                console.error('Feedback submission failed:', result);
                 this.showNotification(result.message || 'Error submitting feedback', 'error');
             }
         } catch (error) {
@@ -459,7 +489,14 @@ class GuestManager {
 
     // Add feedback
     addFeedback(guestId) {
-        document.getElementById('feedback_guest_id').value = guestId;
+        console.log('addFeedback called with guestId:', guestId);
+        const guestIdField = document.getElementById('feedback_guest_id');
+        if (guestIdField) {
+            guestIdField.value = guestId;
+            console.log('Set feedback_guest_id to:', guestIdField.value);
+        } else {
+            console.error('feedback_guest_id field not found!');
+        }
         this.showFeedbackModal();
     }
 
@@ -562,6 +599,10 @@ class GuestManager {
             }, 300);
         }, 5000);
     }
+
+    showError(message) {
+        this.showNotification(message, 'error');
+    }
 }
 
 // Global functions
@@ -595,15 +636,41 @@ function closeGuestModal() {
     }
 }
 
+function showGuestModal(guest = null) {
+    if (window.guestManager) {
+        if (guest) {
+            window.guestManager.populateGuestForm(guest);
+        }
+        window.guestManager.showGuestModal();
+    }
+}
+
 function closeGuestDetailsModal() {
     if (window.guestManager) {
         window.guestManager.closeGuestDetailsModal();
+    } else {
+        // Fallback for when guestManager is not available
+        const modal = document.getElementById('guest-details-modal');
+        if (modal) {
+            modal.classList.add('hidden');
+        }
+        // Also remove any dynamically created modals
+        const dynamicModal = document.querySelector('.fixed.inset-0.bg-gray-600');
+        if (dynamicModal) {
+            dynamicModal.remove();
+        }
     }
 }
 
 function closeFeedbackModal() {
     if (window.guestManager) {
         window.guestManager.closeFeedbackModal();
+    }
+}
+
+function loadGuests() {
+    if (window.guestManager) {
+        window.guestManager.loadGuests();
     }
 }
 
@@ -738,13 +805,7 @@ function showGuestDetailsModal(guest) {
     document.body.appendChild(modal);
 }
 
-// Close guest details modal
-function closeGuestDetailsModal() {
-    const modal = document.querySelector('.fixed.inset-0.bg-gray-600');
-    if (modal) {
-        modal.remove();
-    }
-}
+// This function is already defined above, removing duplicate
 
 // Show notification
 function showNotification(message, type = 'info') {
@@ -774,6 +835,5 @@ function showNotification(message, type = 'info') {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
-    // Don't initialize GuestManager to prevent API calls
-    // window.guestManager = new GuestManager();
+    window.guestManager = new GuestManager();
 });

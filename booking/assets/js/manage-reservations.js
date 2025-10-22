@@ -65,12 +65,12 @@ class ReservationManager {
                                     <div class="flex-shrink-0 h-10 w-10">
                                         <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
                                             <span class="text-white font-medium">
-                                                ${reservation.guest_name.charAt(0).toUpperCase()}
+                                                ${(reservation.guest_name || 'G').charAt(0).toUpperCase()}
                                             </span>
                                         </div>
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">${reservation.guest_name}</div>
+                                        <div class="text-sm font-medium text-gray-900">${reservation.guest_name || 'Unknown Guest'}</div>
                                         <div class="text-sm text-gray-500">${reservation.email || ''}</div>
                                     </div>
                                 </div>

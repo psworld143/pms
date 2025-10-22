@@ -60,9 +60,7 @@ try {
     }
     
     // Add GROUP BY and ORDER BY
-    $sql .= " GROUP BY g.id ORDER BY g.created_at DESC LIMIT ? OFFSET ?";
-    $params[] = $per_page;
-    $params[] = $offset;
+    $sql .= " GROUP BY g.id ORDER BY g.created_at DESC LIMIT $per_page OFFSET $offset";
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

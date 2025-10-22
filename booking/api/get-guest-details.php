@@ -56,10 +56,9 @@ try {
             r.status,
             r.total_amount,
             rm.room_number,
-            rt.name as room_type
+            rm.room_type
         FROM reservations r
         LEFT JOIN rooms rm ON r.room_id = rm.id
-        LEFT JOIN room_types rt ON rm.room_type_id = rt.id
         WHERE r.guest_id = ?
         ORDER BY r.check_in_date DESC
         LIMIT 10
@@ -79,14 +78,10 @@ try {
         'is_vip' => (bool)$guest['is_vip'],
         'id_number' => $guest['id_number'],
         'address' => $guest['address'],
-        'city' => $guest['city'],
-        'state' => $guest['state'],
-        'country' => $guest['country'],
-        'postal_code' => $guest['postal_code'],
         'date_of_birth' => $guest['date_of_birth'],
         'nationality' => $guest['nationality'],
         'preferences' => $guest['preferences'],
-        'notes' => $guest['notes'],
+        'service_notes' => $guest['service_notes'],
         'created_at' => $guest['created_at'],
         'total_stays' => (int)$guest['total_stays'],
         'last_visit' => $guest['last_visit'],

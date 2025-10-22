@@ -4,7 +4,26 @@
  */
 
 require_once __DIR__ . '/../vps_session_fix.php';
-require_once __DIR__ . '/../includes/database.php';
+
+// Database connection with error handling
+try {
+    require_once __DIR__ . '/../includes/database.php';
+    
+    // Test the connection
+    if (!isset($pdo) || !$pdo) {
+        throw new Exception('Database connection not established');
+    }
+    
+    // Test query to ensure connection works
+    $testQuery = $pdo->query('SELECT 1');
+    if (!$testQuery) {
+        throw new Exception('Database test query failed');
+    }
+    
+} catch (Exception $e) {
+    error_log('Database connection error in auto-reordering.php: ' . $e->getMessage());
+    die('Database connection failed: ' . $e->getMessage());
+}
 
 if (!isset($_SESSION['user_id']) || (($_SESSION['user_role'] ?? '') !== 'manager')) {
     header('Location: login.php?error=access_denied');

@@ -21,21 +21,21 @@ try {
     $next_month = date('Y-m-01', strtotime('+1 month'));
 
     // Monthly revenue (paid)
-    $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) AS rev FROM billing WHERE payment_status='paid' AND created_at >= ? AND created_at < ?");
+    $stmt = $pdo->prepare("SELECT COALESCE(SUM(total_amount),0) AS rev FROM bills WHERE status='paid' AND created_at >= ? AND created_at < ?");
     $stmt->execute([$first_day, $next_month]);
     $monthly_revenue = (float)$stmt->fetch()['rev'];
 
-    // Outstanding balance (pending or partial)
-    $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount - (CASE WHEN payment_status='paid' THEN total_amount ELSE 0 END)),0) AS outstanding FROM billing WHERE payment_status IN ('pending','partial')");
+    // Outstanding balance (pending or overdue)
+    $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount),0) AS outstanding FROM bills WHERE status IN ('pending','overdue')");
     $outstanding_balance = (float)$stmt->fetch()['outstanding'];
 
     // Paid transactions count this month
-    $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt FROM billing WHERE payment_status='paid' AND created_at >= ? AND created_at < ?");
+    $stmt = $pdo->prepare("SELECT COUNT(*) AS cnt FROM bills WHERE status='paid' AND created_at >= ? AND created_at < ?");
     $stmt->execute([$first_day, $next_month]);
     $paid_tx_count = (int)$stmt->fetch()['cnt'];
 
     // Unpaid bills count
-    $stmt = $pdo->query("SELECT COUNT(*) AS cnt FROM billing WHERE payment_status != 'paid'");
+    $stmt = $pdo->query("SELECT COUNT(*) AS cnt FROM bills WHERE status != 'paid'");
     $unpaid_bills = (int)$stmt->fetch()['cnt'];
 } catch (Exception $e) {
     error_log('Financial KPI error: ' . $e->getMessage());
@@ -163,10 +163,10 @@ include '../../includes/sidebar-unified.php';
                 new Chart(ctx, {
                     type: 'line',
                     data: {
-                        labels: data.data.map(i => new Date(i.date).toLocaleDateString()),
+                        labels: data.data.daily.map(i => new Date(i.date).toLocaleDateString()),
                         datasets: [{
                             label: 'Revenue',
-                            data: data.data.map(i => i.revenue),
+                            data: data.data.daily.map(i => i.daily_revenue || i.revenue || 0),
                             borderColor: 'rgb(59,130,246)',
                             backgroundColor: 'rgba(59,130,246,0.1)',
                             tension: 0.4,
@@ -176,8 +176,8 @@ include '../../includes/sidebar-unified.php';
                     options: { responsive: true, maintainAspectRatio: false }
                 });
                 document.getElementById('collectionsSummary').innerHTML = `
-                    <li><strong>Monthly Total:</strong> ₱${Number(data.monthly_total||0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</li>
-                    <li><strong>Transactions:</strong> ${data.monthly_transactions||0}</li>
+                    <li><strong>Monthly Total:</strong> ₱${Number(data.data?.monthly?.[0]?.monthly_revenue||0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</li>
+                    <li><strong>Transactions:</strong> ${data.data?.monthly?.[0]?.transaction_count||0}</li>
                 `;
             } catch (e) {
                 document.getElementById('revLoading').innerHTML = '<div class="text-red-500">Error loading chart</div>';
@@ -202,7 +202,7 @@ include '../../includes/sidebar-unified.php';
                                     <tr class="border-t">
                                         <td class="px-3 py-2">#${b.reservation_id}</td>
                                         <td class="px-3 py-2">₱${Number(b.total_amount||0).toLocaleString(undefined,{minimumFractionDigits:2, maximumFractionDigits:2})}</td>
-                                        <td class="px-3 py-2"><span class="px-2 py-1 rounded text-xs ${b.payment_status==='paid'?'bg-green-100 text-green-700':(b.payment_status==='partial'?'bg-yellow-100 text-yellow-700':'bg-red-100 text-red-700')}">${b.payment_status||'pending'}</span></td>
+                                        <td class="px-3 py-2"><span class="px-2 py-1 rounded text-xs ${b.status==='paid'?'bg-green-100 text-green-700':(b.status==='overdue'?'bg-yellow-100 text-yellow-700':'bg-red-100 text-red-700')}">${b.status||'pending'}</span></td>
                                     </tr>
                                 `).join('')}
                             </tbody>

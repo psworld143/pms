@@ -73,8 +73,8 @@ function getMaintenanceRequests(array $options = []): array
             u_assigned.name AS assigned_to_name,
             mr.created_at,
             mr.updated_at,
-            mr.completed_at,
-            mr.notes
+            mr.updated_at as completed_at,
+            '' as notes
         FROM maintenance_requests mr
         LEFT JOIN rooms r ON mr.room_id = r.id
         LEFT JOIN users u_reporter ON mr.reported_by = u_reporter.id
@@ -201,7 +201,7 @@ function getMaintenanceSummary(): array
         $stmt = $pdo->query("SELECT COUNT(*) FROM maintenance_requests WHERE priority = 'urgent' AND status != 'completed'");
         $summary['urgent'] = (int)($stmt->fetchColumn() ?: 0);
 
-        $stmt = $pdo->query("SELECT AVG(TIMESTAMPDIFF(MINUTE, created_at, completed_at)) FROM maintenance_requests WHERE status = 'completed' AND completed_at IS NOT NULL");
+        $stmt = $pdo->query("SELECT AVG(TIMESTAMPDIFF(MINUTE, created_at, updated_at)) FROM maintenance_requests WHERE status = 'completed' AND updated_at > created_at");
         $summary['average_completion_minutes'] = (float)round($stmt->fetchColumn() ?: 0, 1);
     } catch (PDOException $e) {
         error_log('Maintenance summary error: ' . $e->getMessage());
@@ -251,7 +251,7 @@ function updateMaintenanceRequest(int $requestId, array $data): array
 
     $fields[] = 'updated_at = NOW()';
     if (!empty($data['status']) && $data['status'] === 'completed') {
-        $fields[] = 'completed_at = NOW()';
+        $fields[] = 'updated_at = NOW()';
     }
 
     $sql = 'UPDATE maintenance_requests SET ' . implode(', ', $fields) . ' WHERE id = :id';

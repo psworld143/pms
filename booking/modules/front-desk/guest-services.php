@@ -148,6 +148,23 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
+            <!-- Service Request Details Modal -->
+            <div id="service-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+                <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                    <div class="px-6 py-4 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-800">Service Request Details</h3>
+                            <button onclick="closeServiceDetailsModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div id="service-details-content" class="p-6">
+                        <!-- Content will be loaded dynamically -->
+                    </div>
+                </div>
+            </div>
+
             <!-- Service Request Modal -->
             <div id="service-request-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
                 <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -270,10 +287,160 @@ include '../../includes/sidebar-unified.php';
                     const res = await fetch(`../../api/get-service-request.php?id=${id}`);
                     const data = await res.json();
                     if (!data.success) throw new Error(data.message || 'Failed');
-                    alert(`Request #${data.request.id}\nRoom: ${data.request.room_number}\nType: ${data.request.issue_type}\nPriority: ${data.request.priority}\nStatus: ${data.request.status}\n\nDescription:\n${data.request.description}`);
+                    
+                    // Display in beautiful modal
+                    displayServiceRequestDetails(data.request);
                 } catch (e) {
-                    alert('Unable to load service request details.');
+                    showNotification('Unable to load service request details.', 'error');
                 }
+            }
+            
+            function displayServiceRequestDetails(request) {
+                const content = document.getElementById('service-details-content');
+                
+                const statusColors = {
+                    'reported': 'bg-yellow-100 text-yellow-800',
+                    'assigned': 'bg-blue-100 text-blue-800', 
+                    'in_progress': 'bg-purple-100 text-purple-800',
+                    'completed': 'bg-green-100 text-green-800',
+                    'verified': 'bg-gray-100 text-gray-800'
+                };
+                
+                const priorityColors = {
+                    'low': 'bg-gray-100 text-gray-800',
+                    'medium': 'bg-yellow-100 text-yellow-800',
+                    'high': 'bg-orange-100 text-orange-800',
+                    'urgent': 'bg-red-100 text-red-800'
+                };
+                
+                const issueTypeLabels = {
+                    'plumbing': 'Plumbing',
+                    'electrical': 'Electrical',
+                    'hvac': 'HVAC',
+                    'furniture': 'Furniture',
+                    'appliance': 'Appliance',
+                    'other': 'Other'
+                };
+                
+                content.innerHTML = `
+                    <div class="space-y-6">
+                        <!-- Header Info -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-sm font-medium text-gray-500 mb-2">Request ID</h4>
+                                <p class="text-lg font-semibold text-gray-900">#${request.id}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-sm font-medium text-gray-500 mb-2">Room</h4>
+                                <p class="text-lg font-semibold text-gray-900">Room ${request.room_number}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-sm font-medium text-gray-500 mb-2">Created</h4>
+                                <p class="text-lg font-semibold text-gray-900">${new Date(request.created_at).toLocaleDateString()}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Status and Priority -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-sm font-medium text-gray-500 mb-2">Status</h4>
+                                <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full ${statusColors[request.status] || 'bg-gray-100 text-gray-800'}">
+                                    ${request.status.replace('_', ' ').toUpperCase()}
+                                </span>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-sm font-medium text-gray-500 mb-2">Priority</h4>
+                                <span class="inline-flex px-3 py-1 text-sm font-semibold rounded-full ${priorityColors[request.priority] || 'bg-gray-100 text-gray-800'}">
+                                    ${request.priority.toUpperCase()}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <!-- Service Details -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-sm font-medium text-gray-500 mb-2">Service Type</h4>
+                                <p class="text-lg font-semibold text-gray-900">${issueTypeLabels[request.issue_type] || request.issue_type}</p>
+                            </div>
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="text-sm font-medium text-gray-500 mb-2">Reported By</h4>
+                                <p class="text-lg font-semibold text-gray-900">${request.reported_by_name || 'System'}</p>
+                            </div>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Description</h4>
+                            <p class="text-gray-900 whitespace-pre-wrap">${request.description || 'No description provided'}</p>
+                        </div>
+                        
+                        <!-- Guest Information (if available) -->
+                        ${request.guest_name ? `
+                        <div class="bg-blue-50 p-4 rounded-lg">
+                            <h4 class="text-sm font-medium text-blue-700 mb-2">Guest Information</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <p class="text-sm text-blue-600">Guest Name</p>
+                                    <p class="font-semibold text-blue-900">${request.guest_name}</p>
+                                </div>
+                                ${request.guest_phone ? `
+                                <div>
+                                    <p class="text-sm text-blue-600">Phone</p>
+                                    <p class="font-semibold text-blue-900">${request.guest_phone}</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Cost Information (if available) -->
+                        ${request.estimated_cost || request.actual_cost ? `
+                        <div class="bg-green-50 p-4 rounded-lg">
+                            <h4 class="text-sm font-medium text-green-700 mb-2">Cost Information</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                ${request.estimated_cost ? `
+                                <div>
+                                    <p class="text-sm text-green-600">Estimated Cost</p>
+                                    <p class="font-semibold text-green-900">$${parseFloat(request.estimated_cost).toFixed(2)}</p>
+                                </div>
+                                ` : ''}
+                                ${request.actual_cost ? `
+                                <div>
+                                    <p class="text-sm text-green-600">Actual Cost</p>
+                                    <p class="font-semibold text-green-900">$${parseFloat(request.actual_cost).toFixed(2)}</p>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                        ` : ''}
+                        
+                        <!-- Timeline -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <h4 class="text-sm font-medium text-gray-500 mb-2">Timeline</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Created:</span>
+                                    <span class="text-sm font-medium text-gray-900">${new Date(request.created_at).toLocaleString()}</span>
+                                </div>
+                                ${request.updated_at && request.updated_at !== request.created_at ? `
+                                <div class="flex justify-between">
+                                    <span class="text-sm text-gray-600">Last Updated:</span>
+                                    <span class="text-sm font-medium text-gray-900">${new Date(request.updated_at).toLocaleString()}</span>
+                                </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Show the modal
+                document.getElementById('service-details-modal').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+            }
+            
+            function closeServiceDetailsModal() {
+                document.getElementById('service-details-modal').classList.add('hidden');
+                document.body.style.overflow = 'auto';
             }
             async function completeServiceRequest(id) {
                 if (!confirm('Mark this service request as completed?')) return;
@@ -290,6 +457,22 @@ include '../../includes/sidebar-unified.php';
         <?php include '../../includes/footer.php'; ?>
 
         <script>
+        // Suppress classifier.js shader errors
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('Failed to link vertex and fragment shaders')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Suppress unhandled promise rejections from classifier.js
+        window.addEventListener('unhandledrejection', function(e) {
+            if (e.reason && e.reason.message && e.reason.message.includes('Failed to link vertex and fragment shaders')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
         document.addEventListener('DOMContentLoaded', function() {
             loadRooms();
             initializeServiceRequestForm();
@@ -306,7 +489,7 @@ include '../../includes/sidebar-unified.php';
                         data.rooms.forEach(room => {
                             const option = document.createElement('option');
                             option.value = room.id;
-                            option.textContent = `Room ${room.room_number} - ${room.room_type_name}`;
+                            option.textContent = `Room ${room.room_number} - ${room.room_type || 'Standard'}`;
                             roomSelect.appendChild(option);
                         });
                     }

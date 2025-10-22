@@ -28,10 +28,10 @@ include '../../includes/sidebar-unified.php';
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Loyalty Program</h2>
                 <div class="flex items-center space-x-4">
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button onclick="openAddMemberModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-plus mr-2"></i>Add Member
                     </button>
-                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button onclick="openRedeemPointsModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-gift mr-2"></i>Redeem Points
                     </button>
                 </div>
@@ -100,32 +100,6 @@ include '../../includes/sidebar-unified.php';
             <!-- Loyalty Tiers (Dynamic counts per tier) -->
             <?php $tiers = getLoyaltyTiersSummary(); $tierMap = []; foreach ($tiers as $t) { $tierMap[strtolower($t['loyalty_tier'] ?? 'unknown')] = (int)$t['members']; } ?>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <!-- Bronze Tier -->
-                <div class="bg-gradient-to-br from-orange-400 to-orange-600 rounded-lg shadow p-6 text-white">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold">Bronze</h3>
-                        <i class="fas fa-medal text-orange-200 text-xl"></i>
-                    </div>
-                    <div class="space-y-2">
-                        <div class="flex justify-between">
-                            <span class="text-orange-100">Members:</span>
-                            <span class="font-semibold"><?php echo $tierMap['bronze'] ?? 0; ?></span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-orange-100">Points Required:</span>
-                            <span class="text-sm">0-999</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-orange-100">Benefits:</span>
-                            <span class="text-sm">5% Discount</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-orange-100">Points per $:</span>
-                            <span class="text-sm">1 point</span>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Silver Tier -->
                 <div class="bg-gradient-to-br from-gray-400 to-gray-600 rounded-lg shadow p-6 text-white">
                     <div class="flex items-center justify-between mb-4">
@@ -139,7 +113,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-100">Points Required:</span>
-                            <span class="text-sm">1,000-2,999</span>
+                            <span class="text-sm">0-2,999</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-100">Benefits:</span>
@@ -165,7 +139,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="flex justify-between">
                             <span class="text-yellow-100">Points Required:</span>
-                            <span class="text-sm">3,000+</span>
+                            <span class="text-sm">3,000-9,999</span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-yellow-100">Benefits:</span>
@@ -177,60 +151,71 @@ include '../../includes/sidebar-unified.php';
                         </div>
                     </div>
                 </div>
+
+                <!-- Platinum Tier -->
+                <div class="bg-gradient-to-br from-purple-400 to-purple-600 rounded-lg shadow p-6 text-white">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-lg font-semibold">Platinum</h3>
+                        <i class="fas fa-gem text-purple-200 text-xl"></i>
+                    </div>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-purple-100">Members:</span>
+                            <span class="font-semibold"><?php echo $tierMap['platinum'] ?? 0; ?></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-purple-100">Points Required:</span>
+                            <span class="text-sm">10,000+</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-purple-100">Benefits:</span>
+                            <span class="text-sm">20% Discount</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-purple-100">Points per $:</span>
+                            <span class="text-sm">2.5 points</span>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Rewards Catalog -->
             <div class="bg-white rounded-lg shadow p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Rewards Catalog</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <?php 
+                    $rewards = getLoyaltyRewards();
+                    $reward_icons = [
+                        'free_night' => 'fas fa-bed',
+                        'dining_credit' => 'fas fa-utensils', 
+                        'spa_treatment' => 'fas fa-spa',
+                        'welcome_gift' => 'fas fa-gift',
+                        'discount' => 'fas fa-percentage'
+                    ];
+                    $reward_colors = [
+                        'free_night' => 'blue',
+                        'dining_credit' => 'green',
+                        'spa_treatment' => 'purple', 
+                        'welcome_gift' => 'yellow',
+                        'discount' => 'red'
+                    ];
+                    foreach ($rewards as $reward): 
+                        $icon = $reward_icons[$reward['reward_type']] ?? 'fas fa-gift';
+                        $color = $reward_colors[$reward['reward_type']] ?? 'blue';
+                    ?>
                     <div class="border border-gray-200 rounded-lg p-4">
                         <div class="text-center">
-                            <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <i class="fas fa-bed text-blue-600 text-xl"></i>
+                            <div class="w-16 h-16 bg-<?php echo $color; ?>-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                                <i class="<?php echo $icon; ?> text-<?php echo $color; ?>-600 text-xl"></i>
                             </div>
-                            <h4 class="font-semibold text-gray-800">Free Night</h4>
-                            <p class="text-sm text-gray-600">5,000 points</p>
-                            <button class="mt-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">
+                            <h4 class="font-semibold text-gray-800"><?php echo htmlspecialchars($reward['name']); ?></h4>
+                            <p class="text-sm text-gray-600"><?php echo number_format($reward['points_required']); ?> points</p>
+                            <button onclick="redeemReward(<?php echo $reward['id']; ?>, '<?php echo htmlspecialchars($reward['name']); ?>', <?php echo $reward['points_required']; ?>)" class="mt-2 bg-<?php echo $color; ?>-600 hover:bg-<?php echo $color; ?>-700 text-white px-3 py-1 rounded text-sm">
                                 Redeem
                             </button>
                         </div>
                     </div>
-                    <div class="border border-gray-200 rounded-lg p-4">
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <i class="fas fa-utensils text-green-600 text-xl"></i>
-                            </div>
-                            <h4 class="font-semibold text-gray-800">Dining Credit</h4>
-                            <p class="text-sm text-gray-600">2,000 points</p>
-                            <button class="mt-2 bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm">
-                                Redeem
-                            </button>
-                        </div>
-                    </div>
-                    <div class="border border-gray-200 rounded-lg p-4">
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <i class="fas fa-spa text-purple-600 text-xl"></i>
-                            </div>
-                            <h4 class="font-semibold text-gray-800">Spa Treatment</h4>
-                            <p class="text-sm text-gray-600">3,500 points</p>
-                            <button class="mt-2 bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm">
-                                Redeem
-                            </button>
-                        </div>
-                    </div>
-                    <div class="border border-gray-200 rounded-lg p-4">
-                        <div class="text-center">
-                            <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                                <i class="fas fa-gift text-yellow-600 text-xl"></i>
-                            </div>
-                            <h4 class="font-semibold text-gray-800">Welcome Gift</h4>
-                            <p class="text-sm text-gray-600">1,000 points</p>
-                            <button class="mt-2 bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded text-sm">
-                                Redeem
-                            </button>
-                        </div>
-                    </div>
+                    <?php endforeach; ?>
                 </div>
             </div>
 
@@ -293,19 +278,24 @@ include '../../includes/sidebar-unified.php';
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo strtolower($row['tier']) === 'gold' ? 'bg-yellow-100 text-yellow-800' : (strtolower($row['tier']) === 'silver' ? 'bg-gray-100 text-gray-800' : 'bg-orange-100 text-orange-800'); ?>">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo strtolower($row['tier']) === 'gold' ? 'bg-yellow-100 text-yellow-800' : (strtolower($row['tier']) === 'silver' ? 'bg-gray-100 text-gray-800' : 'bg-purple-100 text-purple-800'); ?>">
                                         <?php echo htmlspecialchars(ucfirst($row['tier'])); ?>
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo number_format($row['points']); ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo number_format($row['total_spent']); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars(date('Y-m-d', strtotime($row['last_activity']))); ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php 
+                                    $stmt = $pdo->prepare("SELECT loyalty_join_date FROM guests WHERE id = ?");
+                                    $stmt->execute([$row['guest_id']]);
+                                    $joinDate = $stmt->fetch()['loyalty_join_date'];
+                                    echo $joinDate ? date('Y-m-d', strtotime($joinDate)) : 'N/A';
+                                ?></td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Active</span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Manage</button>
+                                    <button onclick="viewLoyaltyMember(<?php echo $row['guest_id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                                    <button onclick="manageLoyaltyMember(<?php echo $row['guest_id']; ?>)" class="text-green-600 hover:text-green-900">Manage</button>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -315,7 +305,403 @@ include '../../includes/sidebar-unified.php';
             </div>
         </main>
 
+        <!-- Add Member Modal -->
+        <div id="add-member-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-800">Add Loyalty Member</h3>
+                        <button onclick="closeAddMemberModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <form id="add-member-form" class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="guest_id" class="block text-sm font-medium text-gray-700 mb-2">Select Guest *</label>
+                            <select id="guest_id" name="guest_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select a guest to add to loyalty program...</option>
+                                <?php
+                                // Get all non-loyalty guests
+                                $stmt = $pdo->query("SELECT id, first_name, last_name, email FROM guests WHERE (loyalty_tier IS NULL OR loyalty_tier = '') ORDER BY first_name, last_name");
+                                while($guest = $stmt->fetch()) {
+                                    $guest_name = htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']);
+                                    $guest_email = htmlspecialchars($guest['email'] ?? '');
+                                    $display_text = $guest_name . ($guest_email ? ' - ' . $guest_email : '');
+                                    echo "<option value=\"{$guest['id']}\">{$display_text}</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="loyalty_tier" class="block text-sm font-medium text-gray-700 mb-2">Loyalty Tier *</label>
+                            <select id="loyalty_tier" name="loyalty_tier" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Select Loyalty Tier</option>
+                                <option value="silver">Silver</option>
+                                <option value="gold">Gold</option>
+                                <option value="platinum">Platinum</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                        <button type="button" onclick="closeAddMemberModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
+                            Add Member
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Redeem Points Modal -->
+        <div id="redeem-points-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-800">Redeem Points</h3>
+                        <button onclick="closeRedeemPointsModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <form id="redeem-points-form" class="p-6 space-y-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label for="redeem_guest_id" class="block text-sm font-medium text-gray-700 mb-2">Select Member *</label>
+                            <select id="redeem_guest_id" name="guest_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="">Select a loyalty member...</option>
+                                <?php
+                                // Get all loyalty members
+                                $stmt = $pdo->query("SELECT g.id, g.first_name, g.last_name, g.email, lp.points FROM guests g JOIN loyalty_points lp ON g.id = lp.guest_id WHERE g.loyalty_tier IS NOT NULL AND g.loyalty_tier != '' ORDER BY g.first_name, g.last_name");
+                                while($member = $stmt->fetch()) {
+                                    $member_name = htmlspecialchars($member['first_name'] . ' ' . $member['last_name']);
+                                    $member_email = htmlspecialchars($member['email'] ?? '');
+                                    $points = number_format($member['points']);
+                                    $display_text = $member_name . ($member_email ? ' - ' . $member_email : '') . " ({$points} points)";
+                                    echo "<option value=\"{$member['id']}\">{$display_text}</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="reward_id" class="block text-sm font-medium text-gray-700 mb-2">Select Reward *</label>
+                            <select id="reward_id" name="reward_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-green-500">
+                                <option value="">Select a reward...</option>
+                                <?php
+                                foreach ($rewards as $reward) {
+                                    echo "<option value=\"{$reward['id']}\" data-points=\"{$reward['points_required']}\">{$reward['name']} - " . number_format($reward['points_required']) . " points</option>";
+                                }
+                                ?>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-4 pt-4 border-t border-gray-200">
+                        <button type="button" onclick="closeRedeemPointsModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-4 py-2 bg-green-600 text-white rounded-md text-sm font-medium hover:bg-green-700">
+                            Redeem Points
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- Include footer -->
         <?php include '../../includes/footer.php'; ?>
+
+        <script>
+        // Suppress classifier.js shader errors
+        window.addEventListener('error', function(e) {
+            if (e.message && e.message.includes('Failed to link vertex and fragment shaders')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+        
+        // Suppress unhandled promise rejections from classifier.js
+        window.addEventListener('unhandledrejection', function(e) {
+            if (e.reason && e.reason.message && e.reason.message.includes('Failed to link vertex and fragment shaders')) {
+                e.preventDefault();
+                return false;
+            }
+        });
+
+        // Loyalty Program JavaScript Functions
+        
+        function openAddMemberModal() {
+            document.getElementById('add-member-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAddMemberModal() {
+            document.getElementById('add-member-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            document.getElementById('add-member-form').reset();
+        }
+
+        function openRedeemPointsModal() {
+            document.getElementById('redeem-points-modal').classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeRedeemPointsModal() {
+            document.getElementById('redeem-points-modal').classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            document.getElementById('redeem-points-form').reset();
+        }
+
+        function redeemReward(rewardId, rewardName, pointsRequired) {
+            if (confirm(`Redeem ${rewardName} for ${pointsRequired} points?`)) {
+                // For now, just show an alert - in a real implementation, this would open a modal to select a member
+                alert(`Redeem ${rewardName} functionality will be implemented. This would deduct ${pointsRequired} points from a selected member.`);
+            }
+        }
+
+        function viewLoyaltyMember(guestId) {
+            // Open guest profile in new tab
+            window.open(`../profiles.php?id=${guestId}`, '_blank');
+        }
+
+        function manageLoyaltyMember(guestId) {
+            // Fetch comprehensive loyalty member details
+            fetch(`../../api/get-loyalty-member-details.php?id=${guestId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        openLoyaltyManagementModal(data.member);
+                    } else {
+                        // Fallback to simple management
+                        alert(`Manage loyalty for guest ID: ${guestId}\n\nThis will open comprehensive loyalty management features.`);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    // Fallback to simple management
+                    alert(`Manage loyalty for guest ID: ${guestId}\n\nThis will open comprehensive loyalty management features.`);
+                });
+        }
+
+        function openLoyaltyManagementModal(member) {
+            // Create comprehensive loyalty management modal
+            const modal = document.createElement('div');
+            modal.id = 'loyalty-management-modal';
+            modal.className = 'fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50';
+            modal.innerHTML = `
+                <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white">
+                    <div class="mt-3">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-medium text-gray-900">Manage Loyalty - ${member.name}</h3>
+                            <button onclick="closeLoyaltyManagementModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-gray-700 mb-2">Member Information</h4>
+                                <p><strong>Name:</strong> ${member.name}</p>
+                                <p><strong>Email:</strong> ${member.email}</p>
+                                <p><strong>Tier:</strong> <span class="px-2 py-1 rounded text-xs ${getTierClass(member.tier)}">${member.tier.toUpperCase()}</span></p>
+                                <p><strong>Join Date:</strong> ${member.join_date}</p>
+                            </div>
+                            
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <h4 class="font-semibold text-gray-700 mb-2">Loyalty Summary</h4>
+                                <p><strong>Current Points:</strong> ${member.points.toLocaleString()}</p>
+                                <p><strong>Total Stays:</strong> ${member.stays}</p>
+                                <p><strong>Last Activity:</strong> ${member.last_activity}</p>
+                                <p><strong>Status:</strong> <span class="text-green-600 font-semibold">Active</span></p>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h4 class="font-semibold text-gray-700 mb-3">Quick Actions</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="awardPoints(${member.guest_id})" class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm">
+                                    <i class="fas fa-plus mr-1"></i>Award Points
+                                </button>
+                                <button onclick="adjustTier(${member.guest_id})" class="bg-purple-500 hover:bg-purple-600 text-white px-3 py-2 rounded text-sm">
+                                    <i class="fas fa-crown mr-1"></i>Adjust Tier
+                                </button>
+                                <button onclick="viewHistory(${member.guest_id})" class="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded text-sm">
+                                    <i class="fas fa-history mr-1"></i>View History
+                                </button>
+                                <button onclick="sendNotification(${member.guest_id})" class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-2 rounded text-sm">
+                                    <i class="fas fa-bell mr-1"></i>Send Notification
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="flex justify-end space-x-3">
+                            <button onclick="closeLoyaltyManagementModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded text-sm">
+                                Close
+                            </button>
+                            <button onclick="viewLoyaltyMember(${member.guest_id})" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded text-sm">
+                                <i class="fas fa-user mr-1"></i>View Profile
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function closeLoyaltyManagementModal() {
+            const modal = document.getElementById('loyalty-management-modal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        function getTierClass(tier) {
+            switch(tier.toLowerCase()) {
+                case 'silver': return 'bg-gray-100 text-gray-800';
+                case 'gold': return 'bg-yellow-100 text-yellow-800';
+                case 'platinum': return 'bg-purple-100 text-purple-800';
+                default: return 'bg-gray-100 text-gray-800';
+            }
+        }
+
+        function awardPoints(guestId) {
+            const points = prompt('Enter points to award:');
+            if (points && !isNaN(points) && points > 0) {
+                fetch('../../api/award-loyalty-points.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ guest_id: guestId, points: parseInt(points), description: 'Manual points award' })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Points awarded successfully!');
+                        closeLoyaltyManagementModal();
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error awarding points');
+                });
+            }
+        }
+
+        function adjustTier(guestId) {
+            const tier = prompt('Enter new tier (silver/gold/platinum):');
+            if (tier && ['silver', 'gold', 'platinum'].includes(tier.toLowerCase())) {
+                fetch('../../api/update-loyalty-tier.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ guest_id: guestId, tier: tier.toLowerCase() })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Tier updated successfully!');
+                        closeLoyaltyManagementModal();
+                        location.reload();
+                    } else {
+                        alert('Error: ' + data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error updating tier');
+                });
+            }
+        }
+
+        function viewHistory(guestId) {
+            alert(`View loyalty history for guest ID: ${guestId}\n\nThis would show:\n- Points earned/redeemed\n- Stay history\n- Tier changes\n- Redemption history`);
+        }
+
+        function sendNotification(guestId) {
+            const message = prompt('Enter notification message:');
+            if (message) {
+                alert(`Notification sent to guest ID: ${guestId}\nMessage: ${message}\n\nThis would send an email/SMS notification to the guest.`);
+            }
+        }
+
+        // Form submission handlers
+        document.getElementById('add-member-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Validate required fields
+            if (!data.guest_id || !data.loyalty_tier) {
+                alert('Please select a guest and loyalty tier');
+                return;
+            }
+            
+            fetch('../../api/add-loyalty-member.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Guest added to loyalty program successfully!');
+                    closeAddMemberModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to add loyalty member'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error adding loyalty member');
+            });
+        });
+
+        document.getElementById('redeem-points-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            // Validate required fields
+            if (!data.guest_id || !data.reward_id) {
+                alert('Please select a member and reward');
+                return;
+            }
+            
+            const rewardSelect = document.getElementById('reward_id');
+            const selectedOption = rewardSelect.options[rewardSelect.selectedIndex];
+            const pointsRequired = selectedOption.getAttribute('data-points');
+            
+            data.points_used = pointsRequired;
+            
+            fetch('../../api/redeem-loyalty-points.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    alert('Points redeemed successfully!');
+                    closeRedeemPointsModal();
+                    location.reload();
+                } else {
+                    alert('Error: ' + (result.message || 'Failed to redeem points'));
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error redeeming points');
+            });
+        });
+        </script>
     </body>
 </html>

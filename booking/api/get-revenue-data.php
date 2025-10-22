@@ -4,7 +4,7 @@
  */
 
 require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
-require_once dirname(__DIR__) . '/config/database.php';
+require_once dirname(__DIR__, 2) . '/includes/database.php';
 
 header('Content-Type: application/json');
 
@@ -78,7 +78,7 @@ try {
                 
                 $filledRevenueData[] = [
                     'date' => $date,
-                    'revenue' => round($dailyRevenue, 2),
+                    'daily_revenue' => round($dailyRevenue, 2),
                     'transactions' => round($dailyTransactions)
                 ];
             }
@@ -103,12 +103,16 @@ try {
     
     // Get revenue by source - simplified since bill_type doesn't exist
     $revenueBreakdown = [
-        ['source' => 'Total Revenue', 'amount' => array_sum(array_column($revenueData, 'revenue'))]
+        ['source' => 'Total Revenue', 'amount' => array_sum(array_column($revenueData, 'daily_revenue'))]
     ];
     
     echo json_encode([
         'success' => true,
-        'data' => $revenueData
+        'data' => [
+            'daily' => $revenueData,
+            'monthly' => $monthlyData,
+            'breakdown' => $revenueBreakdown
+        ]
     ]);
     
 } catch (PDOException $e) {

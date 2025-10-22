@@ -173,6 +173,25 @@ const Utils = {
     validatePhone: function(phone) {
         const re = /^[\+]?[1-9][\d]{0,15}$/;
         return re.test(phone.replace(/[\s\-\(\)]/g, ''));
+    },
+    
+    // Safe ResizeObserver wrapper
+    createResizeObserver: function(callback) {
+        if (typeof ResizeObserver === 'undefined') {
+            return null;
+        }
+        
+        return new ResizeObserver(function(entries, observer) {
+            try {
+                callback(entries, observer);
+            } catch (error) {
+                // Suppress ResizeObserver loop errors
+                if (error.message && error.message.includes('ResizeObserver loop completed with undelivered notifications')) {
+                    return;
+                }
+                console.error('ResizeObserver error:', error);
+            }
+        });
     }
 };
 
@@ -324,10 +343,38 @@ const TableHelper = {
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Add ResizeObserver error suppression
+    const resizeObserverErrorHandler = function(e) {
+        if (e.message && e.message.includes('ResizeObserver loop completed with undelivered notifications')) {
+            e.stopImmediatePropagation();
+            return false;
+        }
+    };
+    
+    // Suppress ResizeObserver errors
+    window.addEventListener('error', resizeObserverErrorHandler, true);
+    
+    // Suppress unhandled promise rejections related to ResizeObserver
+    window.addEventListener('unhandledrejection', function(e) {
+        if (e.reason && e.reason.message && e.reason.message.includes('ResizeObserver loop completed with undelivered notifications')) {
+            e.preventDefault();
+            return;
+        }
+    });
+    
     // Add global error handler
     window.addEventListener('error', function(e) {
-        console.error('Global error:', e.error);
-        Utils.showNotification('An error occurred. Please try again.', 'error');
+        // Filter out benign ResizeObserver errors
+        if (e.message && e.message.includes('ResizeObserver loop completed with undelivered notifications')) {
+            // This is a benign browser error that doesn't affect functionality
+            return;
+        }
+        
+        console.error('Global error:', e.error || e.message || 'Unknown error');
+        // Only show notification for meaningful errors
+        if (e.error && e.error.message) {
+            Utils.showNotification('An error occurred: ' + e.error.message, 'error');
+        }
     });
     
     // Add form validation listeners

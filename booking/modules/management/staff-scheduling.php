@@ -132,7 +132,13 @@ include '../../includes/sidebar-unified.php';
 
         async function loadHousekeepingUsers(){
             try{
-                const res = await fetch('../../api/get-users.php?role=housekeeping&status=active');
+                const res = await fetch('../../api/get-users.php?role=housekeeping&status=active', {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-API-Key': 'pms_users_api_2024'
+                    },
+                    credentials: 'same-origin'
+                });
                 const json = await res.json();
                 const users = json.users || [];
                 const sel = document.getElementById('staffSelect');

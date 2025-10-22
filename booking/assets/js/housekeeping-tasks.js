@@ -2,13 +2,114 @@
  * Housekeeping Task Management JavaScript
  */
 
+// Fallback notification function in case Utils is not available
+function showNotificationFallback(message, type = 'info') {
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    alert(message);
+}
+
+// Safe notification function
+function showNotification(message, type = 'info') {
+    if (typeof HotelPMS !== 'undefined' && HotelPMS.Utils && HotelPMS.Utils.showNotification) {
+        HotelPMS.Utils.showNotification(message, type);
+    } else if (typeof Utils !== 'undefined' && Utils.showNotification) {
+        Utils.showNotification(message, type);
+    } else {
+        showNotificationFallback(message, type);
+    }
+}
+
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Wait for HotelPMS.Utils to be available
+    if (typeof HotelPMS === 'undefined' || !HotelPMS.Utils) {
+        console.error('HotelPMS.Utils is not defined. Make sure main.js is loaded before housekeeping-tasks.js');
+        // Still initialize with fallback notifications
+    }
     initializeTasks();
 });
 
 function initializeTasks() {
     setupEventListeners();
+    loadTasks();
+}
+
+function loadTasks() {
+    // This function will be implemented to load tasks dynamically
+    // For now, we'll just reload the page content
+    fetch('../../api/get-recent-housekeeping-tasks.php', {
+        credentials: 'same-origin'
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            updateTaskList(result.tasks || []);
+            updateTaskStats(result);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading tasks:', error);
+    });
+}
+
+function updateTaskList(tasks) {
+    const tasksList = document.getElementById('tasksList');
+    if (!tasksList) return;
+    
+    if (tasks.length === 0) {
+        tasksList.innerHTML = '<div class="text-center py-8 text-gray-500">No tasks found.</div>';
+        return;
+    }
+    
+    tasksList.innerHTML = tasks.map(task => `
+        <tr class="hover:bg-gray-50">
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                ${task.task_type ? task.task_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'N/A'}
+                ${task.notes ? '<br><span class="text-xs text-gray-500">' + task.notes + '</span>' : ''}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${task.room_number || 'N/A'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${task.assigned_to_name || 'Unassigned'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                ${task.scheduled_time ? new Date(task.scheduled_time).toLocaleString() : 'N/A'}
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="px-2 py-1 text-xs font-medium rounded-full ${getStatusClass(task.status)}">
+                    ${task.status ? task.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Pending'}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button onclick="viewTask(${task.id})" class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                ${task.status === 'pending' ? `<button onclick="updateTaskStatus(${task.id}, 'in_progress')" class="text-yellow-600 hover:text-yellow-900 mr-3">Start</button>` : ''}
+                ${task.status === 'in_progress' ? `<button onclick="updateTaskStatus(${task.id}, 'completed')" class="text-green-600 hover:text-green-900 mr-3">Complete</button>` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function getStatusClass(status) {
+    switch(status) {
+        case 'completed': return 'bg-green-100 text-green-800';
+        case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+        case 'pending': return 'bg-gray-100 text-gray-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function updateTaskStats(data) {
+    // Update the statistics cards if they exist
+    const totalTasks = document.querySelector('[data-stat="total"]');
+    const completedTasks = document.querySelector('[data-stat="completed"]');
+    const inProgressTasks = document.querySelector('[data-stat="in_progress"]');
+    const overdueTasks = document.querySelector('[data-stat="overdue"]');
+    
+    if (totalTasks) totalTasks.textContent = data.count || 0;
+    if (completedTasks) completedTasks.textContent = data.tasks ? data.tasks.filter(t => t.status === 'completed').length : 0;
+    if (inProgressTasks) inProgressTasks.textContent = data.tasks ? data.tasks.filter(t => t.status === 'in_progress').length : 0;
+    if (overdueTasks) overdueTasks.textContent = data.tasks ? data.tasks.filter(t => t.status === 'overdue').length : 0;
 }
 
 function setupEventListeners() {
@@ -85,7 +186,7 @@ function submitTaskForm() {
     };
     
     // Validate required fields
-    if (!data.room_id || !data.task_type || !data.assigned_to || !data.scheduled_date || !data.scheduled_time) {
+    if (!data.room_id || !data.task_type || !data.scheduled_date || !data.scheduled_time) {
         showNotification('Please fill in all required fields', 'error');
         // Re-enable button
         submitButton.disabled = false;
@@ -102,7 +203,7 @@ function submitTaskForm() {
     const taskData = {
         room_id: parseInt(data.room_id),
         task_type: data.task_type,
-        assigned_to: parseInt(data.assigned_to),
+        assigned_to: data.assigned_to ? parseInt(data.assigned_to) : null,
         scheduled_time: scheduledDateTime,
         notes: data.notes || ''
     };
@@ -133,12 +234,10 @@ function submitTaskForm() {
     .then(result => {
         console.log('Task creation result:', result);
         if (result.success) {
-            showNotification('✅ Task created successfully!', 'success');
+            showNotification('✅ Successfully created a new task!', 'success');
             closeNewTaskModal();
-            // Refresh the page to show new task
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
+            // Refresh the task list without page reload
+            loadTasks();
         } else {
             showNotification('❌ Error creating task: ' + result.message, 'error');
             // Re-enable button
@@ -248,8 +347,8 @@ function updateTaskStatus(taskId, newStatus) {
     .then(result => {
         if (result.success) {
             showNotification(`Task status updated to ${newStatus}`, 'success');
-            // Refresh the page to show updated status
-            window.location.reload();
+            // Refresh the task list without page reload
+            loadTasks();
         } else {
             showNotification('Error updating task status: ' + result.message, 'error');
         }
@@ -267,3 +366,7 @@ window.submitTaskForm = submitTaskForm;
 window.viewTask = viewTask;
 window.closeTaskDetailsModal = closeTaskDetailsModal;
 window.updateTaskStatus = updateTaskStatus;
+window.showNotification = showNotification; // Export showNotification globally
+
+// Test function availability
+console.log('housekeeping-tasks.js loaded successfully');

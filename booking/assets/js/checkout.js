@@ -64,35 +64,35 @@ class CheckOutManager {
                                     <div class="flex-shrink-0 h-10 w-10">
                                         <div class="h-10 w-10 rounded-full bg-green-500 flex items-center justify-center">
                                             <span class="text-white font-medium">
-                                                ${guest.guest_name.charAt(0).toUpperCase()}
+                                                ${(guest.guest_name || 'G').charAt(0).toUpperCase()}
                                             </span>
                                         </div>
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">${guest.guest_name}</div>
+                                        <div class="text-sm font-medium text-gray-900">${guest.guest_name || 'Unknown Guest'}</div>
                                         <div class="text-sm text-gray-500">${guest.email || ''}</div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${guest.reservation_number}
+                                ${guest.reservation_number || 'N/A'}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                Room ${guest.room_number}
+                                Room ${guest.room_number || 'N/A'}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 ${this.formatDate(guest.check_out_date)}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${this.getStatusClass(guest.checkout_status)}">
-                                    ${this.getStatusLabel(guest.checkout_status)}
+                                    ${this.getStatusLabel(guest.checkout_status, guest.days_remaining)}
                                 </span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <button onclick="startCheckOut(${guest.reservation_id})" class="text-red-600 hover:text-red-900 mr-3">
+                                <button onclick="startCheckOut(${guest.reservation_id || guest.id})" class="text-red-600 hover:text-red-900 mr-3">
                                     <i class="fas fa-sign-out-alt mr-1"></i>Check Out
                                 </button>
-                                <button onclick="viewGuestDetails(${guest.reservation_id})" class="text-gray-600 hover:text-gray-900">
+                                <button onclick="viewGuestDetails(${guest.reservation_id || guest.id})" class="text-gray-600 hover:text-gray-900">
                                     <i class="fas fa-eye mr-1"></i>View
                                 </button>
                             </td>
@@ -242,36 +242,47 @@ class CheckOutManager {
         const container = document.getElementById('billing-summary');
         if (!container) return;
 
+        // Ensure billing object has all required properties with defaults and convert to numbers
+        const safeBilling = {
+            room_rate: parseFloat(billing.room_rate || billing.room_charges || 0),
+            nights: parseInt(billing.nights || 1),
+            subtotal: parseFloat(billing.subtotal || billing.room_charges || 0),
+            tax: parseFloat(billing.tax || billing.tax_amount || 0),
+            additional_charges: parseFloat(billing.additional_charges || 0),
+            discounts: parseFloat(billing.discounts || 0),
+            total_amount: parseFloat(billing.total_amount || 0)
+        };
+
         const summary = `
             <div class="space-y-2">
                 <div class="flex justify-between">
                     <span class="text-sm text-gray-600">Room Rate:</span>
-                    <span class="text-sm font-medium">₱${billing.room_rate.toFixed(2)}</span>
+                    <span class="text-sm font-medium">₱${safeBilling.room_rate.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-sm text-gray-600">Nights:</span>
-                    <span class="text-sm font-medium">${billing.nights}</span>
+                    <span class="text-sm font-medium">${safeBilling.nights}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-sm text-gray-600">Subtotal:</span>
-                    <span class="text-sm font-medium">₱${billing.subtotal.toFixed(2)}</span>
+                    <span class="text-sm font-medium">₱${safeBilling.subtotal.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-sm text-gray-600">Tax (10%):</span>
-                    <span class="text-sm font-medium">₱${billing.tax.toFixed(2)}</span>
+                    <span class="text-sm font-medium">₱${safeBilling.tax.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-sm text-gray-600">Additional Charges:</span>
-                    <span class="text-sm font-medium">₱${billing.additional_charges.toFixed(2)}</span>
+                    <span class="text-sm font-medium">₱${safeBilling.additional_charges.toFixed(2)}</span>
                 </div>
                 <div class="flex justify-between">
                     <span class="text-sm text-gray-600">Discounts:</span>
-                    <span class="text-sm font-medium text-green-600">-₱${billing.discounts.toFixed(2)}</span>
+                    <span class="text-sm font-medium text-green-600">-₱${safeBilling.discounts.toFixed(2)}</span>
                 </div>
                 <div class="border-t pt-2">
                     <div class="flex justify-between">
                         <span class="text-base font-semibold text-gray-900">Total Amount:</span>
-                        <span class="text-base font-semibold text-gray-900">₱${billing.total_amount.toFixed(2)}</span>
+                        <span class="text-base font-semibold text-gray-900">₱${safeBilling.total_amount.toFixed(2)}</span>
                     </div>
                 </div>
             </div>
@@ -332,14 +343,18 @@ class CheckOutManager {
         return statusClasses[status] || 'bg-gray-100 text-gray-800';
     }
 
-    getStatusLabel(status) {
-        const statusLabels = {
-            'due_today': 'Due Today',
-            'overdue': 'Overdue',
-            'vip': 'VIP Guest',
-            'normal': 'Normal'
-        };
-        return statusLabels[status] || status;
+    getStatusLabel(status, daysRemaining) {
+        if (status === 'overdue') {
+            return 'Overdue';
+        } else if (status === 'due_today') {
+            return 'Due Today';
+        } else if (status === 'vip') {
+            return 'VIP Guest';
+        } else if (daysRemaining !== undefined && daysRemaining > 0) {
+            return `${daysRemaining} days left`;
+        } else {
+            return 'Normal';
+        }
     }
 
     showNotification(message, type) {

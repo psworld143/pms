@@ -59,7 +59,22 @@ function getBillingSummary($reservation_id) {
         $billing = $stmt->fetch();
         
         if ($billing) {
-            return $billing;
+            // Ensure all required fields are present with proper types
+            return [
+                'id' => $billing['id'],
+                'reservation_id' => $billing['reservation_id'],
+                'guest_id' => $billing['guest_id'],
+                'room_rate' => (float)$billing['room_charges'],
+                'room_charges' => (float)$billing['room_charges'],
+                'subtotal' => (float)$billing['room_charges'],
+                'additional_charges' => (float)$billing['additional_charges'],
+                'tax' => (float)$billing['tax_amount'],
+                'tax_amount' => (float)$billing['tax_amount'],
+                'discounts' => 0,
+                'total_amount' => (float)$billing['total_amount'],
+                'payment_status' => $billing['payment_status'],
+                'nights' => 1
+            ];
         }
         
         // If no billing record exists, create one based on reservation data
@@ -98,16 +113,21 @@ function getBillingSummary($reservation_id) {
             $total_amount
         ]);
         
-        // Return the created billing record
+        // Return the created billing record with JavaScript-compatible field names
         return [
             'id' => $pdo->lastInsertId(),
             'reservation_id' => $reservation_id,
             'guest_id' => $reservation['guest_id'],
+            'room_rate' => $room_charges,
             'room_charges' => $room_charges,
+            'subtotal' => $room_charges,
             'additional_charges' => $additional_charges,
+            'tax' => $tax_amount,
             'tax_amount' => $tax_amount,
+            'discounts' => 0,
             'total_amount' => $total_amount,
-            'payment_status' => 'pending'
+            'payment_status' => 'pending',
+            'nights' => 1
         ];
         
     } catch (PDOException $e) {

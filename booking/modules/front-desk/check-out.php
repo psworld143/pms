@@ -350,7 +350,7 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
     </div>
 
     <script src="../../assets/js/main.js"></script>
-    <script src="../../assets/js/checkout.js"></script>
+    <script src="../../assets/js/checkout.js?v=<?php echo time(); ?>"></script>
     
     <script>
         // Update current time

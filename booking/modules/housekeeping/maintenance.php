@@ -16,20 +16,20 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['manager'
 
 // Get maintenance statistics
 try {
-    // Active maintenance requests
-    $stmt = $pdo->query("SELECT COUNT(*) as active FROM maintenance_requests WHERE status = 'pending' OR status = 'in_progress'");
+    // Active maintenance requests (reported, assigned, in_progress)
+    $stmt = $pdo->query("SELECT COUNT(*) as active FROM maintenance_requests WHERE status IN ('reported', 'assigned', 'in_progress')");
     $activeRequests = $stmt->fetch()['active'];
     
     // Completed today
     $stmt = $pdo->query("SELECT COUNT(*) as completed_today FROM maintenance_requests WHERE status = 'completed' AND DATE(updated_at) = CURDATE()");
     $completedToday = $stmt->fetch()['completed_today'];
     
-    // Pending approval
-    $stmt = $pdo->query("SELECT COUNT(*) as pending FROM maintenance_requests WHERE status = 'pending'");
+    // Pending approval (reported status)
+    $stmt = $pdo->query("SELECT COUNT(*) as pending FROM maintenance_requests WHERE status = 'reported'");
     $pendingApproval = $stmt->fetch()['pending'];
     
-    // Total cost
-    $stmt = $pdo->query("SELECT SUM(estimated_cost) as total_cost FROM maintenance_requests WHERE status = 'completed'");
+    // Total cost (sum of estimated costs for all requests)
+    $stmt = $pdo->query("SELECT SUM(COALESCE(estimated_cost, 0)) as total_cost FROM maintenance_requests");
     $totalCost = $stmt->fetch()['total_cost'] ?? 0;
     
     // Get all maintenance requests
@@ -161,10 +161,14 @@ include '../../includes/sidebar-unified.php';
                                             $priorityClass = 'bg-orange-100 text-orange-800';
                                             $priorityText = 'High';
                                             break;
-                                        case 'normal':
+                                        case 'medium':
+                                            $priorityClass = 'bg-yellow-100 text-yellow-800';
+                                            $priorityText = 'Medium';
+                                            break;
+                                        case 'low':
                                         default:
                                             $priorityClass = 'bg-blue-100 text-blue-800';
-                                            $priorityText = 'Normal';
+                                            $priorityText = 'Low';
                                             break;
                                     }
                                     
@@ -175,14 +179,22 @@ include '../../includes/sidebar-unified.php';
                                             $statusClass = 'bg-green-100 text-green-800';
                                             $statusText = 'Completed';
                                             break;
+                                        case 'verified':
+                                            $statusClass = 'bg-blue-100 text-blue-800';
+                                            $statusText = 'Verified';
+                                            break;
                                         case 'in_progress':
                                             $statusClass = 'bg-yellow-100 text-yellow-800';
                                             $statusText = 'In Progress';
                                             break;
-                                        case 'pending':
+                                        case 'assigned':
+                                            $statusClass = 'bg-purple-100 text-purple-800';
+                                            $statusText = 'Assigned';
+                                            break;
+                                        case 'reported':
                                         default:
                                             $statusClass = 'bg-gray-100 text-gray-800';
-                                            $statusText = 'Pending';
+                                            $statusText = 'Reported';
                                             break;
                                     }
                                 ?>
@@ -297,7 +309,7 @@ include '../../includes/sidebar-unified.php';
         </div>
 
         <!-- Scripts -->
-        <script src="../../assets/js/housekeeping-maintenance.js"></script>
-        <script src="../../assets/js/main.js"></script>
+        <script src="../../assets/js/main.js?v=<?php echo time(); ?>"></script>
+        <script src="../../assets/js/housekeeping-maintenance.js?v=<?php echo time(); ?>"></script>
     </body>
 </html>

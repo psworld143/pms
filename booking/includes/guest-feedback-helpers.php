@@ -2,8 +2,7 @@
 
 declare(strict_types=1);
 
-use PDO;
-use PDOException;
+// Remove unused use statements that cause warnings
 
 if (!function_exists('getGuestFeedbackFilterDefaults')) {
     function getGuestFeedbackFilterDefaults(): array
@@ -97,11 +96,10 @@ if (!function_exists('getGuestFeedbackSummary')) {
                 SELECT
                     AVG(rating) AS average_rating,
                     COUNT(*) AS total_reviews,
-                    SUM(CASE WHEN is_resolved = 0 THEN 1 ELSE 0 END) AS pending_response,
-                    SUM(CASE WHEN feedback_type = "compliment" OR rating >= 4 THEN 1 ELSE 0 END) AS positive_reviews,
                     SUM(CASE WHEN feedback_type = "complaint" THEN 1 ELSE 0 END) AS complaints,
-                    SUM(CASE WHEN is_resolved = 1 THEN 1 ELSE 0 END) AS resolved
+                    SUM(CASE WHEN feedback_type = "compliment" OR rating >= 4 THEN 1 ELSE 0 END) AS positive_reviews
                 FROM guest_feedback
+                WHERE rating IS NOT NULL
             ');
             $row = $stmt ? $stmt->fetch(PDO::FETCH_ASSOC) : false;
             if (!$row) {
@@ -110,16 +108,16 @@ if (!function_exists('getGuestFeedbackSummary')) {
 
             $total = (int)($row['total_reviews'] ?? 0);
             $positive = (int)($row['positive_reviews'] ?? 0);
-            $resolved = (int)($row['resolved'] ?? 0);
+            $complaints = (int)($row['complaints'] ?? 0);
 
             return [
                 'average_rating' => $row['average_rating'] !== null ? round((float)$row['average_rating'], 1) : null,
                 'total_reviews' => $total,
-                'pending_response' => (int)($row['pending_response'] ?? 0),
+                'pending_response' => $complaints, // For now, treat complaints as pending
                 'satisfaction_rate' => $total > 0 ? round(($positive / $total) * 100, 1) : 0.0,
-                'response_rate' => $total > 0 ? round(($resolved / $total) * 100, 1) : 0.0,
-                'complaints' => (int)($row['complaints'] ?? 0),
-                'resolved' => $resolved,
+                'response_rate' => 0.0, // No response tracking in current table structure
+                'complaints' => $complaints,
+                'resolved' => 0, // No resolution tracking in current table structure
             ];
         } catch (PDOException $e) {
             error_log('Guest feedback summary error: ' . $e->getMessage());

@@ -1,6 +1,6 @@
 <?php
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/../includes/database.php';
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
@@ -18,16 +18,22 @@ if (!$reservation_id) {
 // Get reservation details
 $reservation = getReservationDetails($reservation_id);
 if (!$reservation) {
+    error_log("Reservation not found: " . $reservation_id);
     header('Location: manage-reservations.php');
     exit();
 }
 
-// Get additional reservation data
-$guest_details = getGuestDetails($reservation['guest_id'] ?? null);
-$room_details = getRoomDetails($reservation['room_id'] ?? null);
-$billing_details = getBillingDetails($reservation_id);
-$check_in_details = getCheckInDetails($reservation_id);
-$additional_services = getAdditionalServicesForReservation($reservation_id);
+// Get additional reservation data with error handling
+try {
+    $guest_details = getGuestDetails($reservation['guest_id'] ?? null);
+    $room_details = getRoomDetails($reservation['room_id'] ?? null);
+    $billing_details = getBillingDetails($reservation_id);
+    $check_in_details = getCheckInDetails($reservation_id);
+    $additional_services = getAdditionalServicesForReservation($reservation_id);
+} catch (Exception $e) {
+    error_log("Error loading reservation data: " . $e->getMessage());
+    $guest_details = $room_details = $billing_details = $check_in_details = $additional_services = [];
+}
 
 // Calculate nights if not already set
 $nights = $reservation['nights'] ?? ((strtotime($reservation['check_out_date']) - strtotime($reservation['check_in_date'])) / (60 * 60 * 24));

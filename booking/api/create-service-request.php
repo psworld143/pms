@@ -56,48 +56,4 @@ try {
     ]);
 }
 
-/**
- * Create service request
- */
-function createServiceRequest($data) {
-    global $pdo;
-    
-    try {
-        $pdo->beginTransaction();
-        
-        // Insert service request (using reported_by per maintenance_requests schema)
-        $stmt = $pdo->prepare("INSERT INTO maintenance_requests (
-                room_id, issue_type, priority, description, status, reported_by, created_at, updated_at
-            ) VALUES (?, ?, ?, ?, 'pending', ?, NOW(), NOW())");
-        
-        $stmt->execute([
-            $data['room_id'],
-            $data['request_type'],
-            $data['priority'],
-            $data['description'],
-            $_SESSION['user_id']
-        ]);
-        
-        $request_id = $pdo->lastInsertId();
-        
-        // Log activity
-        logActivity($_SESSION['user_id'], 'service_request_created', "Created service request #{$request_id}");
-        
-        $pdo->commit();
-        
-        return [
-            'success' => true,
-            'message' => 'Service request created successfully',
-            'request_id' => $request_id
-        ];
-        
-    } catch (Exception $e) {
-        $pdo->rollBack();
-        error_log("Error creating service request: " . $e->getMessage());
-        return [
-            'success' => false,
-            'message' => $e->getMessage()
-        ];
-    }
-}
 ?>

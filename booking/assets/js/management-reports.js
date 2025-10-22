@@ -93,7 +93,7 @@ function loadOccupancyChart() {
     fetch('../../api/get-occupancy-data.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.data && data.data.daily) {
+            if (data.success && data.data && data.data.daily && data.data.daily.length > 0) {
                 // Process the daily occupancy data
                 const dailyData = data.data.daily || [];
                 const labels = dailyData.map(item => {
@@ -146,7 +146,43 @@ function loadOccupancyChart() {
                     }
                 });
             } else {
-                console.error('No data available for occupancy chart');
+                // Show a message when no data is available
+                const ctx = document.getElementById('occupancyChart').getContext('2d');
+                chartInstances.occupancyChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['No Data'],
+                        datasets: [{
+                            label: 'Occupancy Rate (%)',
+                            data: [0],
+                            borderColor: '#E5E7EB',
+                            backgroundColor: 'rgba(229, 231, 235, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+                console.warn('No occupancy data available for chart');
             }
         })
         .catch(error => {
@@ -174,7 +210,7 @@ function loadRevenueChart() {
     fetch('../../api/get-revenue-data.php')
         .then(response => response.json())
         .then(data => {
-            if (data.success && data.data && data.data.daily) {
+            if (data.success && data.data && data.data.daily && data.data.daily.length > 0) {
                 // Process the daily revenue data
                 const dailyData = data.data.daily || [];
                 const labels = dailyData.map(item => {
@@ -226,7 +262,42 @@ function loadRevenueChart() {
                     }
                 });
             } else {
-                console.error('No data available for revenue chart');
+                // Show a message when no data is available
+                const ctx = document.getElementById('revenueChart').getContext('2d');
+                chartInstances.revenueChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['No Data'],
+                        datasets: [{
+                            label: 'Daily Revenue (₱)',
+                            data: [0],
+                            borderColor: '#E5E7EB',
+                            backgroundColor: 'rgba(229, 231, 235, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₱' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+                console.warn('No revenue data available for chart');
             }
         })
         .catch(error => {
@@ -1571,17 +1642,78 @@ function loadInventoryAnalytics() {
                 createLowStockChart(data.data.items || []);
                 createInventoryValueChart(data.data.categories || []);
             } else {
-                console.error('Failed to load inventory analytics:', data.message);
+                console.warn('No inventory data available for analytics:', data.message || 'Unknown error');
+                // Create empty charts when no data is available
+                createEmptyInventoryCharts();
             }
         })
         .catch(error => {
             console.error('Error loading inventory analytics:', error);
+            // Create empty charts when there's an error
+            createEmptyInventoryCharts();
         });
+}
+
+function createEmptyInventoryCharts() {
+    // Create empty charts for all inventory chart elements
+    const chartIds = ['inventoryCategoryChart', 'stockStatusChart', 'lowStockChart', 'inventoryValueChart'];
+    
+    chartIds.forEach(chartId => {
+        const ctx = document.getElementById(chartId);
+        if (ctx) {
+            const chartCtx = ctx.getContext('2d');
+            chartInstances[chartId] = new Chart(chartCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['No Data'],
+                    datasets: [{
+                        label: 'No Data Available',
+                        data: [0],
+                        backgroundColor: '#E5E7EB'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
+            });
+        }
+    });
 }
 
 function createInventoryCategoryChart(categories) {
     const ctx = document.getElementById('inventoryCategoryChart').getContext('2d');
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4', '#84CC16', '#F97316'];
+    
+    if (!categories || categories.length === 0) {
+        chartInstances.inventoryCategoryChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    label: 'Items Count',
+                    data: [0],
+                    backgroundColor: '#E5E7EB',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        return;
+    }
     
     chartInstances.inventoryCategoryChart = new Chart(ctx, {
         type: 'bar',
@@ -1608,6 +1740,31 @@ function createInventoryCategoryChart(categories) {
 
 function createStockStatusChart(items) {
     const ctx = document.getElementById('stockStatusChart').getContext('2d');
+    
+    if (!items || items.length === 0) {
+        chartInstances.stockStatusChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#E5E7EB'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+        return;
+    }
     
     // Calculate stock status distribution
     const statusCounts = {
@@ -1652,11 +1809,61 @@ function createStockStatusChart(items) {
 function createLowStockChart(items) {
     const ctx = document.getElementById('lowStockChart').getContext('2d');
     
+    if (!items || items.length === 0) {
+        chartInstances.lowStockChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    label: 'Current Stock',
+                    data: [0],
+                    backgroundColor: '#E5E7EB',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        return;
+    }
+    
     // Get low stock items
     const lowStockItems = items.filter(item => item.current_stock <= item.minimum_stock).slice(0, 10);
     
+    if (lowStockItems.length === 0) {
+        chartInstances.lowStockChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['No Low Stock Items'],
+                datasets: [{
+                    label: 'Current Stock',
+                    data: [0],
+                    backgroundColor: '#10B981',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        return;
+    }
+    
     chartInstances.lowStockChart = new Chart(ctx, {
-        type: 'horizontalBar',
+        type: 'bar',
         data: {
             labels: lowStockItems.map(item => item.item_name || 'Unknown'),
             datasets: [{
@@ -1681,6 +1888,31 @@ function createLowStockChart(items) {
 function createInventoryValueChart(categories) {
     const ctx = document.getElementById('inventoryValueChart').getContext('2d');
     const colors = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#06B6D4'];
+    
+    if (!categories || categories.length === 0) {
+        chartInstances.inventoryValueChart = new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: ['No Data'],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#E5E7EB'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+        return;
+    }
     
     // Calculate total value for each category (simplified)
     const categoryValues = categories.map(cat => ({

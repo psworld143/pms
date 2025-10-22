@@ -38,57 +38,29 @@ include '../../includes/sidebar-unified.php';
                 <h3 class="text-xl font-semibold text-gray-800 mb-6">Create New Reservation</h3>
                     
                     <form id="reservation-form" class="space-y-6">
-                        <!-- Guest Information -->
+                        <!-- Guest Selection -->
                         <div class="border-b border-gray-200 pb-6">
                             <h4 class="text-lg font-semibold text-gray-800 mb-4 flex items-center">
-                                <i class="fas fa-user mr-2 text-primary"></i>Guest Information
+                                <i class="fas fa-user mr-2 text-primary"></i>Guest Selection
                             </h4>
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                <div>
-                                    <label for="first_name" class="block text-sm font-medium text-gray-700 mb-2">First Name *</label>
-                                    <input type="text" id="first_name" name="first_name" required 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                </div>
-                                <div>
-                                    <label for="last_name" class="block text-sm font-medium text-gray-700 mb-2">Last Name *</label>
-                                    <input type="text" id="last_name" name="last_name" required 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                </div>
-                                <div>
-                                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
-                                    <input type="email" id="email" name="email" 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                </div>
-                                <div>
-                                    <label for="phone" class="block text-sm font-medium text-gray-700 mb-2">Phone *</label>
-                                    <input type="tel" id="phone" name="phone" required 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                </div>
-                                <div>
-                                    <label for="id_type" class="block text-sm font-medium text-gray-700 mb-2">ID Type *</label>
-                                    <select id="id_type" name="id_type" required 
-                                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                        <option value="">Select ID Type</option>
-                                        <option value="passport">Passport</option>
-                                        <option value="driver_license">Driver's License</option>
-                                        <option value="national_id">National ID</option>
-                                        <option value="other">Other</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label for="id_number" class="block text-sm font-medium text-gray-700 mb-2">ID Number *</label>
-                                    <input type="text" id="id_number" name="id_number" required 
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                </div>
-                                <div class="md:col-span-2 lg:col-span-3">
-                                    <label for="address" class="block text-sm font-medium text-gray-700 mb-2">Address</label>
-                                    <textarea id="address" name="address" rows="3" 
-                                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
-                                </div>
-                                <div class="flex items-center md:col-span-2 lg:col-span-3">
-                                    <input type="checkbox" id="is_vip" name="is_vip" class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded">
-                                    <label for="is_vip" class="ml-2 block text-sm text-gray-900">VIP Guest</label>
-                                </div>
+                            <div>
+                                <label for="guest_id" class="block text-sm font-medium text-gray-700 mb-2">Select Guest *</label>
+                                <select id="guest_id" name="guest_id" required 
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Select a guest...</option>
+                                    <?php
+                                    // Get all guests for dropdown
+                                    $guests = getAllGuests();
+                                    foreach ($guests as $guest) {
+                                        $guest_name = htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']);
+                                        $guest_email = htmlspecialchars($guest['email'] ?? '');
+                                        $guest_phone = htmlspecialchars($guest['phone'] ?? '');
+                                        $vip_badge = $guest['is_vip'] ? ' (VIP)' : '';
+                                        $display_text = $guest_name . $vip_badge . ($guest_email ? ' - ' . $guest_email : '');
+                                        echo "<option value=\"{$guest['id']}\">{$display_text}</option>";
+                                    }
+                                    ?>
+                                </select>
                             </div>
                         </div>
 
@@ -207,5 +179,64 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
         </main>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const guestSelect = document.getElementById('guest_id');
+    
+    // Form submission
+    document.getElementById('reservation-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        if (!guestSelect.value) {
+            alert('Please select a guest before creating the reservation.');
+            guestSelect.focus();
+            return false;
+        }
+        
+        // Collect form data
+        const formData = new FormData(this);
+        const reservationData = {
+            guest_id: parseInt(guestSelect.value), // Ensure it's an integer
+            check_in_date: formData.get('check_in_date'),
+            check_out_date: formData.get('check_out_date'),
+            adults: parseInt(formData.get('adults')),
+            children: parseInt(formData.get('children') || 0),
+            room_type: formData.get('room_type'),
+            booking_source: formData.get('booking_source'),
+            special_requests: formData.get('special_requests') || ''
+        };
+        
+        
+        // Submit reservation
+        submitReservation(reservationData);
+    });
+    
+    // Submit reservation function
+    async function submitReservation(data) {
+        try {
+            const response = await fetch('../../api/create-reservation.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(data)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert(`Reservation created successfully!\nReservation Number: ${result.reservation_number}`);
+                window.location.href = 'manage-reservations.php';
+            } else {
+                alert(`Error creating reservation: ${result.message}`);
+            }
+        } catch (error) {
+            console.error('Error submitting reservation:', error);
+            alert('Error creating reservation. Please try again.');
+        }
+    }
+});
+</script>
 
 <?php include '../../includes/footer.php'; ?>

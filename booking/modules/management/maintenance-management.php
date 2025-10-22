@@ -25,7 +25,7 @@ $totalPages = max(1, (int)ceil($totalRequests / $limit));
 $summary = getMaintenanceSummary();
 $assignees = getMaintenanceAssignees();
 
-$issueTypes = ['plumbing', 'electrical', 'hvac', 'furniture', 'appliances', 'structural', 'other'];
+$issueTypes = ['plumbing', 'electrical', 'hvac', 'furniture', 'appliance', 'other'];
 $priorities = ['low', 'medium', 'high', 'urgent'];
 $statusOptions = ['reported', 'assigned', 'in_progress', 'completed'];
 

@@ -16,31 +16,31 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['manager'
 
 // Load room status data directly in PHP
 try {
-    // Get room status overview
+    // Get room status overview - count by actual room status, not housekeeping status
     $stmt = $pdo->query("
         SELECT 
-            housekeeping_status,
+            status,
             COUNT(*) as count
         FROM rooms 
-        WHERE housekeeping_status IS NOT NULL
-        GROUP BY housekeeping_status
-        ORDER BY housekeeping_status
+        WHERE status IS NOT NULL
+        GROUP BY status
+        ORDER BY status
     ");
     $statusData = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Initialize counts
-    $cleanCount = 0;
-    $dirtyCount = 0;
+    $availableCount = 0;
+    $occupiedCount = 0;
     $maintenanceCount = 0;
     $cleaningCount = 0;
     
     foreach ($statusData as $status) {
-        switch($status['housekeeping_status']) {
-            case 'clean':
-                $cleanCount = $status['count'];
+        switch($status['status']) {
+            case 'available':
+                $availableCount = $status['count'];
                 break;
-            case 'dirty':
-                $dirtyCount = $status['count'];
+            case 'occupied':
+                $occupiedCount = $status['count'];
                 break;
             case 'maintenance':
                 $maintenanceCount = $status['count'];
@@ -70,7 +70,7 @@ try {
     
 } catch (Exception $e) {
     error_log('Error loading room status data: ' . $e->getMessage());
-    $cleanCount = $dirtyCount = $maintenanceCount = $cleaningCount = 0;
+    $availableCount = $occupiedCount = $maintenanceCount = $cleaningCount = 0;
     $rooms = [];
 }
 
@@ -108,7 +108,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Available</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="available-count"><?php echo $cleanCount; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" id="available-count"><?php echo $availableCount; ?></p>
                         </div>
                     </div>
                 </div>
@@ -122,7 +122,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Occupied</p>
-                            <p class="text-2xl font-semibold text-gray-900" id="occupied-count"><?php echo $dirtyCount; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" id="occupied-count"><?php echo $occupiedCount; ?></p>
                         </div>
                     </div>
                 </div>
@@ -290,7 +290,7 @@ include '../../includes/sidebar-unified.php';
         </div>
 
         <!-- Scripts -->
-        <script src="../../assets/js/main.js"></script>
+        <script src="../../assets/js/main.js?v=<?php echo time(); ?>"></script>
         <script>
             // Simple working functions for room status
             function showRoomModal(roomId, roomNumber, floor, roomType, status, housekeepingStatus, capacity) {
@@ -628,26 +628,26 @@ include '../../includes/sidebar-unified.php';
             
             function updateRoomCounts() {
                 const rows = document.querySelectorAll('#rooms-table-body tr');
-                let cleanCount = 0, dirtyCount = 0, maintenanceCount = 0, cleaningCount = 0;
+                let availableCount = 0, occupiedCount = 0, maintenanceCount = 0, cleaningCount = 0;
                 
                 rows.forEach(row => {
-                    const status = row.cells[3].textContent.trim();
+                    const status = row.cells[2].textContent.trim(); // Column 2 is room status, not housekeeping status
                     switch(status) {
-                        case 'clean': cleanCount++; break;
-                        case 'dirty': dirtyCount++; break;
+                        case 'available': availableCount++; break;
+                        case 'occupied': occupiedCount++; break;
                         case 'maintenance': maintenanceCount++; break;
                         case 'cleaning': cleaningCount++; break;
                     }
                 });
                 
                 // Update the count displays
-                const availableCount = document.getElementById('available-count');
-                const occupiedCount = document.getElementById('occupied-count');
+                const availableCountEl = document.getElementById('available-count');
+                const occupiedCountEl = document.getElementById('occupied-count');
                 const maintenanceCountEl = document.getElementById('maintenance-count');
                 const cleaningCountEl = document.getElementById('cleaning-count');
                 
-                if (availableCount) availableCount.textContent = cleanCount;
-                if (occupiedCount) occupiedCount.textContent = dirtyCount;
+                if (availableCountEl) availableCountEl.textContent = availableCount;
+                if (occupiedCountEl) occupiedCountEl.textContent = occupiedCount;
                 if (maintenanceCountEl) maintenanceCountEl.textContent = maintenanceCount;
                 if (cleaningCountEl) cleaningCountEl.textContent = cleaningCount;
             }

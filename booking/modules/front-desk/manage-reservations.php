@@ -216,8 +216,8 @@ include '../../includes/sidebar-unified.php';
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            <form id="edit-reservation-form" class="space-y-6">
-                <input type="hidden" id="edit_reservation_id" name="reservation_id">
+            <form id="edit-reservation-form" class="space-y-6" data-uuid="<?php echo uniqid(); ?>">
+                <input type="hidden" id="edit_reservation_id" name="reservation_id" data-uuid="<?php echo uniqid(); ?>">
                 
                 <!-- Guest Information -->
                 <div class="border-b border-gray-200 pb-6">
@@ -468,6 +468,29 @@ include '../../includes/sidebar-unified.php';
         // Escape to clear filters
         if (e.key === 'Escape') {
             clearFilters();
+        }
+    });
+    
+    // Prevent classifier.js UUID errors
+    document.addEventListener('DOMContentLoaded', function() {
+        // Add UUIDs to all form elements that might be processed by classifier.js
+        const formElements = document.querySelectorAll('input, select, textarea, button');
+        formElements.forEach(function(element) {
+            if (!element.getAttribute('data-uuid')) {
+                element.setAttribute('data-uuid', 'uuid-' + Math.random().toString(36).substr(2, 9));
+            }
+        });
+        
+        // Override any classifier.js functions that might cause errors
+        if (typeof window.dre === 'function') {
+            const originalDre = window.dre;
+            window.dre = function(input) {
+                if (!input || !input.uuid) {
+                    input = input || {};
+                    input.uuid = 'uuid-' + Math.random().toString(36).substr(2, 9);
+                }
+                return originalDre.call(this, input);
+            };
         }
     });
 </script>

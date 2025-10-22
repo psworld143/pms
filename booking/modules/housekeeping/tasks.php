@@ -82,7 +82,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Tasks</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $totalTasks; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" data-stat="total"><?php echo $totalTasks; ?></p>
                         </div>
                     </div>
                 </div>
@@ -96,7 +96,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Completed</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $completedTasks; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" data-stat="completed"><?php echo $completedTasks; ?></p>
                         </div>
                     </div>
                 </div>
@@ -110,7 +110,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">In Progress</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $inProgressTasks; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" data-stat="in_progress"><?php echo $inProgressTasks; ?></p>
                         </div>
                     </div>
                 </div>
@@ -124,7 +124,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Overdue</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $overdueTasks; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900" data-stat="overdue"><?php echo $overdueTasks; ?></p>
                         </div>
                     </div>
                 </div>
@@ -147,7 +147,7 @@ include '../../includes/sidebar-unified.php';
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
+                        <tbody id="tasksList" class="bg-white divide-y divide-gray-200">
                             <?php if (!empty($tasks)): ?>
                                 <?php foreach ($tasks as $task): 
                                     $statusClass = '';
@@ -245,9 +245,9 @@ include '../../includes/sidebar-unified.php';
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Assigned To *</label>
-                            <select name="assigned_to" id="assigned_to" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">Select Staff Member</option>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Assigned To</label>
+                            <select name="assigned_to" id="assigned_to" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                <option value="">Leave Unassigned</option>
                                 <?php
                                 try {
                                     // Get all users with housekeeping or maintenance roles
@@ -290,7 +290,7 @@ include '../../includes/sidebar-unified.php';
         </div>
 
         <!-- Scripts -->
-        <script src="../../assets/js/housekeeping-tasks.js"></script>
-        <script src="../../assets/js/main.js"></script>
+        <script src="../../assets/js/main.js?v=<?php echo time(); ?>"></script>
+        <script src="../../assets/js/housekeeping-tasks.js?v=<?php echo time(); ?>"></script>
     </body>
 </html>

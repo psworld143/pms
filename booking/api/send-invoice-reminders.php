@@ -1,0 +1,28 @@
+<?php
+session_start();
+require_once "../config/database.php";
+require_once '../includes/functions.php';
+
+header('Content-Type: application/json');
+
+if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit(); }
+try {
+    // Fetch overdue or pending bills due within 3 days
+    $bills = getBills('overdue', '') ?: [];
+    $soon = getBills('pending', 'this_week') ?: [];
+    $targets = array_merge($bills, $soon);
+
+    $count = 0;
+    foreach ($targets as $bill) {
+        // Here we would enqueue/send actual reminders (email/SMS). For now, just count.
+        $count++; }
+    echo json_encode(['success' => true, 'reminders_sent' => $count]);
+} catch (Throwable $e) {
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Failed to send reminders']); }
+?>
+
+

@@ -4,7 +4,7 @@
  */
 
 require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
-require_once dirname(__DIR__) . '/config/database.php';
+require_once dirname(__DIR__, 2) . '/includes/database.php';
 
 header('Content-Type: application/json');
 
@@ -129,7 +129,11 @@ try {
     
     echo json_encode([
         'success' => true,
-        'data' => $occupancyData,
+        'data' => [
+            'daily' => $occupancyData,
+            'by_type' => $occupancyByType,
+            'monthly' => $monthlyOccupancy
+        ],
         'summary' => [
             'today_rate' => $todayRate,
             'average_rate' => $averageRate
