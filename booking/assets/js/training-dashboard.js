@@ -1,0 +1,1215 @@
+// Training Dashboard dynamic loader - moved to main DOMContentLoaded event below
+
+function switchTrainingTab(tab) {
+  const ids = ['scenarios','customer-service','problems','progress'];
+  ids.forEach(t => {
+    document.getElementById('tab-content-' + t).classList.toggle('active', t === tab);
+    document.getElementById('tab-' + (t === 'customer-service' ? 'customer-service' : t)).classList.toggle('text-primary', t === tab);
+  });
+}
+
+async function loadScenarios() {
+  const diff = document.getElementById('scenario-difficulty-filter').value;
+  const cat = document.getElementById('scenario-category-filter').value;
+  const container = document.getElementById('scenarios-container');
+  container.innerHTML = '<div class="p-6 text-gray-500">Loading scenarios...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-scenarios.php?difficulty=${encodeURIComponent(diff)}&category=${encodeURIComponent(cat)}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Failed');
+    if (!data.scenarios.length) { container.innerHTML = '<div class="p-6 text-gray-500">No scenarios found.</div>'; return; }
+    container.innerHTML = data.scenarios.map(s => scenarioCard(s)).join('');
+  } catch(err) {
+    console.error(err); container.innerHTML = '<div class="p-6 text-red-600">Error loading scenarios.</div>';
+  }
+}
+
+function scenarioCard(s) {
+  return `
+  <div class="border rounded-lg p-4 mb-3 hover:shadow">
+    <div class="flex justify-between items-center">
+      <div>
+        <div class="font-semibold text-gray-800">${escapeHtml(s.title || 'Scenario')}</div>
+        <div class="text-sm text-gray-500">Difficulty: ${s.difficulty || '-'} • Category: ${s.category || '-'}</div>
+      </div>
+      <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm" onclick="openScenario(${s.id})">Start</button>
+    </div>
+  </div>`;
+}
+
+async function openScenario(id) {
+  const modal = document.getElementById('scenario-modal');
+  const title = document.getElementById('scenario-title');
+  const content = document.getElementById('scenario-content');
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-scenario-details.php?id=${id}`);
+    const data = await res.json();
+    if (!data.success) throw new Error(data.message || 'Failed');
+    title.textContent = data.scenario.title || 'Scenario';
+    content.innerHTML = renderScenarioQuestions(data);
+  } catch (e) { content.innerHTML = '<div class="p-6 text-red-600">Failed to load scenario.</div>'; }
+}
+
+function renderScenarioQuestions(data) {
+  const q = data.questions || [];
+  return q.map((item, idx) => `
+    <div class="mb-4">
+      <div class="font-medium text-gray-800 mb-2">${idx+1}. ${escapeHtml(item.question)}</div>
+      ${(item.options || []).map(opt => `
+        <label class="flex items-center space-x-2 mb-1">
+          <input type="radio" name="q_${item.id}" value="${escapeHtml(opt.id)}" class="text-primary">
+          <span class="text-sm text-gray-700">${escapeHtml(opt.text)}</span>
+        </label>`).join('')}
+    </div>`).join('') + `
+    <div class="text-right">
+      <button class="px-4 py-2 bg-primary text-white rounded" onclick="submitScenario(${data.scenario.id})">Submit</button>
+    </div>`;
+}
+
+async function loadCustomerService() {
+  const type = document.getElementById('service-type-filter').value;
+  const container = document.getElementById('customer-service-container');
+  container.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-customer-service.php?type=${encodeURIComponent(type)}`);
+    const data = await res.json();
+    if (!data.success || !data.items.length) { container.innerHTML = '<div class="p-6 text-gray-500">No items.</div>'; return; }
+    container.innerHTML = data.items.map(cs => `
+      <div class="border rounded-lg p-4 mb-3">
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="font-semibold text-gray-800">${escapeHtml(cs.title || 'Case')}</div>
+            <div class="text-sm text-gray-500">Difficulty: ${cs.difficulty || '-'}</div>
+          </div>
+          <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm" onclick="openCustomerService(${cs.id})">Practice</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { container.innerHTML = '<div class="p-6 text-red-600">Error loading.</div>'; }
+}
+
+async function openCustomerService(id) {
+  const modal = document.getElementById('customer-service-modal');
+  const title = document.getElementById('cs-title');
+  const content = document.getElementById('customer-service-content');
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-customer-service-details.php?id=${id}`);
+    const data = await res.json();
+    if (!data.success) throw new Error();
+    title.textContent = data.item.title || 'Customer Service';
+    content.innerHTML = `
+      <div class="mb-4 text-gray-800">${escapeHtml(data.item.prompt || '')}</div>
+      <textarea id="cs-response" class="w-full border rounded p-2" rows="4" placeholder="Type your response..."></textarea>
+      <div class="text-right mt-3">
+        <button class="px-4 py-2 bg-primary text-white rounded" onclick="submitCustomerService(${id})">Submit Response</button>
+      </div>`;
+  } catch(e) { content.innerHTML = '<div class="p-6 text-red-600">Failed to load.</div>'; }
+}
+
+async function loadProblems() {
+  const sev = document.getElementById('problem-severity-filter').value;
+  const container = document.getElementById('problems-container');
+  container.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-problems.php?severity=${encodeURIComponent(sev)}`);
+    const data = await res.json();
+    if (!data.success || !data.scenarios.length) { container.innerHTML = '<div class="p-6 text-gray-500">No problems found.</div>'; return; }
+    container.innerHTML = data.scenarios.map(p => `
+      <div class="border rounded-lg p-4 mb-3">
+        <div class="flex justify-between items-center">
+          <div>
+            <div class="font-semibold text-gray-800">${escapeHtml(p.title || 'Problem')}</div>
+            <div class="text-sm text-gray-500">Severity: ${p.severity || '-'}</div>
+          </div>
+          <button class="px-3 py-1 bg-blue-600 text-white rounded text-sm" onclick="openProblem(${p.id})">Start</button>
+        </div>
+      </div>`).join('');
+  } catch(e) { container.innerHTML = '<div class="p-6 text-red-600">Error loading problems.</div>'; }
+}
+
+async function openProblem(id) {
+  const modal = document.getElementById('problem-modal');
+  const title = document.getElementById('problem-title');
+  const content = document.getElementById('problem-content');
+  modal.classList.remove('hidden');
+  content.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch(`../../api/training/get-problem-details.php?id=${id}`);
+    const data = await res.json();
+    if (!data.success) throw new Error();
+    title.textContent = data.item.title || 'Problem';
+    content.innerHTML = `
+      <div class="mb-4 text-gray-800">${escapeHtml(data.item.description || '')}</div>
+      <textarea id="problem-response" class="w-full border rounded p-2" rows="4" placeholder="Describe your solution..."></textarea>
+      <div class="text-right mt-3">
+        <button class="px-4 py-2 bg-primary text-white rounded" onclick="submitProblem(${id})">Submit Solution</button>
+      </div>`;
+  } catch(e) { content.innerHTML = '<div class="p-6 text-red-600">Failed to load.</div>'; }
+}
+
+async function loadProgress() {
+  const container = document.getElementById('progress-container');
+  container.innerHTML = '<div class="p-6 text-gray-500">Loading...</div>';
+  try {
+    const res = await fetch('../../api/training/get-progress.php');
+    const data = await res.json();
+    if (!data.success) throw new Error();
+    container.innerHTML = renderProgress(data);
+  } catch(e) { container.innerHTML = '<div class="p-6 text-red-600">Error loading progress.</div>'; }
+}
+
+function renderProgress(data) {
+  const rows = (data.recent_activity || []).map(a => `<tr>
+    <td class="px-4 py-2 text-sm text-gray-700">${escapeHtml(a.type)}</td>
+    <td class="px-4 py-2 text-sm text-gray-700">${escapeHtml(a.title)}</td>
+    <td class="px-4 py-2 text-sm text-gray-700">${a.score ?? '-'}${a.score!=null?'%':''}</td>
+    <td class="px-4 py-2 text-sm text-gray-700">${escapeHtml(a.completed_at)}</td>
+  </tr>`).join('');
+  return `
+    <div class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-200">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
+          </tr>
+        </thead>
+        <tbody class="bg-white divide-y divide-gray-200">${rows || '<tr><td colspan="4" class="px-4 py-6 text-center text-gray-500">No progress yet.</td></tr>'}</tbody>
+      </table>
+    </div>`;
+}
+
+function closeScenarioModal(){ document.getElementById('scenario-modal').classList.add('hidden'); }
+function closeCustomerServiceModal(){ document.getElementById('customer-service-modal').classList.add('hidden'); }
+function closeProblemModal(){ document.getElementById('problem-modal').classList.add('hidden'); }
+
+function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+
+// Filters
+document.addEventListener('change', (e)=>{
+  if (e.target && e.target.id==='scenario-difficulty-filter' || e.target.id==='scenario-category-filter') loadScenarios();
+  if (e.target && e.target.id==='service-type-filter') loadCustomerService();
+  if (e.target && e.target.id==='problem-severity-filter') loadProblems();
+});
+// Training Dashboard JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    initializeTrainingDashboard();
+    // Load initial data
+    loadScenarios();
+    loadCustomerService();
+    loadProblems();
+    loadProgress();
+});
+
+// Trivia refresh function
+function refreshTrivia() {
+    const triviaFacts = [
+        "The world's largest hotel is the First World Hotel in Malaysia with 7,351 rooms.",
+        "The Burj Al Arab in Dubai has a helipad on its roof, 210 meters above the ground.",
+        "The oldest hotel still in operation is the Nishiyama Onsen Keiunkan in Japan, opened in 705 AD.",
+        "The most expensive hotel room in the world is the Royal Villa at the Grand Resort Lagonissi in Greece, costing $50,000 per night.",
+        "The world's highest hotel is the Ritz-Carlton Hong Kong, located on the 102nd to 118th floors.",
+        "The largest hotel chain in the world is Marriott International with over 7,000 properties.",
+        "The first hotel to offer room service was the Waldorf-Astoria in New York City in 1893.",
+        "The world's most remote hotel is the Amundsen-Scott South Pole Station in Antarctica.",
+        "The first hotel to have electricity was the Hotel Savoy in London in 1889.",
+        "The world's largest hotel suite is the Royal Villa at the Grand Resort Lagonissi, covering 1,300 square meters.",
+        "The first hotel to have a swimming pool was the Hotel del Coronado in San Diego in 1888.",
+        "The world's most haunted hotel is said to be the Stanley Hotel in Colorado, which inspired Stephen King's 'The Shining'.",
+        "The first hotel to have air conditioning was the Hotel Pennsylvania in New York City in 1925.",
+        "The world's most expensive hotel room service meal was ordered at the Ritz Paris for €1,000.",
+        "The first hotel to have a telephone in every room was the Hotel Pennsylvania in 1900.",
+        "The world's largest hotel lobby is at the Venetian Macao, covering 550,000 square feet.",
+        "The first hotel to have an elevator was the Hotel Astor in New York City in 1904.",
+        "The world's most photographed hotel is the Burj Al Arab in Dubai.",
+        "The first hotel to have a restaurant was the City Hotel in New York City in 1794.",
+        "The world's most sustainable hotel is the Proximity Hotel in North Carolina, the first LEED Platinum hotel in the US."
+    ];
+    
+    const randomFact = triviaFacts[Math.floor(Math.random() * triviaFacts.length)];
+    const triviaContent = document.getElementById('trivia-content');
+    
+    if (triviaContent) {
+        triviaContent.innerHTML = `<p class="text-lg leading-relaxed">${randomFact}</p>`;
+    }
+}
+
+// Motivation refresh function
+function refreshMotivation() {
+    const motivationalQuotes = [
+        "Excellence is not a skill. It's an attitude. - Ralph Marston",
+        "The only way to do great work is to love what you do. - Steve Jobs",
+        "Success is not final, failure is not fatal: it is the courage to continue that counts. - Winston Churchill",
+        "The future belongs to those who believe in the beauty of their dreams. - Eleanor Roosevelt",
+        "Quality is not an act, it is a habit. - Aristotle",
+        "The best way to predict the future is to create it. - Peter Drucker",
+        "Service to others is the rent you pay for your room here on earth. - Muhammad Ali",
+        "The difference between ordinary and extraordinary is that little extra. - Jimmy Johnson",
+        "Your work is going to fill a large part of your life, and the only way to be truly satisfied is to do what you believe is great work. - Steve Jobs",
+        "The only limit to our realization of tomorrow will be our doubts of today. - Franklin D. Roosevelt"
+    ];
+    
+    const randomQuote = motivationalQuotes[Math.floor(Math.random() * motivationalQuotes.length)];
+    const motivationContent = document.getElementById('motivation-content');
+    
+    if (motivationContent) {
+        motivationContent.innerHTML = `<p class="text-lg italic leading-relaxed">"${randomQuote}"</p>`;
+    }
+}
+
+function initializeTrainingDashboard() {
+    switchTrainingTab('scenarios');
+    
+    // Initialize filter change listeners with null checks
+    const difficultyFilter = document.getElementById('scenario-difficulty-filter');
+    const categoryFilter = document.getElementById('scenario-category-filter');
+    const serviceTypeFilter = document.getElementById('service-type-filter');
+    const problemSeverityFilter = document.getElementById('problem-severity-filter');
+    
+    if (difficultyFilter) {
+        difficultyFilter.addEventListener('change', loadScenarios);
+    }
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', loadScenarios);
+    }
+    if (serviceTypeFilter) {
+        serviceTypeFilter.addEventListener('change', loadCustomerService);
+    }
+    if (problemSeverityFilter) {
+        problemSeverityFilter.addEventListener('change', loadProblems);
+    }
+}
+
+// Tab switching functionality
+function switchTrainingTab(tabName) {
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.add('hidden');
+        content.classList.remove('active');
+    });
+    
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+        button.classList.remove('border-primary', 'text-primary');
+        button.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    const selectedContent = document.getElementById(`tab-content-${tabName}`);
+    if (selectedContent) {
+        selectedContent.classList.remove('hidden');
+        selectedContent.classList.add('active');
+    }
+    
+    const selectedButton = document.getElementById(`tab-${tabName}`);
+    if (selectedButton) {
+        selectedButton.classList.add('active', 'border-primary', 'text-primary');
+        selectedButton.classList.remove('border-transparent', 'text-gray-500');
+    }
+    
+    switch(tabName) {
+        case 'scenarios': loadScenarios(); break;
+        case 'customer-service': loadCustomerService(); break;
+        case 'problems': loadProblems(); break;
+        case 'progress': loadProgress(); break;
+    }
+}
+
+// Load functions
+function loadScenarios() {
+    const container = document.getElementById('scenarios-container');
+    const difficultyFilterElement = document.getElementById('scenario-difficulty-filter');
+    const categoryFilterElement = document.getElementById('scenario-category-filter');
+    
+    if (!container) {
+        console.warn('Scenarios container not found');
+        return;
+    }
+    
+    const difficultyFilter = difficultyFilterElement ? difficultyFilterElement.value : '';
+    const categoryFilter = categoryFilterElement ? categoryFilterElement.value : '';
+    
+    // Show loading state
+    container.innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-gray-400 text-4xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Loading Scenarios...</h3>
+        </div>
+    `;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (difficultyFilter) params.append('difficulty', difficultyFilter);
+    if (categoryFilter) params.append('category', categoryFilter);
+    
+    // Fetch scenarios from API
+    fetch(`../../api/training/get-scenarios.php?${params.toString()}`, {
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                displayScenarios(data.scenarios);
+            } else {
+                throw new Error(data.message || 'Failed to load scenarios');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scenarios:', error);
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Error Loading Scenarios</h3>
+                    <p class="text-gray-500 mb-4">Unable to load training scenarios. Please try again later.</p>
+                    <button onclick="loadScenarios()" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                        <i class="fas fa-refresh mr-2"></i>Retry
+                    </button>
+                </div>
+            `;
+        });
+}
+
+function loadCustomerService() {
+    const container = document.getElementById('customer-service-container');
+    const typeFilterElement = document.getElementById('service-type-filter');
+    
+    if (!container) {
+        console.warn('Customer service container not found');
+        return;
+    }
+    
+    const typeFilter = typeFilterElement ? typeFilterElement.value : '';
+    
+    // Show loading state
+    container.innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-gray-400 text-4xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Loading Customer Service Scenarios...</h3>
+        </div>
+    `;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (typeFilter) params.append('type', typeFilter);
+    
+    // Fetch customer service scenarios from API
+    fetch(`../../api/training/get-customer-service.php?${params.toString()}`, {
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                displayCustomerService(data.scenarios);
+            } else {
+                throw new Error(data.message || 'Failed to load customer service scenarios');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading customer service scenarios:', error);
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Error Loading Customer Service Scenarios</h3>
+                    <p class="text-gray-500 mb-4">Unable to load customer service scenarios. Please try again later.</p>
+                    <button onclick="loadCustomerService()" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                        <i class="fas fa-refresh mr-2"></i>Retry
+                    </button>
+                </div>
+            `;
+        });
+}
+
+function loadProblems() {
+    const container = document.getElementById('problems-container');
+    const severityFilterElement = document.getElementById('problem-severity-filter');
+    
+    if (!container) {
+        console.warn('Problems container not found');
+        return;
+    }
+    
+    const severityFilter = severityFilterElement ? severityFilterElement.value : '';
+    
+    // Show loading state
+    container.innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-gray-400 text-4xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Loading Problem Scenarios...</h3>
+        </div>
+    `;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    if (severityFilter) params.append('severity', severityFilter);
+    
+    // Fetch problem scenarios from API
+    fetch(`../../api/training/get-problems.php?${params.toString()}`, {
+        credentials: 'same-origin'
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                displayProblems(data.scenarios);
+            } else {
+                throw new Error(data.message || 'Failed to load problem scenarios');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading problem scenarios:', error);
+            container.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">Error Loading Problem Scenarios</h3>
+                    <p class="text-gray-500 mb-4">Unable to load problem scenarios. Please try again later.</p>
+                    <button onclick="loadProblems()" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                        <i class="fas fa-refresh mr-2"></i>Retry
+                    </button>
+                </div>
+            `;
+        });
+}
+
+function loadProgress() {
+    const container = document.getElementById('progress-container');
+    
+    if (!container) {
+        console.warn('Progress container not found');
+        return;
+    }
+    
+    // Show loading state
+    container.innerHTML = `
+        <div class="text-center py-8">
+            <i class="fas fa-spinner fa-spin text-gray-400 text-4xl mb-4"></i>
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Loading Progress...</h3>
+        </div>
+    `;
+    
+    // For now, show sample progress data
+    setTimeout(() => {
+        const sampleProgress = {
+            completion_rate: 75,
+            average_score: 85,
+            total_points: 1250,
+            recent_activity: [
+                {
+                    scenario_title: 'Front Desk Check-in Process',
+                    completed_at: new Date().toISOString(),
+                    score: 90,
+                    points: 100
+                },
+                {
+                    scenario_title: 'Handling Guest Complaints',
+                    completed_at: new Date(Date.now() - 86400000).toISOString(),
+                    score: 85,
+                    points: 150
+                }
+            ],
+            certificates: [
+                {
+                    name: 'Front Desk Operations',
+                    earned_at: new Date(Date.now() - 172800000).toISOString()
+                },
+                {
+                    name: 'Customer Service Excellence',
+                    earned_at: new Date(Date.now() - 259200000).toISOString()
+                }
+            ]
+        };
+        
+        displayProgress(sampleProgress);
+    }, 500);
+}
+
+// Display functions
+function displayScenarios(scenarios) {
+    const container = document.getElementById('scenarios-container');
+    
+    if (!scenarios || scenarios.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-play-circle text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No scenarios found</h3>
+                <p class="text-gray-500">No scenarios match your current filters.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const gridHtml = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${scenarios.map(scenario => `
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-medium text-gray-900">${scenario.title}</h4>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${getDifficultyClass(scenario.difficulty)}">
+                                ${getDifficultyLabel(scenario.difficulty)}
+                            </span>
+                        </div>
+                        <p class="text-gray-600 mb-4">${scenario.description}</p>
+                        <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                            <span><i class="fas fa-clock mr-1"></i>${scenario.estimated_time} min</span>
+                            <span><i class="fas fa-star mr-1"></i>${scenario.points} points</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-500">${getCategoryLabel(scenario.category)}</span>
+                            <button onclick="startScenario('${scenario.id}')" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                                <i class="fas fa-play mr-2"></i>Start
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    container.innerHTML = gridHtml;
+}
+
+function displayCustomerService(scenarios) {
+    const container = document.getElementById('customer-service-container');
+    
+    if (!scenarios || scenarios.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-headset text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No customer service scenarios found</h3>
+                <p class="text-gray-500">No scenarios match your current filters.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const gridHtml = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${scenarios.map(scenario => `
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-medium text-gray-900">${scenario.title}</h4>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${getServiceTypeClass(scenario.type)}">
+                                ${getServiceTypeLabel(scenario.type)}
+                            </span>
+                        </div>
+                        <p class="text-gray-600 mb-4">${scenario.description}</p>
+                        <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                            <span><i class="fas fa-clock mr-1"></i>${scenario.estimated_time} min</span>
+                            <span><i class="fas fa-star mr-1"></i>${scenario.points} points</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-500">${getDifficultyLabel(scenario.difficulty)}</span>
+                            <button onclick="startCustomerService('${scenario.id}')" class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                                <i class="fas fa-play mr-2"></i>Practice
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    container.innerHTML = gridHtml;
+}
+
+function displayProblems(scenarios) {
+    const container = document.getElementById('problems-container');
+    
+    if (!scenarios || scenarios.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-8">
+                <i class="fas fa-exclamation-triangle text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No problem scenarios found</h3>
+                <p class="text-gray-500">No scenarios match your current filters.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const gridHtml = `
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            ${scenarios.map(scenario => `
+                <div class="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-lg font-medium text-gray-900">${scenario.title}</h4>
+                            <span class="px-2 py-1 text-xs font-medium rounded-full ${getSeverityClass(scenario.severity)}">
+                                ${getSeverityLabel(scenario.severity)}
+                            </span>
+                        </div>
+                        <p class="text-gray-600 mb-4">${scenario.description}</p>
+                        <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                            <span><i class="fas fa-clock mr-1"></i>${scenario.time_limit} min</span>
+                            <span><i class="fas fa-star mr-1"></i>${scenario.points} points</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-500">${getDifficultyLabel(scenario.difficulty)}</span>
+                            <button onclick="startProblemScenario('${scenario.id}')" class="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors">
+                                <i class="fas fa-play mr-2"></i>Solve
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    
+    container.innerHTML = gridHtml;
+}
+
+function displayProgress(progress) {
+    const container = document.getElementById('progress-container');
+    
+    const progressHtml = `
+        <div class="space-y-6">
+            <!-- Overall Progress -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 class="text-lg font-medium text-gray-900 mb-4">Overall Progress</h4>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-blue-600">${progress.completion_rate}%</div>
+                        <div class="text-sm text-gray-500">Completion Rate</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-green-600">${progress.average_score}%</div>
+                        <div class="text-sm text-gray-500">Average Score</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl font-bold text-purple-600">${progress.total_points}</div>
+                        <div class="text-sm text-gray-500">Total Points</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Activity -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 class="text-lg font-medium text-gray-900 mb-4">Recent Activity</h4>
+                <div class="space-y-3">
+                    ${progress.recent_activity.map(activity => `
+                        <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center">
+                                <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+                                    <i class="fas fa-play text-blue-600"></i>
+                                </div>
+                                <div>
+                                    <div class="font-medium text-gray-900">${activity.scenario_title}</div>
+                                    <div class="text-sm text-gray-500">${formatDate(activity.completed_at)}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="font-medium text-gray-900">${activity.score}%</div>
+                                <div class="text-sm text-gray-500">${activity.points} points</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            
+            <!-- Certificates -->
+            <div class="bg-white border border-gray-200 rounded-lg p-6">
+                <h4 class="text-lg font-medium text-gray-900 mb-4">Certificates Earned</h4>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    ${progress.certificates.map(certificate => `
+                        <div class="flex items-center p-4 border border-gray-200 rounded-lg">
+                            <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                                <i class="fas fa-certificate text-yellow-600 text-xl"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium text-gray-900">${certificate.name}</div>
+                                <div class="text-sm text-gray-500">Earned on ${formatDate(certificate.earned_at)}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    container.innerHTML = progressHtml;
+}
+
+// Scenario functions
+function startScenario(scenarioId) {
+    fetch(`../../api/training/get-scenario-details.php?id=${scenarioId}`, {
+        credentials: 'same-origin'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                openScenarioModal(data.scenario);
+            } else {
+                Utils.showNotification(data.message || 'Error loading scenario', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scenario:', error);
+            Utils.showNotification('Error loading scenario', 'error');
+        });
+}
+
+function openScenarioModal(scenario) {
+    window.currentScenarioId = scenario.id;
+    document.getElementById('scenario-title').textContent = scenario.title;
+    document.getElementById('scenario-content').innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 class="font-medium text-blue-900 mb-2">Scenario Description</h4>
+                <p class="text-blue-800">${scenario.description || 'No description available'}</p>
+            </div>
+            
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                <h4 class="font-medium text-gray-900 mb-2">Instructions</h4>
+                <p class="text-gray-700">${scenario.instructions || 'Complete the scenario by answering the questions below. Choose the best response for each situation.'}</p>
+            </div>
+            
+            <div class="space-y-4">
+                ${scenario.questions && scenario.questions.length > 0 ? scenario.questions.map((question, index) => `
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h5 class="font-medium text-gray-900 mb-2">Question ${index + 1}</h5>
+                        <p class="text-gray-700 mb-3">${question.question}</p>
+                        <div class="space-y-2">
+                            ${question.options && question.options.length > 0 ? question.options.map(option => `
+                                <label class="flex items-center">
+                                    <input type="radio" name="q${index}" value="${option.value}" class="mr-2">
+                                    <span class="text-gray-700">${option.text}</span>
+                                </label>
+                            `).join('') : '<p class="text-gray-500 italic">No options available</p>'}
+                        </div>
+                    </div>
+                `).join('') : `
+                    <div class="border border-gray-200 rounded-lg p-4 text-center">
+                        <p class="text-gray-500 italic">No questions available for this scenario. This is a practice scenario where you can learn from the description above.</p>
+                    </div>
+                `}
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('scenario-modal').classList.remove('hidden');
+    startScenarioTimer();
+}
+
+function closeScenarioModal() {
+    document.getElementById('scenario-modal').classList.add('hidden');
+    stopScenarioTimer();
+}
+
+function startScenarioTimer() {
+    // Timer implementation
+    let seconds = 0;
+    window.scenarioTimer = setInterval(() => {
+        seconds++;
+        const minutes = Math.floor(seconds / 60);
+        const remainingSeconds = seconds % 60;
+        document.getElementById('scenario-timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }, 1000);
+}
+
+function stopScenarioTimer() {
+    if (window.scenarioTimer) {
+        clearInterval(window.scenarioTimer);
+        window.scenarioTimer = null;
+    }
+}
+
+function pauseScenario() {
+    const pauseBtn = document.getElementById('pause-btn');
+    if (pauseBtn.innerHTML.includes('Pause')) {
+        pauseBtn.innerHTML = '<i class="fas fa-play mr-2"></i>Resume';
+        stopScenarioTimer();
+    } else {
+        pauseBtn.innerHTML = '<i class="fas fa-pause mr-2"></i>Pause';
+        startScenarioTimer();
+    }
+}
+
+function submitScenario() {
+    // Get the current scenario ID from the modal or use a default
+    const scenarioId = window.currentScenarioId || 1;
+    
+    // Collect answers
+    const answers = {};
+    const questions = document.querySelectorAll('[name^="q"]');
+    questions.forEach(question => {
+        const selected = document.querySelector(`input[name="${question.name}"]:checked`);
+        if (selected) {
+            answers[question.name] = selected.value;
+        }
+    });
+    
+    // Submit answers
+    fetch('../../api/training/submit-scenario.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            scenario_id: scenarioId,
+            answers: answers
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Utils.showNotification(`Scenario completed! Score: ${data.score}%`, 'success');
+            closeScenarioModal();
+            loadScenarios();
+            loadProgress();
+        } else {
+            Utils.showNotification(data.message || 'Error submitting scenario', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting scenario:', error);
+        Utils.showNotification('Error submitting scenario', 'error');
+    });
+}
+
+// Customer service functions
+function startCustomerService(scenarioId) {
+    fetch(`../../api/training/get-customer-service-details.php?id=${scenarioId}`, {
+        credentials: 'same-origin'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                openCustomerServiceModal(data.item);
+            } else {
+                Utils.showNotification(data.message || 'Error loading customer service scenario', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading customer service scenario:', error);
+            Utils.showNotification('Error loading customer service scenario', 'error');
+        });
+}
+
+function openCustomerServiceModal(scenario) {
+    if (!scenario) {
+        console.error('Customer service scenario is undefined');
+        Utils.showNotification('Error: Scenario data is missing', 'error');
+        return;
+    }
+    
+    window.currentCustomerServiceScenario = scenario.id;
+    document.getElementById('cs-title').textContent = scenario.title || 'Customer Service Practice';
+    document.getElementById('cs-difficulty').textContent = getDifficultyLabel(scenario.difficulty || 'beginner');
+    document.getElementById('cs-points').textContent = scenario.points || 0;
+    
+    document.getElementById('customer-service-content').innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 class="font-medium text-green-900 mb-2">Scenario Description</h4>
+                <p class="text-green-800">${scenario.description || 'No description available'}</p>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 class="font-medium text-yellow-900 mb-2">Instructions</h4>
+                <p class="text-yellow-800">${scenario.instructions || 'Practice handling customer service situations professionally. Use the tips below to guide your response.'}</p>
+            </div>
+            
+            <div class="space-y-4">
+                <label class="block">
+                    <span class="text-gray-700 font-medium">Your Response:</span>
+                    <textarea id="customer-service-response" rows="4" 
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                              placeholder="Type your response to the guest..."></textarea>
+                </label>
+                
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h5 class="font-medium text-gray-900 mb-2">Tips for Good Customer Service:</h5>
+                    <ul class="text-sm text-gray-700 space-y-1">
+                        <li>• Listen actively and acknowledge the guest's concerns</li>
+                        <li>• Show empathy and understanding</li>
+                        <li>• Offer specific solutions or alternatives</li>
+                        <li>• Follow up to ensure satisfaction</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('customer-service-modal').classList.remove('hidden');
+}
+
+function closeCustomerServiceModal() {
+    document.getElementById('customer-service-modal').classList.add('hidden');
+}
+
+function skipCustomerService() {
+    Utils.showNotification('Scenario skipped', 'info');
+    closeCustomerServiceModal();
+}
+
+function submitCustomerService() {
+    const response = document.getElementById('customer-service-response').value;
+    const scenarioId = window.currentCustomerServiceScenario || 'customer_service';
+    
+    if (!response.trim()) {
+        Utils.showNotification('Please provide a response', 'warning');
+        return;
+    }
+    
+    fetch('../../api/training/submit-customer-service.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ 
+            response: response,
+            scenario_id: scenarioId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Utils.showNotification(`Response submitted! Score: ${data.score}%`, 'success');
+            closeCustomerServiceModal();
+            loadCustomerService();
+            loadProgress();
+        } else {
+            Utils.showNotification(data.message || 'Error submitting response', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting response:', error);
+        Utils.showNotification('Error submitting response', 'error');
+    });
+}
+
+// Problem scenario functions
+function startProblemScenario(scenarioId) {
+    fetch(`../../api/training/get-problem-details.php?id=${scenarioId}`, {
+        credentials: 'same-origin'
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                openProblemModal(data.item);
+            } else {
+                Utils.showNotification(data.message || 'Error loading problem scenario', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading problem scenario:', error);
+            Utils.showNotification('Error loading problem scenario', 'error');
+        });
+}
+
+function openProblemModal(scenario) {
+    if (!scenario) {
+        console.error('Problem scenario is undefined');
+        Utils.showNotification('Error: Scenario data is missing', 'error');
+        return;
+    }
+    
+    window.currentProblemScenario = scenario.id;
+    document.getElementById('problem-title').textContent = scenario.title || 'Problem Scenario';
+    document.getElementById('problem-severity').textContent = getSeverityLabel(scenario.severity || 'medium');
+    
+    document.getElementById('problem-content').innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 class="font-medium text-red-900 mb-2">Problem Description</h4>
+                <p class="text-red-800">${scenario.description || 'No description available'}</p>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 class="font-medium text-yellow-900 mb-2">Instructions</h4>
+                <p class="text-yellow-800">${scenario.instructions || 'Analyze the problem and provide a comprehensive solution. Consider the impact, urgency, and available options before proposing your approach.'}</p>
+            </div>
+            
+            <div class="space-y-4">
+                <label class="block">
+                    <span class="text-gray-700 font-medium">Your Solution:</span>
+                    <textarea id="problem-solution" rows="4" 
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary focus:border-primary"
+                              placeholder="Describe your solution to the problem..."></textarea>
+                </label>
+                
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h5 class="font-medium text-gray-900 mb-2">Problem-Solving Steps:</h5>
+                    <ol class="text-sm text-gray-700 space-y-1">
+                        <li>1. Identify the root cause of the problem</li>
+                        <li>2. Assess the impact and urgency</li>
+                        <li>3. Consider multiple solution options</li>
+                        <li>4. Choose the best solution</li>
+                        <li>5. Implement and monitor the solution</li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('problem-modal').classList.remove('hidden');
+    startProblemTimer(scenario.time_limit);
+}
+
+function closeProblemModal() {
+    document.getElementById('problem-modal').classList.add('hidden');
+    stopProblemTimer();
+}
+
+function startProblemTimer(timeLimit) {
+    let timeLeft = timeLimit * 60; // Convert to seconds
+    window.problemTimer = setInterval(() => {
+        timeLeft--;
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('problem-timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (timeLeft <= 0) {
+            stopProblemTimer();
+            Utils.showNotification('Time is up!', 'warning');
+        }
+    }, 1000);
+}
+
+function stopProblemTimer() {
+    if (window.problemTimer) {
+        clearInterval(window.problemTimer);
+        window.problemTimer = null;
+    }
+}
+
+function requestHint() {
+    Utils.showNotification('Hint: Consider the guest\'s perspective and hotel policies', 'info');
+}
+
+function submitProblem() {
+    const solution = document.getElementById('problem-solution').value;
+    const scenarioId = window.currentProblemScenario || 1;
+    
+    if (!solution.trim()) {
+        Utils.showNotification('Please provide a solution', 'warning');
+        return;
+    }
+    
+    fetch('../../api/training/submit-problem.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ 
+            scenario_id: scenarioId,
+            solution: solution 
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Utils.showNotification(`Solution submitted! Score: ${data.score}%`, 'success');
+            closeProblemModal();
+            loadProblems();
+            loadProgress();
+        } else {
+            Utils.showNotification(data.message || 'Error submitting solution', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting solution:', error);
+        Utils.showNotification('Error submitting solution', 'error');
+    });
+}
+
+// Utility functions
+function exportProgress() {
+    fetch('../../api/export-training-progress.php', {
+        credentials: 'same-origin'
+    })
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `training_progress_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            Utils.showNotification('Progress exported successfully!', 'success');
+        })
+        .catch(error => {
+            console.error('Error exporting progress:', error);
+            Utils.showNotification('Error exporting progress', 'error');
+        });
+}
+
+// Helper functions for styling
+function getDifficultyClass(difficulty) {
+    switch (difficulty) {
+        case 'beginner': return 'bg-green-100 text-green-800';
+        case 'intermediate': return 'bg-yellow-100 text-yellow-800';
+        case 'advanced': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getDifficultyLabel(difficulty) {
+    return difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+}
+
+function getCategoryLabel(category) {
+    switch (category) {
+        case 'front_desk': return 'Front Desk';
+        case 'housekeeping': return 'Housekeeping';
+        case 'management': return 'Management';
+        default: return category;
+    }
+}
+
+function getServiceTypeClass(type) {
+    switch (type) {
+        case 'complaints': return 'bg-red-100 text-red-800';
+        case 'requests': return 'bg-blue-100 text-blue-800';
+        case 'emergencies': return 'bg-orange-100 text-orange-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getServiceTypeLabel(type) {
+    return type.charAt(0).toUpperCase() + type.slice(1);
+}
+
+function getSeverityClass(severity) {
+    switch (severity) {
+        case 'low': return 'bg-green-100 text-green-800';
+        case 'medium': return 'bg-yellow-100 text-yellow-800';
+        case 'high': return 'bg-orange-100 text-orange-800';
+        case 'critical': return 'bg-red-100 text-red-800';
+        default: return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function getSeverityLabel(severity) {
+    return severity.charAt(0).toUpperCase() + severity.slice(1);
+}
+
+function formatDate(dateString) {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    });
+}

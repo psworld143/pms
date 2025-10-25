@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Modal Close</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body class="bg-gray-100 p-8">
+    <h1 class="text-2xl font-bold mb-4">Test Modal Close Functions</h1>
+    
+    <div class="space-x-4">
+        <button onclick="testJournalModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+            Test Journal Entry Modal
+        </button>
+        
+        <button onclick="testMappingModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+            Test Account Mapping Modal
+        </button>
+        
+        <button onclick="closeAllModals()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+            Close All Modals
+        </button>
+    </div>
+
+    <script>
+        function testJournalModal() {
+            const modal = `
+                <div id="journal-entry-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-1/2 shadow-lg rounded-md bg-white">
+                        <div class="mt-3">
+                            <div class="flex justify-between items-center mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">Test Journal Entry Details</h3>
+                                <button onclick="closeJournalEntryModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            <p>This is a test modal. Click X or Close to test closing.</p>
+                            <div class="mt-6 flex justify-end">
+                                <button onclick="closeJournalEntryModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('body').append(modal);
+        }
+        
+        function testMappingModal() {
+            const modal = `
+                <div id="account-mapping-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+                    <div class="relative top-10 mx-auto p-5 border w-11/12 md:w-4/5 lg:w-3/4 xl:w-2/3 shadow-lg rounded-md bg-white">
+                        <div class="mt-3">
+                            <div class="flex justify-between items-center mb-6">
+                                <h3 class="text-lg font-medium text-gray-900">Test Account Mapping Editor</h3>
+                                <button onclick="closeAccountMappingModal()" class="text-gray-400 hover:text-gray-600">
+                                    <i class="fas fa-times text-xl"></i>
+                                </button>
+                            </div>
+                            <p>This is a test modal. Click X, Cancel, or Save to test closing.</p>
+                            <div class="mt-6 flex justify-end space-x-3">
+                                <button onclick="closeAccountMappingModal()" class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                    Cancel
+                                </button>
+                                <button onclick="closeAccountMappingModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            $('body').append(modal);
+        }
+        
+        function closeJournalEntryModal() {
+            console.log('Closing journal entry modal');
+            $('#journal-entry-modal').remove();
+        }
+        
+        function closeAccountMappingModal() {
+            console.log('Closing account mapping modal');
+            $('#account-mapping-modal').remove();
+        }
+        
+        function closeAllModals() {
+            closeJournalEntryModal();
+            closeAccountMappingModal();
+        }
+    </script>
+</body>
+</html>
