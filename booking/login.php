@@ -17,6 +17,12 @@ if (!file_exists('../includes/database.php')) {
 }
 
 require_once '../includes/database.php';
+
+// Check if functions file exists
+if (!file_exists('includes/functions.php')) {
+    die('Error: Booking functions not found. Path: ' . __DIR__ . '/includes/functions.php');
+}
+
 require_once 'includes/functions.php';
 
 $error = '';
