@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -143,7 +144,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
                             </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="total-value">$24,850</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="total-value">₱24,850</h3>
                             <p class="text-sm text-gray-600">Total Inventory Value</p>
                             <p class="text-xs text-purple-600 mt-1">+12% vs last month</p>
                         </div>

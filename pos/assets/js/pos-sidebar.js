@@ -40,15 +40,25 @@ function closeSidebar() {
 
 // Submenu functionality
 function toggleSubmenu(menuKey) {
+    console.log('toggleSubmenu called with key:', menuKey);
     const submenu = document.getElementById(`submenu-${menuKey}`);
     const chevron = document.getElementById(`chevron-${menuKey}`);
     
-    if (submenu.classList.contains('hidden')) {
-        submenu.classList.remove('hidden');
-        chevron.style.transform = 'rotate(180deg)';
+    console.log('Submenu element:', submenu);
+    console.log('Chevron element:', chevron);
+    
+    if (submenu && chevron) {
+        if (submenu.classList.contains('hidden')) {
+            console.log('Showing submenu for:', menuKey);
+            submenu.classList.remove('hidden');
+            chevron.style.transform = 'rotate(180deg)';
+        } else {
+            console.log('Hiding submenu for:', menuKey);
+            submenu.classList.add('hidden');
+            chevron.style.transform = 'rotate(0deg)';
+        }
     } else {
-        submenu.classList.add('hidden');
-        chevron.style.transform = 'rotate(0deg)';
+        console.error('Could not find submenu or chevron for:', menuKey);
     }
 }
 

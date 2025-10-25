@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -117,7 +118,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
                             </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="total-revenue">$156,420</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="total-revenue">₱156,420</h3>
                             <p class="text-sm text-gray-600">Total Revenue</p>
                             <p class="text-xs text-green-600 mt-1">+22% vs last month</p>
                         </div>
@@ -182,7 +183,7 @@ require_once '../includes/pos-functions.php';
                                                 <span class="text-sm text-gray-600">Weddings</span>
                                             </div>
                                             <div class="text-right">
-                                                <div class="text-sm font-semibold text-gray-900">$45,200</div>
+                                                <div class="text-sm font-semibold text-gray-900">₱45,200</div>
                                                 <div class="text-xs text-gray-500">28 events</div>
                                             </div>
                                         </div>
@@ -192,7 +193,7 @@ require_once '../includes/pos-functions.php';
                                                 <span class="text-sm text-gray-600">Corporate Events</span>
                                             </div>
                                             <div class="text-right">
-                                                <div class="text-sm font-semibold text-gray-900">$38,600</div>
+                                                <div class="text-sm font-semibold text-gray-900">₱38,600</div>
                                                 <div class="text-xs text-gray-500">22 events</div>
                                             </div>
                                         </div>
@@ -202,7 +203,7 @@ require_once '../includes/pos-functions.php';
                                                 <span class="text-sm text-gray-600">Birthday Parties</span>
                                             </div>
                                             <div class="text-right">
-                                                <div class="text-sm font-semibold text-gray-900">$28,400</div>
+                                                <div class="text-sm font-semibold text-gray-900">₱28,400</div>
                                                 <div class="text-xs text-gray-500">18 events</div>
                                             </div>
                                         </div>
@@ -226,7 +227,7 @@ require_once '../includes/pos-functions.php';
                                                 <span class="text-sm font-medium text-gray-900">Grand Ballroom</span>
                                             </div>
                                             <div class="text-right">
-                                                <div class="text-sm font-semibold text-gray-900">$52,500</div>
+                                                <div class="text-sm font-semibold text-gray-900">₱52,500</div>
                                                 <div class="text-xs text-gray-500">21 events</div>
                                             </div>
                                         </div>
@@ -238,7 +239,7 @@ require_once '../includes/pos-functions.php';
                                                 <span class="text-sm font-medium text-gray-900">Rooftop Garden</span>
                                             </div>
                                             <div class="text-right">
-                                                <div class="text-sm font-semibold text-gray-900">$38,200</div>
+                                                <div class="text-sm font-semibold text-gray-900">₱38,200</div>
                                                 <div class="text-xs text-gray-500">17 events</div>
                                             </div>
                                         </div>
@@ -250,7 +251,7 @@ require_once '../includes/pos-functions.php';
                                                 <span class="text-sm font-medium text-gray-900">Conference Room</span>
                                             </div>
                                             <div class="text-right">
-                                                <div class="text-sm font-semibold text-gray-900">$28,100</div>
+                                                <div class="text-sm font-semibold text-gray-900">₱28,100</div>
                                                 <div class="text-xs text-gray-500">24 events</div>
                                             </div>
                                         </div>
@@ -406,7 +407,7 @@ require_once '../includes/pos-functions.php';
                 if (eventsGrowth) eventsGrowth.textContent = '+15 this month';
             }
             if (totalRevenue) {
-                totalRevenue.textContent = `$${data.totalRevenue.toLocaleString()}`;
+                totalRevenue.textContent = `₱${data.totalRevenue.toLocaleString()}`;
                 const revenueGrowth = totalRevenue.parentElement.querySelector('.text-xs');
                 if (revenueGrowth) revenueGrowth.textContent = '+22% vs last month';
             }

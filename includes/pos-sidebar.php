@@ -1,16 +1,14 @@
 <?php
 // POS-specific sidebar component
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../booking/login.php');
-    exit();
-}
+// Note: Session checks should be done in the main page, not in included components
+// This allows for more flexible inclusion
 
-$user_role = $_SESSION['user_role'] ?? 'pos_user';
+$user_role = $_SESSION['pos_user_role'] ?? $_SESSION['user_role'] ?? 'pos_user';
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $current_url = $_SERVER['REQUEST_URI'];
 
 // Use absolute paths for navigation
-$base_path = '/seait/pms/pos/';
+$base_path = '/pms/pos/';
 
 // Function to check if a URL is active
 function isActiveUrl($url, $current_url) {
@@ -76,7 +74,7 @@ $navigation_items = [
 ?>
 
 <!-- Sidebar -->
-<aside id="sidebar" class="fixed left-0 top-16 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out z-30" data-mobile-open="false">
+<aside id="sidebar" class="fixed left-0 top-16 h-full w-64 bg-white shadow-lg transform transition-transform duration-300 ease-in-out lg:translate-x-0 -translate-x-full z-50">
     <div class="flex flex-col h-full">
         <!-- Sidebar Header -->
         <div class="p-4 border-b border-gray-200">
@@ -115,7 +113,38 @@ $navigation_items = [
     </div>
 </aside>
 
-<!-- Mobile Sidebar Toggle Button -->
-<button id="mobile-sidebar-toggle" onclick="toggleSidebar()" class="fixed top-20 left-4 z-50 lg:hidden bg-white border border-gray-300 rounded-lg p-2 shadow-lg">
-    <i class="fas fa-bars text-gray-600"></i>
-</button>
+<!-- Mobile Sidebar Overlay -->
+<div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
+
+<script>
+// Sidebar functionality - ensure it works immediately
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.toggle('-translate-x-full');
+        sidebar.classList.toggle('translate-x-0');
+        overlay.classList.toggle('hidden');
+    }
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (sidebar && overlay) {
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
+        overlay.classList.add('hidden');
+    }
+}
+
+// Close sidebar when clicking overlay
+document.addEventListener('DOMContentLoaded', function() {
+    const overlay = document.getElementById('sidebar-overlay');
+    if (overlay) {
+        overlay.addEventListener('click', closeSidebar);
+    }
+});
+</script>

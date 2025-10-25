@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -187,7 +188,7 @@ require_once '../includes/pos-functions.php';
                                             </div>
                                             <div class="flex justify-between text-sm">
                                                 <span class="text-gray-500">Rate:</span>
-                                                <span class="font-medium">$2,500/day</span>
+                                                <span class="font-medium">₱2,500/day</span>
                                             </div>
                                             <div class="flex justify-between text-sm">
                                                 <span class="text-gray-500">Features:</span>
@@ -225,7 +226,7 @@ require_once '../includes/pos-functions.php';
                                             </div>
                                             <div class="flex justify-between text-sm">
                                                 <span class="text-gray-500">Rate:</span>
-                                                <span class="font-medium">$500/day</span>
+                                                <span class="font-medium">₱500/day</span>
                                             </div>
                                             <div class="flex justify-between text-sm">
                                                 <span class="text-gray-500">Features:</span>
@@ -263,7 +264,7 @@ require_once '../includes/pos-functions.php';
                                             </div>
                                             <div class="flex justify-between text-sm">
                                                 <span class="text-gray-500">Rate:</span>
-                                                <span class="font-medium">$1,800/day</span>
+                                                <span class="font-medium">₱1,800/day</span>
                                             </div>
                                             <div class="flex justify-between text-sm">
                                                 <span class="text-gray-500">Features:</span>

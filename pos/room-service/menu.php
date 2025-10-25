@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -180,10 +181,10 @@ require_once '../includes/pos-functions.php';
                         <label for="price-filter" class="block text-sm font-medium text-gray-700 mb-2">Price Range</label>
                         <select id="price-filter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                             <option value="">All Prices</option>
-                            <option value="0-10">$0 - $10</option>
-                            <option value="10-25">$10 - $25</option>
-                            <option value="25-50">$25 - $50</option>
-                            <option value="50+">$50+</option>
+                            <option value="0-10">₱0 - $10</option>
+                            <option value="10-25">₱10 - $25</option>
+                            <option value="25-50">₱25 - $50</option>
+                            <option value="50+">₱50+</option>
                         </select>
                     </div>
                 </div>
@@ -261,7 +262,7 @@ require_once '../includes/pos-functions.php';
                                 <h4 class="font-semibold text-gray-900 mb-1">Club Sandwich</h4>
                                 <p class="text-sm text-gray-600 mb-2">Fresh turkey, bacon, lettuce, tomato</p>
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-lg font-bold text-blue-600">$12.99</span>
+                                    <span class="text-lg font-bold text-blue-600">₱12.99</span>
                                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Main Course</span>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -293,7 +294,7 @@ require_once '../includes/pos-functions.php';
                                 <h4 class="font-semibold text-gray-900 mb-1">Margherita Pizza</h4>
                                 <p class="text-sm text-gray-600 mb-2">Fresh mozzarella, tomato sauce, basil</p>
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-lg font-bold text-blue-600">$16.99</span>
+                                    <span class="text-lg font-bold text-blue-600">₱16.99</span>
                                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Main Course</span>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -325,7 +326,7 @@ require_once '../includes/pos-functions.php';
                                 <h4 class="font-semibold text-gray-900 mb-1">Caesar Salad</h4>
                                 <p class="text-sm text-gray-600 mb-2">Romaine lettuce, parmesan, croutons</p>
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-lg font-bold text-blue-600">$9.99</span>
+                                    <span class="text-lg font-bold text-blue-600">₱9.99</span>
                                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Appetizer</span>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -357,7 +358,7 @@ require_once '../includes/pos-functions.php';
                                 <h4 class="font-semibold text-gray-900 mb-1">Chocolate Cake</h4>
                                 <p class="text-sm text-gray-600 mb-2">Rich chocolate cake with ganache</p>
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-lg font-bold text-blue-600">$7.99</span>
+                                    <span class="text-lg font-bold text-blue-600">₱7.99</span>
                                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Dessert</span>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -407,7 +408,7 @@ require_once '../includes/pos-functions.php';
                                             <span class="text-sm text-gray-900">Main Course</span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="text-sm font-medium text-blue-600">$12.99</span>
+                                            <span class="text-sm font-medium text-blue-600">₱12.99</span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">

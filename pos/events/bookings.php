@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -143,7 +144,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
                             </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="total-revenue">$89,450</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="total-revenue">₱89,450</h3>
                             <p class="text-sm text-gray-600">Total Revenue</p>
                             <p class="text-xs text-purple-600 mt-1">+18% vs last month</p>
                         </div>
@@ -221,7 +222,7 @@ require_once '../includes/pos-functions.php';
                                         </div>
                                     </div>
                                     <div class="text-right">
-                                        <div class="text-lg font-semibold text-gray-900">$8,500</div>
+                                        <div class="text-lg font-semibold text-gray-900">₱8,500</div>
                                         <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                             Confirmed
                                         </span>
@@ -251,7 +252,7 @@ require_once '../includes/pos-functions.php';
                                         </div>
                                     </div>
                                     <div class="text-right">
-                                        <div class="text-lg font-semibold text-gray-900">$12,000</div>
+                                        <div class="text-lg font-semibold text-gray-900">₱12,000</div>
                                         <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                             Pending
                                         </span>
@@ -281,7 +282,7 @@ require_once '../includes/pos-functions.php';
                                         </div>
                                     </div>
                                     <div class="text-right">
-                                        <div class="text-lg font-semibold text-gray-900">$3,200</div>
+                                        <div class="text-lg font-semibold text-gray-900">₱3,200</div>
                                         <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
                                             Confirmed
                                         </span>
@@ -455,7 +456,7 @@ require_once '../includes/pos-functions.php';
                 if (pendingGrowth) pendingGrowth.textContent = 'Needs review';
             }
             if (totalRevenue) {
-                totalRevenue.textContent = `$${data.totalRevenue.toLocaleString()}`;
+                totalRevenue.textContent = `₱${data.totalRevenue.toLocaleString()}`;
                 const revenueGrowth = totalRevenue.parentElement.querySelector('.text-xs');
                 if (revenueGrowth) revenueGrowth.textContent = '+18% vs last month';
             }

@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -140,7 +141,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-yellow-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="revenue-today">$2,450</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="revenue-today">₱2,450</h3>
                             <p class="text-sm text-gray-600">Revenue Today</p>
                         </div>
                     </div>
@@ -264,7 +265,7 @@ require_once '../includes/pos-functions.php';
                                 <h4 class="font-semibold text-gray-900 mb-1">Swedish Massage</h4>
                                 <p class="text-sm text-gray-600 mb-2">Relaxing full-body massage with long strokes</p>
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-lg font-bold text-purple-600">$120</span>
+                                    <span class="text-lg font-bold text-purple-600">₱120</span>
                                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Massage</span>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -299,7 +300,7 @@ require_once '../includes/pos-functions.php';
                                 <h4 class="font-semibold text-gray-900 mb-1">Deep Tissue Massage</h4>
                                 <p class="text-sm text-gray-600 mb-2">Targeted pressure to relieve muscle tension</p>
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-lg font-bold text-purple-600">$150</span>
+                                    <span class="text-lg font-bold text-purple-600">₱150</span>
                                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Massage</span>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -334,7 +335,7 @@ require_once '../includes/pos-functions.php';
                                 <h4 class="font-semibold text-gray-900 mb-1">Anti-Aging Facial</h4>
                                 <p class="text-sm text-gray-600 mb-2">Rejuvenating facial treatment with premium products</p>
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-lg font-bold text-purple-600">$180</span>
+                                    <span class="text-lg font-bold text-purple-600">₱180</span>
                                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Facial</span>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -369,7 +370,7 @@ require_once '../includes/pos-functions.php';
                                 <h4 class="font-semibold text-gray-900 mb-1">Hot Stone Therapy</h4>
                                 <p class="text-sm text-gray-600 mb-2">Heated stones for deep muscle relaxation</p>
                                 <div class="flex items-center justify-between mb-2">
-                                    <span class="text-lg font-bold text-purple-600">$160</span>
+                                    <span class="text-lg font-bold text-purple-600">₱160</span>
                                     <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded">Body Treatment</span>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -423,7 +424,7 @@ require_once '../includes/pos-functions.php';
                                             60 min
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="text-sm font-medium text-purple-600">$120</span>
+                                            <span class="text-sm font-medium text-purple-600">₱120</span>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             Sarah
@@ -566,7 +567,7 @@ require_once '../includes/pos-functions.php';
             if (totalServices) totalServices.textContent = stats.total;
             if (activeServices) activeServices.textContent = stats.active;
             if (bookingsToday) bookingsToday.textContent = stats.bookings;
-            if (revenueToday) revenueToday.textContent = `$${stats.revenue.toLocaleString()}`;
+            if (revenueToday) revenueToday.textContent = `₱${stats.revenue.toLocaleString()}`;
         }
 
         function applyFilters() {

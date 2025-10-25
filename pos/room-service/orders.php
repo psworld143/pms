@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -161,7 +162,7 @@ require_once '../includes/pos-functions.php';
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 205</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">John Smith</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Club Sandwich, Fries, Coke</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$24.50</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱24.50</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning bg-opacity-20 text-warning-800">
                                             Preparing
@@ -179,7 +180,7 @@ require_once '../includes/pos-functions.php';
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 312</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Sarah Johnson</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Caesar Salad, Soup, Water</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$18.75</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱18.75</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-info bg-opacity-20 text-info-800">
                                             Out for Delivery
@@ -196,7 +197,7 @@ require_once '../includes/pos-functions.php';
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room 128</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Mike Davis</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Pizza Margherita, Garlic Bread</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$32.00</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱32.00</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary bg-opacity-20 text-primary-800">
                                             Pending

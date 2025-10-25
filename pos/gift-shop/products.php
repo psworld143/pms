@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -143,9 +144,9 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-yellow-600 text-xl"></i>
                             </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="avg-price">$28.50</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="avg-price">₱28.50</h3>
                             <p class="text-sm text-gray-600">Avg Price</p>
-                            <p class="text-xs text-yellow-600 mt-1">$5 - $150 range</p>
+                            <p class="text-xs text-yellow-600 mt-1">₱5 - $150 range</p>
                         </div>
                         </div>
                     </div>
@@ -463,7 +464,7 @@ require_once '../includes/pos-functions.php';
                 if (categoryGrowth) categoryGrowth.textContent = 'Well organized';
             }
             if (avgPrice) {
-                avgPrice.textContent = `$${data.avgPrice}`;
+                avgPrice.textContent = `₱${data.avgPrice}`;
                 const priceGrowth = avgPrice.parentElement.querySelector('.text-xs');
                 if (priceGrowth) priceGrowth.textContent = '$5 - $150 range';
             }

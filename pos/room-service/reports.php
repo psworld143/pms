@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -112,7 +113,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-blue-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="total-revenue">$12,450</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="total-revenue">₱12,450</h3>
                             <p class="text-sm text-gray-600">Total Revenue</p>
                             <p class="text-xs text-green-600 mt-1">
                                 <i class="fas fa-arrow-up"></i> +12.5% vs last month
@@ -413,8 +414,8 @@ require_once '../includes/pos-functions.php';
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-15</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">45</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$1,250</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$27.78</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱1,250</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱27.78</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">16 min</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
@@ -433,8 +434,8 @@ require_once '../includes/pos-functions.php';
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-14</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">52</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$1,380</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$26.54</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱1,380</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱26.54</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">18 min</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
@@ -453,8 +454,8 @@ require_once '../includes/pos-functions.php';
                             <tr class="hover:bg-gray-50">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">2024-01-13</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">38</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$980</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$25.79</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱980</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱25.79</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">20 min</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
@@ -605,7 +606,7 @@ require_once '../includes/pos-functions.php';
             const avgDeliveryTime = document.getElementById('avg-delivery-time');
             const avgRating = document.getElementById('avg-rating');
 
-            if (totalRevenue) totalRevenue.textContent = `$${data.totalRevenue.toLocaleString()}`;
+            if (totalRevenue) totalRevenue.textContent = `₱${data.totalRevenue.toLocaleString()}`;
             if (totalOrders) totalOrders.textContent = data.totalOrders;
             if (avgDeliveryTime) avgDeliveryTime.textContent = data.avgDeliveryTime;
             if (avgRating) avgRating.textContent = data.avgRating;

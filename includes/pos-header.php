@@ -1,12 +1,9 @@
 <?php
 // POS-specific header component that matches PMS design
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../booking/login.php');
-    exit();
-}
+// Note: Session checks should be done in the main page, not in included components
 
-$user_role = $_SESSION['user_role'] ?? 'pos_user';
-$user_name = $_SESSION['user_name'] ?? 'POS User';
+$user_role = $_SESSION['pos_user_role'] ?? $_SESSION['user_role'] ?? 'pos_user';
+$user_name = $_SESSION['pos_user_name'] ?? $_SESSION['user_name'] ?? 'POS User';
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 ?>
 <!DOCTYPE html>
@@ -125,3 +122,25 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                 </div>
             </div>
         </nav>
+
+<script>
+// User dropdown functionality
+function toggleUserDropdown() {
+    const dropdown = document.getElementById('user-dropdown');
+    if (dropdown) {
+        dropdown.classList.toggle('hidden');
+    }
+}
+
+// Close user dropdown when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(event) {
+        const userDropdown = document.getElementById('user-dropdown');
+        const userButton = event.target.closest('[onclick*="toggleUserDropdown"]');
+        
+        if (!userButton && userDropdown && !userDropdown.contains(event.target)) {
+            userDropdown.classList.add('hidden');
+        }
+    });
+});
+</script>

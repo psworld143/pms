@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -104,7 +105,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="total-revenue">$24,580</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="total-revenue">₱24,580</h3>
                             <p class="text-sm text-gray-600">Total Revenue</p>
                             <p class="text-xs text-green-600 mt-1">+12.5% vs last month</p>
                         </div>
@@ -173,7 +174,7 @@ require_once '../includes/pos-functions.php';
                                             <i class="fas fa-dollar-sign text-green-600"></i>
                                         </div>
                                         <div>
-                                            <div class="text-lg font-semibold text-gray-900">$24,580</div>
+                                            <div class="text-lg font-semibold text-gray-900">₱24,580</div>
                                             <div class="text-sm text-gray-600">Total Revenue</div>
                                             <div class="text-xs text-green-600">+12.5% vs last month</div>
                                         </div>
@@ -376,7 +377,7 @@ require_once '../includes/pos-functions.php';
             const avgRating = document.getElementById('avg-rating');
 
             if (totalRevenue) {
-                totalRevenue.textContent = `$${data.revenue.total.toLocaleString()}`;
+                totalRevenue.textContent = `₱${data.revenue.total.toLocaleString()}`;
                 const revenueGrowth = totalRevenue.parentElement.querySelector('.text-xs');
                 if (revenueGrowth) revenueGrowth.textContent = `+${data.revenue.growth}% vs last month`;
             }

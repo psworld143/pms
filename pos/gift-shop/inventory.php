@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -143,7 +144,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-purple-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="total-value">$12,450</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="total-value">₱12,450</h3>
                             <p class="text-sm text-gray-600">Inventory Value</p>
                             <p class="text-xs text-purple-600 mt-1">+8.2% vs last month</p>
                         </div>
@@ -173,7 +174,7 @@ require_once '../includes/pos-functions.php';
                                              alt="Hotel Logo Mug" class="w-12 h-12 rounded-lg object-cover mr-3">
                                         <div>
                                             <h4 class="font-semibold text-gray-900">Hotel Logo Mug</h4>
-                                            <p class="text-sm text-gray-600">$24.99</p>
+                                            <p class="text-sm text-gray-600">₱24.99</p>
                                         </div>
                                     </div>
                                     <div class="flex items-center justify-between">
@@ -195,7 +196,7 @@ require_once '../includes/pos-functions.php';
                                              alt="Hotel T-Shirt" class="w-12 h-12 rounded-lg object-cover mr-3">
                                         <div>
                                             <h4 class="font-semibold text-gray-900">Hotel T-Shirt</h4>
-                                            <p class="text-sm text-gray-600">$18.99</p>
+                                            <p class="text-sm text-gray-600">₱18.99</p>
                                         </div>
                                     </div>
                                     <div class="flex items-center justify-between">
@@ -217,7 +218,7 @@ require_once '../includes/pos-functions.php';
                                              alt="Local Honey" class="w-12 h-12 rounded-lg object-cover mr-3">
                                         <div>
                                             <h4 class="font-semibold text-gray-900">Local Honey</h4>
-                                            <p class="text-sm text-gray-600">$12.99</p>
+                                            <p class="text-sm text-gray-600">₱12.99</p>
                                         </div>
                                     </div>
                                     <div class="flex items-center justify-between">
@@ -392,7 +393,7 @@ require_once '../includes/pos-functions.php';
                 lowStock.textContent = data.lowStock;
             }
             if (totalValue) {
-                totalValue.textContent = `$${data.totalValue.toLocaleString()}`;
+                totalValue.textContent = `₱${data.totalValue.toLocaleString()}`;
                 const valueGrowth = totalValue.parentElement.querySelector('.text-xs');
                 if (valueGrowth) valueGrowth.textContent = `+${(Math.random() * 15 + 5).toFixed(1)}% vs last month`;
             }

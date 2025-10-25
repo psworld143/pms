@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -104,7 +105,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-green-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="total-sales">$8,420</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="total-sales">₱8,420</h3>
                             <p class="text-sm text-gray-600">Total Sales</p>
                             <p class="text-xs text-green-600 mt-1">+15.3% vs last week</p>
                         </div>
@@ -143,7 +144,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-shopping-bag text-yellow-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="avg-transaction">$59.30</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="avg-transaction">₱59.30</h3>
                             <p class="text-sm text-gray-600">Avg Transaction</p>
                             <p class="text-xs text-yellow-600 mt-1">+6.5% vs last week</p>
                         </div>
@@ -180,7 +181,7 @@ require_once '../includes/pos-functions.php';
                                             </div>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-lg font-semibold text-gray-900">$43.98</div>
+                                            <div class="text-lg font-semibold text-gray-900">₱43.98</div>
                                             <button onclick="viewTransaction('TXN-001')" class="text-orange-600 hover:text-orange-800 text-sm">
                                                 View
                                             </button>
@@ -201,7 +202,7 @@ require_once '../includes/pos-functions.php';
                                             </div>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-lg font-semibold text-gray-900">$21.98</div>
+                                            <div class="text-lg font-semibold text-gray-900">₱21.98</div>
                                             <button onclick="viewTransaction('TXN-002')" class="text-orange-600 hover:text-orange-800 text-sm">
                                                 View
                                             </button>
@@ -222,7 +223,7 @@ require_once '../includes/pos-functions.php';
                                             </div>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-lg font-semibold text-gray-900">$78.50</div>
+                                            <div class="text-lg font-semibold text-gray-900">₱78.50</div>
                                             <button onclick="viewTransaction('TXN-003')" class="text-orange-600 hover:text-orange-800 text-sm">
                                                 View
                                             </button>
@@ -243,7 +244,7 @@ require_once '../includes/pos-functions.php';
                                             <span class="text-sm font-medium text-gray-900">Hotel Logo Mug</span>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm font-semibold text-gray-900">$1,250</div>
+                                            <div class="text-sm font-semibold text-gray-900">₱1,250</div>
                                             <div class="text-xs text-gray-500">25 units sold</div>
                                         </div>
                                     </div>
@@ -255,7 +256,7 @@ require_once '../includes/pos-functions.php';
                                             <span class="text-sm font-medium text-gray-900">Hotel T-Shirt</span>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm font-semibold text-gray-900">$950</div>
+                                            <div class="text-sm font-semibold text-gray-900">₱950</div>
                                             <div class="text-xs text-gray-500">18 units sold</div>
                                         </div>
                                     </div>
@@ -267,7 +268,7 @@ require_once '../includes/pos-functions.php';
                                             <span class="text-sm font-medium text-gray-900">Hotel Keychain</span>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm font-semibold text-gray-900">$720</div>
+                                            <div class="text-sm font-semibold text-gray-900">₱720</div>
                                             <div class="text-xs text-gray-500">45 units sold</div>
                                         </div>
                                     </div>
@@ -418,7 +419,7 @@ require_once '../includes/pos-functions.php';
             const avgTransaction = document.getElementById('avg-transaction');
 
             if (totalSales) {
-                totalSales.textContent = `$${data.totalSales.toLocaleString()}`;
+                totalSales.textContent = `₱${data.totalSales.toLocaleString()}`;
                 const salesGrowth = totalSales.parentElement.querySelector('.text-xs');
                 if (salesGrowth) salesGrowth.textContent = `+${(Math.random() * 20 + 5).toFixed(1)}% vs last week`;
             }
@@ -433,7 +434,7 @@ require_once '../includes/pos-functions.php';
                 if (customerGrowth) customerGrowth.textContent = `+${(Math.random() * 20 + 5).toFixed(1)}% vs last week`;
             }
             if (avgTransaction) {
-                avgTransaction.textContent = `$${data.avgTransaction}`;
+                avgTransaction.textContent = `₱${data.avgTransaction}`;
                 const avgGrowth = avgTransaction.parentElement.querySelector('.text-xs');
                 if (avgGrowth) avgGrowth.textContent = `+${(Math.random() * 10 + 2).toFixed(1)}% vs last week`;
             }

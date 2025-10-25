@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -132,7 +133,7 @@ require_once '../includes/pos-functions.php';
                             </div>
                             <div class="ml-3">
                                 <h3 class="text-sm font-medium text-gray-900">Total Revenue</h3>
-                                <p class="text-2xl font-bold text-primary">$12,450</p>
+                                <p class="text-2xl font-bold text-primary">₱12,450</p>
                                 <p class="text-xs text-green-600">+15% vs last period</p>
                             </div>
                         </div>
@@ -171,7 +172,7 @@ require_once '../includes/pos-functions.php';
                             </div>
                             <div class="ml-3">
                                 <h3 class="text-sm font-medium text-gray-900">Avg. Order Value</h3>
-                                <p class="text-2xl font-bold text-info">$79.81</p>
+                                <p class="text-2xl font-bold text-info">₱79.81</p>
                                 <p class="text-xs text-green-600">+5% vs last period</p>
                             </div>
                         </div>
@@ -194,7 +195,7 @@ require_once '../includes/pos-functions.php';
                                     </div>
                                     <div class="text-right">
                                         <div class="text-sm font-medium text-gray-900">45 orders</div>
-                                        <div class="text-xs text-gray-500">$1,124.55</div>
+                                        <div class="text-xs text-gray-500">₱1,124.55</div>
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -204,7 +205,7 @@ require_once '../includes/pos-functions.php';
                                     </div>
                                     <div class="text-right">
                                         <div class="text-sm font-medium text-gray-900">38 orders</div>
-                                        <div class="text-xs text-gray-500">$493.62</div>
+                                        <div class="text-xs text-gray-500">₱493.62</div>
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -214,7 +215,7 @@ require_once '../includes/pos-functions.php';
                                     </div>
                                     <div class="text-right">
                                         <div class="text-sm font-medium text-gray-900">32 orders</div>
-                                        <div class="text-xs text-gray-500">$912.00</div>
+                                        <div class="text-xs text-gray-500">₱912.00</div>
                                     </div>
                                 </div>
                             </div>
@@ -234,7 +235,7 @@ require_once '../includes/pos-functions.php';
                                         <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
                                             <div class="bg-primary h-2 rounded-full" style="width: 65%"></div>
                                         </div>
-                                        <span class="text-sm text-gray-900">$8,092.50</span>
+                                        <span class="text-sm text-gray-900">₱8,092.50</span>
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -243,7 +244,7 @@ require_once '../includes/pos-functions.php';
                                         <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
                                             <div class="bg-success h-2 rounded-full" style="width: 45%"></div>
                                         </div>
-                                        <span class="text-sm text-gray-900">$5,602.50</span>
+                                        <span class="text-sm text-gray-900">₱5,602.50</span>
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -252,7 +253,7 @@ require_once '../includes/pos-functions.php';
                                         <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
                                             <div class="bg-warning h-2 rounded-full" style="width: 30%"></div>
                                         </div>
-                                        <span class="text-sm text-gray-900">$3,735.00</span>
+                                        <span class="text-sm text-gray-900">₱3,735.00</span>
                                     </div>
                                 </div>
                                 <div class="flex items-center justify-between">
@@ -261,7 +262,7 @@ require_once '../includes/pos-functions.php';
                                         <div class="w-32 bg-gray-200 rounded-full h-2 mr-3">
                                             <div class="bg-info h-2 rounded-full" style="width: 20%"></div>
                                         </div>
-                                        <span class="text-sm text-gray-900">$2,490.00</span>
+                                        <span class="text-sm text-gray-900">₱2,490.00</span>
                                     </div>
                                 </div>
                             </div>

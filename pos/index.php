@@ -40,52 +40,6 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
     <link rel="stylesheet" href="assets/css/pos-styles.css">
     <script src="assets/js/pos-sidebar.js"></script>
     <style>
-        /* Sidebar mobile responsiveness */
-        #sidebar {
-            transition: transform 0.3s ease-in-out;
-        }
-        
-        /* Mobile: sidebar starts hidden */
-        @media (max-width: 1023px) {
-            #sidebar {
-                transform: translateX(-100%);
-                z-index: 50;
-            }
-            #sidebar.sidebar-open {
-                transform: translateX(0);
-            }
-        }
-        
-        /* Desktop: sidebar always visible */
-        @media (min-width: 1024px) {
-            #sidebar {
-                transform: translateX(0) !important;
-            }
-        }
-        
-        /* Responsive layout fixes */
-        .main-content {
-            margin-left: 0;
-            position: relative;
-            z-index: 1;
-        }
-        
-        /* Ensure sidebar is above main content */
-        #sidebar {
-            z-index: 45 !important;
-        }
-        
-        #sidebar-overlay {
-            transition: opacity 0.3s ease-in-out;
-            z-index: 35 !important;
-        }
-        
-        @media (min-width: 1024px) {
-            .main-content {
-                margin-left: 16rem;
-            }
-        }
-
         /* Demo mode indicator */
         .demo-mode-indicator {
             background: linear-gradient(45deg, #ff6b6b, #feca57, #48dbfb, #ff9ff3);
@@ -118,9 +72,6 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
 </head>
 <body class="bg-gray-50">
     <div class="flex min-h-screen">
-        <!-- Sidebar Overlay for Mobile -->
-        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
-        
         <!-- Include POS-specific header and sidebar -->
         <?php include 'includes/pos-header.php'; ?>
         <?php include 'includes/pos-sidebar.php'; ?>
@@ -143,7 +94,7 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
                             <i class="fas fa-cash-register text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800">₱<?php echo number_format($pos_stats['today_sales'], 2); ?></h3>
+                            <h3 class="text-3xl font-bold text-gray-800"₱<?php echo number_format($pos_stats['today_sales'], 2); ?></h3>
                             <p class="text-gray-600">Today's Sales</p>
                         </div>
                     </div>
@@ -179,7 +130,7 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
                             <i class="fas fa-chart-line text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800">₱<?php echo number_format($pos_stats['monthly_revenue'], 2); ?></h3>
+                            <h3 class="text-3xl font-bold text-gray-800"₱<?php echo number_format($pos_stats['monthly_revenue'], 2); ?></h3>
                             <p class="text-gray-600">Monthly Revenue</p>
                         </div>
                     </div>

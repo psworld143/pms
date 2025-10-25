@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -329,7 +330,7 @@ require_once '../includes/pos-functions.php';
                         <label for="item_price" class="block text-sm font-medium text-gray-700 mb-2">Price *</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="text-gray-500 sm:text-sm">$</span>
+                                <span class="text-gray-500 sm:text-sm">₱</span>
                             </div>
                             <input type="number" id="item_price" name="item_price" required step="0.01" min="0"
                                    class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
@@ -341,7 +342,7 @@ require_once '../includes/pos-functions.php';
                         <label for="item_cost" class="block text-sm font-medium text-gray-700 mb-2">Cost (Optional)</label>
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <span class="text-gray-500 sm:text-sm">$</span>
+                                <span class="text-gray-500 sm:text-sm">₱</span>
                             </div>
                             <input type="number" id="item_cost" name="item_cost" step="0.01" min="0"
                                    class="w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" 
@@ -476,7 +477,7 @@ require_once '../includes/pos-functions.php';
                                 ${statusText}
                             </span>
                         </div>
-                        <span class="text-primary font-bold text-xl">$${parseFloat(item.price).toFixed(2)}</span>
+                        <span class="text-primary font-bold text-xl">₱${parseFloat(item.price).toFixed(2)}</span>
                     </div>
                     
                     <p class="text-sm text-gray-600 mb-4 min-h-[2.5rem]">${escapeHtml(item.description || 'No description available')}</p>
@@ -486,7 +487,7 @@ require_once '../includes/pos-functions.php';
                             <span class="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded-full capitalize">
                                 ${escapeHtml(item.category.replace('-', ' '))}
                             </span>
-                            ${item.cost > 0 ? `<span class="text-xs text-gray-500">Cost: $${parseFloat(item.cost).toFixed(2)}</span>` : ''}
+                            ${item.cost > 0 ? `<span class="text-xs text-gray-500">Cost: ₱${parseFloat(item.cost).toFixed(2)}</span>` : ''}
                         </div>
                         
                         <div class="flex space-x-2">
@@ -525,7 +526,7 @@ require_once '../includes/pos-functions.php';
                                     <span class="inline-block px-2 py-1 text-xs font-medium rounded-full ${statusClass}">
                                         ${statusText}
                                     </span>
-                                    <span class="text-primary font-bold text-lg">$${parseFloat(item.price).toFixed(2)}</span>
+                                    <span class="text-primary font-bold text-lg">₱${parseFloat(item.price).toFixed(2)}</span>
                                 </div>
                             </div>
                         </div>

@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 require_once '../../includes/database.php';
 require_once '../includes/pos-functions.php';
 

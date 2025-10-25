@@ -24,28 +24,30 @@ $school_logo = get_school_logo($conn);
 $school_abbreviation = get_school_abbreviation($conn);
 ?>
 
-<!-- Mobile Sidebar CSS -->
+<!-- Sidebar and Layout CSS -->
 <style>
+    /* Ensure smooth sidebar transitions */
     #sidebar {
         transition: transform 0.3s ease-in-out;
     }
-    @media (max-width: 1023px) {
-        #sidebar {
-            transform: translateX(-100%);
-            z-index: 50;
-        }
-        #sidebar.sidebar-open {
-            transform: translateX(0);
+    
+    /* Overlay transitions */
+    #sidebar-overlay {
+        transition: opacity 0.3s ease-in-out;
+    }
+    
+    /* Main content margin for desktop to account for sidebar */
+    @media (min-width: 1024px) {
+        .main-content {
+            margin-left: 16rem; /* 64 * 0.25rem = 16rem for w-64 sidebar */
         }
     }
+    
+    /* Ensure sidebar is always visible on desktop */
     @media (min-width: 1024px) {
         #sidebar {
             transform: translateX(0) !important;
         }
-    }
-    #sidebar-overlay {
-        transition: opacity 0.3s ease-in-out;
-        z-index: 40;
     }
 </style>
 
@@ -201,9 +203,12 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
             e.stopPropagation();
             console.log('Sidebar toggle clicked');
-            sidebar.classList.toggle('sidebar-open');
-            if (sidebarOverlay) {
-                sidebarOverlay.classList.toggle('hidden');
+            
+            // Toggle sidebar visibility
+            if (sidebar.classList.contains('-translate-x-full')) {
+                openSidebar();
+            } else {
+                closeSidebar();
             }
         });
     }
@@ -211,8 +216,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener('click', function() {
             console.log('Sidebar overlay clicked');
-            sidebar.classList.remove('sidebar-open');
-            sidebarOverlay.classList.add('hidden');
+            closeSidebar();
         });
     }
     
@@ -220,11 +224,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(event) {
         if (window.innerWidth < 1024) {
             if (!event.target.closest('#sidebar') && !event.target.closest('#sidebar-toggle')) {
-                if (sidebar && sidebar.classList.contains('sidebar-open')) {
-                    sidebar.classList.remove('sidebar-open');
-                    if (sidebarOverlay) {
-                        sidebarOverlay.classList.add('hidden');
-                    }
+                if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+                    closeSidebar();
                 }
             }
         }
@@ -233,11 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
     // Close sidebar on escape key
     document.addEventListener('keydown', function(event) {
         if (event.key === 'Escape') {
-            if (sidebar && sidebar.classList.contains('sidebar-open')) {
-                sidebar.classList.remove('sidebar-open');
-                if (sidebarOverlay) {
-                    sidebarOverlay.classList.add('hidden');
-                }
+            if (sidebar && !sidebar.classList.contains('-translate-x-full')) {
+                closeSidebar();
             }
         }
     });
@@ -248,7 +246,8 @@ function openSidebar() {
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
     if (sidebar) {
-        sidebar.classList.add('sidebar-open');
+        sidebar.classList.remove('-translate-x-full');
+        sidebar.classList.add('translate-x-0');
         if (sidebarOverlay) {
             sidebarOverlay.classList.remove('hidden');
         }
@@ -259,7 +258,8 @@ function closeSidebar() {
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
     if (sidebar) {
-        sidebar.classList.remove('sidebar-open');
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
         if (sidebarOverlay) {
             sidebarOverlay.classList.add('hidden');
         }

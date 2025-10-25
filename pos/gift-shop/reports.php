@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -104,7 +105,7 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-chart-line text-green-600 text-xl"></i>
                             </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="monthly-revenue">$12,450</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="monthly-revenue">₱12,450</h3>
                             <p class="text-sm text-gray-600">Monthly Revenue</p>
                             <p class="text-xs text-green-600 mt-1">+18.5% vs last month</p>
                         </div>
@@ -213,7 +214,7 @@ require_once '../includes/pos-functions.php';
                                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Sales Performance Summary</h3>
                                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                                     <div class="text-center">
-                                        <div class="text-2xl font-bold text-green-600">$415</div>
+                                        <div class="text-2xl font-bold text-green-600">₱415</div>
                                         <div class="text-sm text-gray-600">Daily Average</div>
                                     </div>
                                     <div class="text-center">
@@ -239,7 +240,7 @@ require_once '../includes/pos-functions.php';
                                             <span class="text-sm font-medium text-gray-900">Hotel Logo Mug</span>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm font-semibold text-gray-900">$1,250</div>
+                                            <div class="text-sm font-semibold text-gray-900">₱1,250</div>
                                             <div class="text-xs text-gray-500">25 units sold</div>
                                         </div>
                                     </div>
@@ -251,7 +252,7 @@ require_once '../includes/pos-functions.php';
                                             <span class="text-sm font-medium text-gray-900">Hotel T-Shirt</span>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm font-semibold text-gray-900">$950</div>
+                                            <div class="text-sm font-semibold text-gray-900">₱950</div>
                                             <div class="text-xs text-gray-500">18 units sold</div>
                                         </div>
                                     </div>
@@ -263,7 +264,7 @@ require_once '../includes/pos-functions.php';
                                             <span class="text-sm font-medium text-gray-900">Local Honey</span>
                                         </div>
                                         <div class="text-right">
-                                            <div class="text-sm font-semibold text-gray-900">$720</div>
+                                            <div class="text-sm font-semibold text-gray-900">₱720</div>
                                             <div class="text-xs text-gray-500">45 units sold</div>
                                         </div>
                                     </div>
@@ -413,7 +414,7 @@ require_once '../includes/pos-functions.php';
             const conversionRate = document.getElementById('conversion-rate');
 
             if (monthlyRevenue) {
-                monthlyRevenue.textContent = `$${data.monthlyRevenue.toLocaleString()}`;
+                monthlyRevenue.textContent = `₱${data.monthlyRevenue.toLocaleString()}`;
                 const revenueGrowth = monthlyRevenue.parentElement.querySelector('.text-xs');
                 if (revenueGrowth) revenueGrowth.textContent = `+${(Math.random() * 25 + 10).toFixed(1)}% vs last month`;
             }

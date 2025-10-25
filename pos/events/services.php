@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -143,9 +144,9 @@ require_once '../includes/pos-functions.php';
                             <i class="fas fa-dollar-sign text-yellow-600 text-xl"></i>
                             </div>
                         <div class="ml-4">
-                            <h3 class="text-2xl font-bold text-gray-900" id="avg-service-price">$450</h3>
+                            <h3 class="text-2xl font-bold text-gray-900" id="avg-service-price">₱450</h3>
                             <p class="text-sm text-gray-600">Avg Service Price</p>
-                            <p class="text-xs text-yellow-600 mt-1">$50 - $2,500 range</p>
+                            <p class="text-xs text-yellow-600 mt-1">₱50 - $2,500 range</p>
                         </div>
                         </div>
                     </div>
@@ -181,15 +182,15 @@ require_once '../includes/pos-functions.php';
                                     <div class="space-y-3">
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Wedding Catering</span>
-                                            <span class="text-sm font-semibold text-gray-900">$1,200</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱1,200</span>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Corporate Events</span>
-                                            <span class="text-sm font-semibold text-gray-900">$800</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱800</span>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Cocktail Reception</span>
-                                            <span class="text-sm font-semibold text-gray-900">$600</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱600</span>
                                         </div>
                                     </div>
                                     <button onclick="viewCateringServices()" class="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded-lg transition-colors">
@@ -211,15 +212,15 @@ require_once '../includes/pos-functions.php';
                                     <div class="space-y-3">
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Sound System</span>
-                                            <span class="text-sm font-semibold text-gray-900">$300</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱300</span>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Projector Setup</span>
-                                            <span class="text-sm font-semibold text-gray-900">$200</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱200</span>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">LED Lighting</span>
-                                            <span class="text-sm font-semibold text-gray-900">$450</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱450</span>
                                         </div>
                                     </div>
                                     <button onclick="viewAVServices()" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors">
@@ -241,15 +242,15 @@ require_once '../includes/pos-functions.php';
                                     <div class="space-y-3">
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Live Band</span>
-                                            <span class="text-sm font-semibold text-gray-900">$1,500</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱1,500</span>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">DJ Services</span>
-                                            <span class="text-sm font-semibold text-gray-900">$800</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱800</span>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Magician</span>
-                                            <span class="text-sm font-semibold text-gray-900">$400</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱400</span>
                                         </div>
                                     </div>
                                     <button onclick="viewEntertainmentServices()" class="w-full mt-4 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors">
@@ -271,15 +272,15 @@ require_once '../includes/pos-functions.php';
                                     <div class="space-y-3">
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Event Photography</span>
-                                            <span class="text-sm font-semibold text-gray-900">$600</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱600</span>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Video Recording</span>
-                                            <span class="text-sm font-semibold text-gray-900">$800</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱800</span>
                                         </div>
                                         <div class="flex items-center justify-between">
                                             <span class="text-sm text-gray-600">Photo Booth</span>
-                                            <span class="text-sm font-semibold text-gray-900">$350</span>
+                                            <span class="text-sm font-semibold text-gray-900">₱350</span>
                                         </div>
                                     </div>
                                     <button onclick="viewPhotographyServices()" class="w-full mt-4 bg-pink-600 hover:bg-pink-700 text-white px-4 py-2 rounded-lg transition-colors">
@@ -446,7 +447,7 @@ require_once '../includes/pos-functions.php';
                 if (bookingsGrowth) bookingsGrowth.textContent = '+3 vs yesterday';
             }
             if (avgServicePrice) {
-                avgServicePrice.textContent = `$${data.avgServicePrice}`;
+                avgServicePrice.textContent = `₱${data.avgServicePrice}`;
                 const priceGrowth = avgServicePrice.parentElement.querySelector('.text-xs');
                 if (priceGrowth) priceGrowth.textContent = '$50 - $2,500 range';
             }

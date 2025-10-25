@@ -1,5 +1,6 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
 
 // Check if user is logged in to POS
 if (!isset($_SESSION['pos_user_id'])) {
@@ -159,7 +160,7 @@ require_once '../includes/pos-functions.php';
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#R001</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Table 5</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Grilled Salmon, Caesar Salad</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$37.98</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱37.98</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-warning bg-opacity-20 text-warning-800">
                                             In Progress
@@ -176,7 +177,7 @@ require_once '../includes/pos-functions.php';
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#R002</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Table 8</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Chicken Pasta, Garlic Bread</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$28.50</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱28.50</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-primary bg-opacity-20 text-primary-800">
                                             Pending
@@ -193,7 +194,7 @@ require_once '../includes/pos-functions.php';
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#R003</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Table 3</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Beef Steak, Mashed Potatoes</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">$42.99</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">₱42.99</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-success bg-opacity-20 text-success-800">
                                             Ready

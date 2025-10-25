@@ -1,5 +1,7 @@
 <?php
-session_start();
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../../vps_session_fix.php';
+
 require_once '../../includes/database.php';
 require_once '../includes/pos-functions.php';
 
@@ -485,32 +487,53 @@ $page_title = 'Room Service POS';
                     return;
                 }
 
-                // Simulate guest search - replace with actual API call
-                const mockGuests = [
-                    { id: 1, name: 'John Doe', room: '101' },
-                    { id: 2, name: 'Jane Smith', room: '205' },
-                    { id: 3, name: 'Mike Johnson', room: '312' }
-                ];
+                // Show loading state
+                const resultsDiv = document.getElementById('guestResults');
+                resultsDiv.innerHTML = '<p class="text-gray-500 text-sm p-2"><i class="fas fa-spinner fa-spin mr-2"></i>Searching...</p>';
+                resultsDiv.classList.remove('hidden');
 
-                displayGuestResults(mockGuests.filter(guest => 
-                    guest.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                    guest.room.includes(searchTerm)
-                ));
+                // Fetch real guests from database via API
+                fetch(`../api/search-guests.php?search=${encodeURIComponent(searchTerm)}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success && data.guests) {
+                            displayGuestResults(data.guests);
+                        } else {
+                            resultsDiv.innerHTML = `<p class="text-red-500 text-sm p-2">${data.message || 'Error searching guests'}</p>`;
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error searching guests:', error);
+                        resultsDiv.innerHTML = '<p class="text-red-500 text-sm p-2">Error connecting to server</p>';
+                    });
             }
 
             function displayGuestResults(guests) {
                 const resultsDiv = document.getElementById('guestResults');
                 
                 if (guests.length === 0) {
-                    resultsDiv.innerHTML = '<p class="text-gray-500 text-sm">No guests found</p>';
+                    resultsDiv.innerHTML = '<p class="text-gray-500 text-sm p-2">No guests found</p>';
                 } else {
                     let html = '';
                     guests.forEach(guest => {
+                        const statusBadge = guest.is_checked_in 
+                            ? '<span class="text-xs bg-green-100 text-green-800 px-2 py-0.5 rounded-full ml-2">Checked In</span>'
+                            : guest.status 
+                            ? `<span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full ml-2">${guest.status}</span>`
+                            : '';
+                        
+                        const roomDisplay = guest.room !== 'N/A' ? `Room ${guest.room}` : 'No room assigned';
+                        
                         html += `
-                            <div class="guest-result p-2 hover:bg-gray-200 cursor-pointer rounded" 
-                                 onclick="selectGuest(${guest.id}, '${guest.name}', '${guest.room}')">
-                                <div class="font-medium">${guest.name}</div>
-                                <div class="text-sm text-gray-600">Room ${guest.room}</div>
+                            <div class="guest-result p-3 hover:bg-blue-50 cursor-pointer rounded border-b border-gray-100 last:border-0" 
+                                 onclick="selectGuest(${guest.id}, '${escapeQuotes(guest.name)}', '${guest.room}')">
+                                <div class="flex justify-between items-start">
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-900">${escapeHtml(guest.name)}${statusBadge}</div>
+                                        <div class="text-sm text-gray-600">${roomDisplay}</div>
+                                        ${guest.phone ? `<div class="text-xs text-gray-500">${escapeHtml(guest.phone)}</div>` : ''}
+                                    </div>
+                                </div>
                             </div>
                         `;
                     });
@@ -518,6 +541,16 @@ $page_title = 'Room Service POS';
                 }
                 
                 resultsDiv.classList.remove('hidden');
+            }
+            
+            function escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+            
+            function escapeQuotes(text) {
+                return text.replace(/'/g, "\\'").replace(/"/g, '\\"');
             }
 
             function selectGuest(guestId, guestName, roomNumber) {
