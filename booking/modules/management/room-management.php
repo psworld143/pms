@@ -203,6 +203,23 @@ include '../../includes/sidebar-unified.php';
 </div>
 
 <script>
+// Safe notification fallback to avoid 'Utils is not defined' on live
+function showNotification(message, type) {
+    try {
+        if (window.HotelPMS && HotelPMS.Utils && typeof HotelPMS.Utils.showNotification === 'function') {
+            return HotelPMS.Utils.showNotification(message, type);
+        }
+        if (window.Utils && typeof window.Utils.showNotification === 'function') {
+            return window.Utils.showNotification(message, type);
+        }
+    } catch (_) {}
+    const colors = { success: 'bg-green-600', error: 'bg-red-600', info: 'bg-blue-600', warning: 'bg-yellow-600' };
+    const bar = document.createElement('div');
+    bar.className = `fixed bottom-4 left-1/2 -translate-x-1/2 text-white px-4 py-2 rounded shadow ${colors[type]||colors.info} z-50`;
+    bar.textContent = message;
+    document.body.appendChild(bar);
+    setTimeout(() => bar.remove(), 2500);
+}
 let currentRoomId = null;
 let isEditMode = false;
 
@@ -218,18 +235,21 @@ function loadRooms() {
     const status = document.getElementById('status-filter').value;
     const floor = document.getElementById('floor-filter').value;
     
-    fetch(`../../api/get-rooms.php?room_type=${roomType}&status=${status}&floor=${floor}`)
+    fetch(`../../api/get-rooms.php?room_type=${roomType}&status=${status}&floor=${floor}`, {
+        headers: { 'X-API-Key': 'pms_users_api_2024' },
+        credentials: 'include'
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
                 displayRooms(data.rooms);
             } else {
-                Utils.showNotification(data.message || 'Error loading rooms', 'error');
+                showNotification(data.message || 'Error loading rooms', 'error');
             }
         })
         .catch(error => {
             console.error('Error loading rooms:', error);
-            Utils.showNotification('Error loading rooms', 'error');
+            showNotification('Error loading rooms', 'error');
         });
 }
 
@@ -319,7 +339,10 @@ function editRoom(roomId) {
     document.getElementById('room-modal-title').textContent = 'Edit Room';
     
     // Load room data
-    fetch(`../../api/get-room-details.php?id=${roomId}`)
+    fetch(`../../api/get-room-details.php?id=${roomId}`, {
+        headers: { 'X-API-Key': 'pms_users_api_2024' },
+        credentials: 'include'
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
@@ -335,12 +358,12 @@ function editRoom(roomId) {
                 
                 document.getElementById('room-modal').classList.remove('hidden');
             } else {
-                Utils.showNotification(data.message || 'Error loading room details', 'error');
+                showNotification(data.message || 'Error loading room details', 'error');
             }
         })
         .catch(error => {
             console.error('Error loading room details:', error);
-            Utils.showNotification('Error loading room details', 'error');
+            showNotification('Error loading room details', 'error');
         });
 }
 
@@ -371,7 +394,9 @@ function confirmDeleteRoom() {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
+            'X-API-Key': 'pms_users_api_2024'
         },
+        credentials: 'include',
         body: JSON.stringify({
             room_id: currentRoomId
         })
@@ -379,16 +404,16 @@ function confirmDeleteRoom() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            Utils.showNotification(data.message, 'success');
+            showNotification(data.message, 'success');
             loadRooms();
             closeDeleteRoomModal();
         } else {
-            Utils.showNotification(data.message || 'Error deleting room', 'error');
+            showNotification(data.message || 'Error deleting room', 'error');
         }
     })
     .catch(error => {
         console.error('Error deleting room:', error);
-        Utils.showNotification('Error deleting room', 'error');
+        showNotification('Error deleting room', 'error');
     });
 }
 
@@ -406,22 +431,24 @@ function initializeRoomForm() {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
+                'X-API-Key': 'pms_users_api_2024'
             },
+            credentials: 'include',
             body: JSON.stringify(data)
         })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                Utils.showNotification(data.message, 'success');
+                showNotification(data.message, 'success');
                 loadRooms();
                 closeRoomModal();
             } else {
-                Utils.showNotification(data.message || 'Error saving room', 'error');
+                showNotification(data.message || 'Error saving room', 'error');
             }
         })
         .catch(error => {
             console.error('Error saving room:', error);
-            Utils.showNotification('Error saving room', 'error');
+            showNotification('Error saving room', 'error');
         });
     });
 }

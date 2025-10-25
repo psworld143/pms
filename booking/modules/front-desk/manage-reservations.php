@@ -218,7 +218,7 @@ session_start(); echo $active_reservations; ?></p>
         </main>
 
     <!-- Edit Reservation Modal -->
-    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div id="edit-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" style="display: none;">
         <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-lg font-semibold text-gray-900">Edit Reservation</h3>
@@ -301,6 +301,40 @@ session_start(); echo uniqid(); ?>">
                     </div>
                 </div>
 
+                <!-- Discount & Voucher Section -->
+                <div class="border-b border-gray-200 pb-6">
+                    <h4 class="text-md font-medium text-gray-900 mb-4">Discounts & Vouchers</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="edit_discount_template" class="block text-sm font-medium text-gray-700 mb-2">Apply Discount</label>
+                            <select id="edit_discount_template" name="discount_template_id" 
+                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <option value="">No Discount</option>
+                                <!-- Discounts will be loaded dynamically -->
+                            </select>
+                        </div>
+                        <div>
+                            <label for="edit_voucher_code" class="block text-sm font-medium text-gray-700 mb-2">Voucher Code</label>
+                            <div class="flex space-x-2">
+                                <input type="text" id="edit_voucher_code" name="voucher_code" placeholder="Enter voucher code" 
+                                       class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                <button type="button" onclick="validateVoucher()" 
+                                        class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                            </div>
+                            <div id="voucher-validation-result" class="mt-2 hidden">
+                                <!-- Voucher validation result will be displayed here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div id="applied-discounts" class="space-y-2">
+                            <!-- Applied discounts will be displayed here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Action Buttons -->
                 <div class="flex justify-end space-x-4">
                     <button type="button" onclick="closeEditModal()" 
@@ -367,13 +401,150 @@ session_start(); include '../../includes/footer.php'; ?>
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
-    // Clear filters function
-    function clearFilters() {
-        document.getElementById('search_reservation').value = '';
-        document.getElementById('search_guest').value = '';
-        document.getElementById('search_status').value = '';
-        document.getElementById('search_date_range').value = '';
-        loadReservations(); // Reload all reservations
+    // Load discounts when modal opens
+    async function loadDiscounts() {
+        try {
+            const response = await fetch('../../api/get-discounts.php', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'X-API-Key': 'pms_users_api_2024'
+                }
+            });
+            const result = await response.json();
+            
+            if (result.success && result.discounts) {
+                const discountSelect = document.getElementById('edit_discount_template');
+                discountSelect.innerHTML = '<option value="">No Discount</option>';
+                
+                result.discounts.forEach(discount => {
+                    const option = document.createElement('option');
+                    option.value = discount.id;
+                    option.textContent = `${discount.discount_name} (${discount.discount_type === 'percentage' ? discount.discount_value + '%' : '₱' + discount.discount_value})`;
+                    discountSelect.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading discounts:', error);
+        }
+    }
+
+    // Validate voucher code
+    async function validateVoucher() {
+        const voucherCode = document.getElementById('edit_voucher_code').value.trim();
+        const resultDiv = document.getElementById('voucher-validation-result');
+        
+        if (!voucherCode) {
+            alert('Please enter a voucher code.');
+            return;
+        }
+
+        try {
+            const response = await fetch('../../api/validate-voucher.php', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'pms_users_api_2024'
+                },
+                body: JSON.stringify({ voucher_code: voucherCode })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const voucher = result.voucher;
+                resultDiv.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-md p-3">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-check-circle text-green-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-green-800">Valid Voucher</h4>
+                                <div class="mt-1 text-sm text-green-700">
+                                    <p><strong>Type:</strong> ${voucher.voucher_type}</p>
+                                    <p><strong>Value:</strong> ${voucher.voucher_type === 'percentage' ? voucher.voucher_value + '%' : '₱' + voucher.voucher_value}</p>
+                                    <p><strong>Valid Until:</strong> ${voucher.valid_until}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+                
+                // Add voucher to applied discounts
+                addAppliedDiscount('voucher', voucher.voucher_code, voucher.voucher_type, voucher.voucher_value);
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-md p-3">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-times-circle text-red-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-red-800">Invalid Voucher</h4>
+                                <p class="mt-1 text-sm text-red-700">${result.message}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error validating voucher:', error);
+            alert('An error occurred while validating the voucher.');
+        }
+    }
+
+    // Add applied discount to display
+    function addAppliedDiscount(type, name, discountType, value) {
+        const container = document.getElementById('applied-discounts');
+        const discountId = type + '_' + Date.now();
+        
+        const discountElement = document.createElement('div');
+        discountElement.id = discountId;
+        discountElement.className = 'flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md';
+        
+        const valueText = discountType === 'percentage' ? value + '%' : '₱' + value;
+        
+        discountElement.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-${type === 'voucher' ? 'ticket-alt' : 'tag'} text-blue-600 mr-2"></i>
+                <span class="text-sm font-medium text-blue-900">${name}</span>
+                <span class="ml-2 text-sm text-blue-700">(${valueText})</span>
+            </div>
+            <button onclick="removeAppliedDiscount('${discountId}')" class="text-red-600 hover:text-red-800">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        container.appendChild(discountElement);
+    }
+
+    // Remove applied discount
+    function removeAppliedDiscount(discountId) {
+        const element = document.getElementById(discountId);
+        if (element) {
+            element.remove();
+        }
+    }
+
+    // Enhanced edit reservation function
+    function editReservation(reservationId) {
+        // Load discounts when opening modal
+        loadDiscounts();
+        
+        // Clear previous voucher validation
+        document.getElementById('voucher-validation-result').classList.add('hidden');
+        document.getElementById('applied-discounts').innerHTML = '';
+        
+        // Call the actual edit function from the ReservationManager
+        if (window.reservationManager) {
+            window.reservationManager.editReservation(reservationId);
+        } else {
+            console.error('ReservationManager not found');
+        }
     }
 
     // Enhanced search function with date range support

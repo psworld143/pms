@@ -7,7 +7,7 @@ CREATE TABLE IF NOT EXISTS training_scenarios (
     scenario_id VARCHAR(50) UNIQUE NOT NULL,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
-    category VARCHAR(50) NOT NULL,
+    category VARCHAR(100) NOT NULL,
     difficulty ENUM('beginner', 'intermediate', 'advanced') NOT NULL,
     estimated_time INT NOT NULL DEFAULT 15,
     points INT NOT NULL DEFAULT 100,

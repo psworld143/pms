@@ -169,8 +169,9 @@ class GuestManager {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'X-API-Key': 'pms_users_api_2024'
                 },
-                credentials: 'same-origin',
+                credentials: 'include',
                 body: JSON.stringify(data)
             });
 

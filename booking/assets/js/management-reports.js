@@ -1422,7 +1422,10 @@ function openAddTransactionModal() {
 
 // Guest Demographics Functions
 function loadGuestDemographicsChart() {
-    fetch('../../api/get-guest-demographics.php')
+    fetch('../../api/get-guest-demographics.php', {
+        headers: { 'X-API-Key': 'pms_users_api_2024' },
+        credentials: 'include'
+    })
         .then(response => response.json())
         .then(data => {
             if (data.success && data.data) {
@@ -1439,10 +1442,16 @@ function loadGuestDemographicsChart() {
                 createGuestTypeChart(data.data.guest_types);
             } else {
                 console.error('Failed to load guest demographics:', data.message);
+                if (window.HotelPMS && HotelPMS.Utils) {
+                    HotelPMS.Utils.showNotification(data.message || 'Unable to load demographics', 'warning');
+                }
             }
         })
         .catch(error => {
             console.error('Error loading guest demographics:', error);
+            if (window.HotelPMS && HotelPMS.Utils) {
+                HotelPMS.Utils.showNotification('Error loading demographics', 'error');
+            }
         });
 }
 

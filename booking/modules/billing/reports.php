@@ -37,10 +37,10 @@ include '../../includes/sidebar-unified.php';
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Billing Reports</h2>
                 <div class="flex items-center space-x-4">
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button onclick="exportReport()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-download mr-2"></i>Export Report
                     </button>
-                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button onclick="printReport()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-print mr-2"></i>Print Report
                     </button>
                 </div>
@@ -124,44 +124,46 @@ ini_set('log_errors', 1); echo number_format($invoiceMetrics['outstanding_amount
             <!-- Report Filters -->
             <div class="bg-white rounded-lg shadow p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Report Filters</h3>
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <form id="report-filters" class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Report Type</label>
-                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option>Revenue Report</option>
-                            <option>Invoice Report</option>
-                            <option>Payment Report</option>
-                            <option>Outstanding Report</option>
-                            <option>Discount Report</option>
+                        <select id="report-type" name="report_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="revenue">Revenue Report</option>
+                            <option value="invoice">Invoice Report</option>
+                            <option value="payment">Payment Report</option>
+                            <option value="outstanding">Outstanding Report</option>
+                            <option value="discount">Discount Report</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
-                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option>Last 7 Days</option>
-                            <option>Last 30 Days</option>
-                            <option>Last 3 Months</option>
-                            <option>Last 6 Months</option>
-                            <option>This Year</option>
-                            <option>Custom Range</option>
+                        <select id="date-range" name="date_range" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="7">Last 7 Days</option>
+                            <option value="30" selected>Last 30 Days</option>
+                            <option value="90">Last 3 Months</option>
+                            <option value="180">Last 6 Months</option>
+                            <option value="365">This Year</option>
+                            <option value="custom">Custom Range</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Payment Method</label>
-                        <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                            <option>All Methods</option>
-                            <option>Credit Card</option>
-                            <option>Cash</option>
-                            <option>Digital Wallet</option>
-                            <option>Bank Transfer</option>
+                        <select id="payment-method" name="payment_method" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Methods</option>
+                            <option value="credit_card">Credit Card</option>
+                            <option value="cash">Cash</option>
+                            <option value="digital_wallet">Digital Wallet</option>
+                            <option value="bank_transfer">Bank Transfer</option>
+                            <option value="debit_card">Debit Card</option>
+                            <option value="check">Check</option>
                         </select>
                     </div>
                     <div class="flex items-end">
-                        <button class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
+                        <button type="button" onclick="generateReport()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium">
                             <i class="fas fa-chart-bar mr-2"></i>Generate
                         </button>
                     </div>
-                </div>
+                </form>
             </div>
 
             <!-- Revenue Chart -->
@@ -361,10 +363,27 @@ ini_set('log_errors', 1); echo htmlspecialchars($b['guest_name']); ?></td>
 // Error handling for production
 ini_set('display_errors', 0);
 ini_set('log_errors', 1); echo number_format($b['total_amount'], 2); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
-// Error handling for production
-ini_set('display_errors', 0);
-ini_set('log_errors', 1); echo '—'; ?></td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?php
+                                    // Error handling for production
+                                    ini_set('display_errors', 0);
+                                    ini_set('log_errors', 1);
+                                    $paymentMethod = $b['payment_method'] ?? null;
+                                    if ($paymentMethod) {
+                                        $methodLabels = [
+                                            'cash' => 'Cash',
+                                            'credit_card' => 'Credit Card',
+                                            'debit_card' => 'Debit Card',
+                                            'bank_transfer' => 'Bank Transfer',
+                                            'check' => 'Check',
+                                            'digital_wallet' => 'Digital Wallet'
+                                        ];
+                                        echo htmlspecialchars($methodLabels[$paymentMethod] ?? ucwords(str_replace('_', ' ', $paymentMethod)));
+                                    } else {
+                                        echo '—';
+                                    }
+                                    ?>
+                                </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <?php
 // Error handling for production
@@ -379,8 +398,8 @@ ini_set('display_errors', 0);
 ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($b['status'])); ?></span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                    <button class="text-green-600 hover:text-green-900">Export</button>
+                                    <button onclick="viewBill(<?php echo $b['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                                    <button onclick="exportBill(<?php echo $b['id']; ?>)" class="text-green-600 hover:text-green-900">Export</button>
                                 </td>
                             </tr>
                             <?php
@@ -407,5 +426,99 @@ ini_set('log_errors', 1); endif; ?>
 // Error handling for production
 ini_set('display_errors', 0);
 ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
+
+<script>
+// Export Report Function
+function exportReport() {
+    const reportType = document.getElementById('report-type').value;
+    const dateRange = document.getElementById('date-range').value;
+    const paymentMethod = document.getElementById('payment-method').value;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('action', 'export');
+    params.append('report_type', reportType);
+    params.append('date_range', dateRange);
+    if (paymentMethod) params.append('payment_method', paymentMethod);
+    
+    // Create download link
+    const url = `../../api/export-billing-report.php?${params.toString()}`;
+    window.open(url, '_blank');
+}
+
+// Print Report Function
+function printReport() {
+    window.print();
+}
+
+// Generate Report Function
+function generateReport() {
+    const reportType = document.getElementById('report-type').value;
+    const dateRange = document.getElementById('date-range').value;
+    const paymentMethod = document.getElementById('payment-method').value;
+    
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+    button.disabled = true;
+    
+    // Build query parameters
+    const params = new URLSearchParams();
+    params.append('report_type', reportType);
+    params.append('date_range', dateRange);
+    if (paymentMethod) params.append('payment_method', paymentMethod);
+    
+    // Reload page with filters
+    window.location.href = `?${params.toString()}`;
+}
+
+// View Bill Function
+function viewBill(billId) {
+    window.open(`../../api/get-bill-details.php?id=${billId}`, '_blank');
+}
+
+// Export Bill Function
+function exportBill(billId) {
+    window.open(`../../api/generate-bill-pdf.php?id=${billId}`, '_blank');
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', function() {
+    // Set current date and time
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+    
+    // Load filters from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('report_type')) {
+        document.getElementById('report-type').value = urlParams.get('report_type');
+    }
+    if (urlParams.get('date_range')) {
+        document.getElementById('date-range').value = urlParams.get('date_range');
+    }
+    if (urlParams.get('payment_method')) {
+        document.getElementById('payment-method').value = urlParams.get('payment_method');
+    }
+});
+
+// Update date and time
+function updateDateTime() {
+    const now = new Date();
+    const dateTimeElement = document.getElementById('current-datetime');
+    if (dateTimeElement) {
+        dateTimeElement.textContent = now.toLocaleString('en-US', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit'
+        });
+    }
+}
+</script>
+
     </body>
 </html>

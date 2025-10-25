@@ -35,10 +35,10 @@ include '../../includes/sidebar-unified.php';
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Voucher System</h2>
                 <div class="flex items-center space-x-4">
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button onclick="scrollToCreateForm()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-plus mr-2"></i>Create Voucher
                     </button>
-                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button onclick="scrollToValidationForm()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-check mr-2"></i>Validate Voucher
                     </button>
                 </div>
@@ -124,19 +124,26 @@ ini_set('log_errors', 1); echo number_format($voucherMetrics['expired_vouchers']
                         <i class="fas fa-bed text-blue-600 text-xl"></i>
                     </div>
                     <div class="space-y-3">
+                        <?php
+                        $roomVouchers = array_filter($vouchers, function($v) {
+                            return in_array($v['voucher_type'], ['free_night', 'upgrade']);
+                        });
+                        $freeNightCount = count(array_filter($roomVouchers, function($v) { return $v['voucher_type'] === 'free_night'; }));
+                        $upgradeCount = count(array_filter($roomVouchers, function($v) { return $v['voucher_type'] === 'upgrade'; }));
+                        ?>
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                                 <p class="font-medium text-gray-900">Free Night Voucher</p>
                                 <p class="text-sm text-gray-500">1 free night stay</p>
                             </div>
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">45 Active</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full"><?= $freeNightCount ?> Active</span>
                         </div>
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                                 <p class="font-medium text-gray-900">Room Upgrade</p>
                                 <p class="text-sm text-gray-500">Upgrade to next room type</p>
                             </div>
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">23 Active</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full"><?= $upgradeCount ?> Active</span>
                         </div>
                     </div>
                 </div>
@@ -148,19 +155,29 @@ ini_set('log_errors', 1); echo number_format($voucherMetrics['expired_vouchers']
                         <i class="fas fa-concierge-bell text-green-600 text-xl"></i>
                     </div>
                     <div class="space-y-3">
+                        <?php
+                        $serviceVouchers = array_filter($vouchers, function($v) {
+                            return $v['voucher_type'] === 'fixed' && strpos(strtolower($v['description']), 'spa') !== false;
+                        });
+                        $diningVouchers = array_filter($vouchers, function($v) {
+                            return $v['voucher_type'] === 'fixed' && strpos(strtolower($v['description']), 'dining') !== false;
+                        });
+                        $spaCount = count($serviceVouchers);
+                        $diningCount = count($diningVouchers);
+                        ?>
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                                 <p class="font-medium text-gray-900">Spa Treatment</p>
                                 <p class="text-sm text-gray-500">Complimentary spa service</p>
                             </div>
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">67 Active</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full"><?= $spaCount ?> Active</span>
                         </div>
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                                 <p class="font-medium text-gray-900">Dining Credit</p>
-                                <p class="text-sm text-gray-500">$50 restaurant credit</p>
+                                <p class="text-sm text-gray-500">Restaurant credit</p>
                             </div>
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">89 Active</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full"><?= $diningCount ?> Active</span>
                         </div>
                     </div>
                 </div>
@@ -172,19 +189,32 @@ ini_set('log_errors', 1); echo number_format($voucherMetrics['expired_vouchers']
                         <i class="fas fa-gift text-purple-600 text-xl"></i>
                     </div>
                     <div class="space-y-3">
+                        <?php
+                        $experienceVouchers = array_filter($vouchers, function($v) {
+                            return $v['voucher_type'] === 'fixed' && (strpos(strtolower($v['description']), 'tour') !== false || strpos(strtolower($v['description']), 'transfer') !== false);
+                        });
+                        $tourVouchers = array_filter($experienceVouchers, function($v) {
+                            return strpos(strtolower($v['description']), 'tour') !== false;
+                        });
+                        $transferVouchers = array_filter($experienceVouchers, function($v) {
+                            return strpos(strtolower($v['description']), 'transfer') !== false;
+                        });
+                        $tourCount = count($tourVouchers);
+                        $transferCount = count($transferVouchers);
+                        ?>
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                                 <p class="font-medium text-gray-900">City Tour</p>
                                 <p class="text-sm text-gray-500">Guided city sightseeing</p>
                             </div>
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">34 Active</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full"><?= $tourCount ?> Active</span>
                         </div>
                         <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div>
                                 <p class="font-medium text-gray-900">Airport Transfer</p>
                                 <p class="text-sm text-gray-500">Complimentary airport pickup</p>
                             </div>
-                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full">56 Active</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 text-xs font-semibold rounded-full"><?= $transferCount ?> Active</span>
                         </div>
                     </div>
                 </div>
@@ -193,55 +223,55 @@ ini_set('log_errors', 1); echo number_format($voucherMetrics['expired_vouchers']
             <!-- Create Voucher Form -->
             <div class="bg-white rounded-lg shadow p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Create New Voucher</h3>
-                <form class="space-y-6">
+                <form id="create-voucher-form" class="space-y-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Voucher Name</label>
-                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter voucher name">
+                            <input type="text" name="voucher_name" id="voucher_name" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter voucher name" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Voucher Type</label>
-                            <select class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option>Select Type</option>
-                                <option>Room Voucher</option>
-                                <option>Service Voucher</option>
-                                <option>Experience Voucher</option>
-                                <option>Dining Voucher</option>
+                            <select name="voucher_type" id="voucher_type" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                                <option value="">Select Type</option>
+                                <option value="percentage">Percentage Discount</option>
+                                <option value="fixed">Fixed Amount</option>
+                                <option value="free_night">Free Night</option>
+                                <option value="upgrade">Room Upgrade</option>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Value</label>
-                            <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter voucher value">
+                            <input type="number" name="voucher_value" id="voucher_value" step="0.01" min="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter voucher value" required>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Quantity</label>
-                            <input type="number" min="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Number of vouchers">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Usage Limit</label>
+                            <input type="number" name="usage_limit" id="usage_limit" min="1" value="1" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Number of uses allowed">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Valid From</label>
-                            <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="date" name="valid_from" id="valid_from" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">Valid Until</label>
-                            <input type="date" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <input type="date" name="valid_until" id="valid_until" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" required>
                         </div>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                        <textarea class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Enter voucher description and terms"></textarea>
+                        <textarea name="description" id="description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Enter voucher description and terms"></textarea>
                     </div>
                     <div class="flex items-center">
-                        <input type="checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <input type="checkbox" name="generate_codes" id="generate_codes" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
                         <label class="ml-2 block text-sm text-gray-900">
                             Generate unique voucher codes
                         </label>
                     </div>
                     <div class="flex justify-end space-x-4">
-                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        <button type="button" onclick="resetVoucherForm()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                             Cancel
                         </button>
                         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
-                            Create Vouchers
+                            Create Voucher
                         </button>
                     </div>
                 </form>
@@ -250,13 +280,16 @@ ini_set('log_errors', 1); echo number_format($voucherMetrics['expired_vouchers']
             <!-- Voucher Validation -->
             <div class="bg-white rounded-lg shadow p-6 mb-8">
                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Validate Voucher</h3>
-                <div class="flex space-x-4">
+                <form id="validate-voucher-form" class="flex space-x-4">
                     <div class="flex-1">
-                        <input type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter voucher code">
+                        <input type="text" name="voucher_code" id="voucher_code" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter voucher code" required>
                     </div>
-                    <button class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium">
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-md text-sm font-medium">
                         <i class="fas fa-search mr-2"></i>Validate
                     </button>
+                </form>
+                <div id="validation-result" class="mt-4 hidden">
+                    <!-- Validation result will be displayed here -->
                 </div>
             </div>
 
@@ -344,9 +377,208 @@ ini_set('log_errors', 1); endif; ?>
         </main>
 
         <!-- Include footer -->
-        <?php
-// Error handling for production
-ini_set('display_errors', 0);
-ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
+        <?php include '../../includes/footer.php'; ?>
+
+        <script>
+            // Suppress classifier.js errors
+            window.addEventListener('error', function(e) {
+                if (e.message && e.message.includes('Failed to link vertex and fragment shaders')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Suppress unhandled promise rejections
+            window.addEventListener('unhandledrejection', function(e) {
+                if (e.reason && e.reason.message && e.reason.message.includes('Failed to link vertex and fragment shaders')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Set default dates
+            document.addEventListener('DOMContentLoaded', function() {
+                const today = new Date().toISOString().split('T')[0];
+                const nextMonth = new Date();
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                const nextMonthStr = nextMonth.toISOString().split('T')[0];
+                
+                document.getElementById('valid_from').value = today;
+                document.getElementById('valid_until').value = nextMonthStr;
+            });
+
+            // Reset voucher form
+            function resetVoucherForm() {
+                document.getElementById('create-voucher-form').reset();
+                const today = new Date().toISOString().split('T')[0];
+                const nextMonth = new Date();
+                nextMonth.setMonth(nextMonth.getMonth() + 1);
+                const nextMonthStr = nextMonth.toISOString().split('T')[0];
+                
+                document.getElementById('valid_from').value = today;
+                document.getElementById('valid_until').value = nextMonthStr;
+                document.getElementById('usage_limit').value = 1;
+                document.getElementById('generate_codes').checked = true;
+            }
+
+            // Scroll to create form
+            function scrollToCreateForm() {
+                document.getElementById('create-voucher-form').scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('voucher_name').focus();
+            }
+
+            // Scroll to validation form
+            function scrollToValidationForm() {
+                document.getElementById('validate-voucher-form').scrollIntoView({ behavior: 'smooth' });
+                document.getElementById('voucher_code').focus();
+            }
+
+            // Create voucher form submission
+            document.getElementById('create-voucher-form').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const form = event.currentTarget;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                submitBtn.disabled = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating...';
+
+                const formData = new FormData(form);
+                const payload = Object.fromEntries(formData.entries());
+
+                // Validate required fields
+                if (!payload.voucher_name || !payload.voucher_type || !payload.voucher_value || !payload.valid_from || !payload.valid_until) {
+                    alert('Please fill in all required fields.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    return;
+                }
+
+                // Validate dates
+                if (new Date(payload.valid_from) >= new Date(payload.valid_until)) {
+                    alert('Valid Until date must be after Valid From date.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    return;
+                }
+
+                // Validate voucher value
+                if (parseFloat(payload.voucher_value) <= 0) {
+                    alert('Please enter a valid voucher value greater than 0.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    return;
+                }
+
+                try {
+                    const response = await fetch('../../api/create-voucher.php', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-API-Key': 'pms_users_api_2024'
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        alert('Voucher created successfully!');
+                        resetVoucherForm();
+                        location.reload();
+                    } else {
+                        alert('Error: ' + (result.message || 'Failed to create voucher.'));
+                    }
+                } catch (error) {
+                    console.error('Error creating voucher:', error);
+                    alert('An unexpected error occurred while creating the voucher.');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            });
+
+            // Validate voucher form submission
+            document.getElementById('validate-voucher-form').addEventListener('submit', async function(event) {
+                event.preventDefault();
+
+                const form = event.currentTarget;
+                const submitBtn = form.querySelector('button[type="submit"]');
+                const voucherCode = document.getElementById('voucher_code').value.trim();
+                const resultDiv = document.getElementById('validation-result');
+
+                if (!voucherCode) {
+                    alert('Please enter a voucher code.');
+                    return;
+                }
+
+                submitBtn.disabled = true;
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Validating...';
+
+                try {
+                    const response = await fetch('../../api/validate-voucher.php', {
+                        method: 'POST',
+                        credentials: 'include',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-API-Key': 'pms_users_api_2024'
+                        },
+                        body: JSON.stringify({ voucher_code: voucherCode })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        const voucher = result.voucher;
+                        resultDiv.innerHTML = `
+                            <div class="bg-green-50 border border-green-200 rounded-md p-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-check-circle text-green-400"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-green-800">Valid Voucher</h3>
+                                        <div class="mt-2 text-sm text-green-700">
+                                            <p><strong>Code:</strong> ${voucher.voucher_code}</p>
+                                            <p><strong>Type:</strong> ${voucher.voucher_type}</p>
+                                            <p><strong>Value:</strong> ${voucher.voucher_value}</p>
+                                            <p><strong>Status:</strong> ${voucher.status}</p>
+                                            <p><strong>Valid Until:</strong> ${voucher.valid_until}</p>
+                                            <p><strong>Usage Limit:</strong> ${voucher.usage_limit}</p>
+                                            <p><strong>Used Count:</strong> ${voucher.used_count || 0}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    } else {
+                        resultDiv.innerHTML = `
+                            <div class="bg-red-50 border border-red-200 rounded-md p-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <i class="fas fa-times-circle text-red-400"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-sm font-medium text-red-800">Invalid Voucher</h3>
+                                        <div class="mt-2 text-sm text-red-700">
+                                            <p>${result.message}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    resultDiv.classList.remove('hidden');
+                } catch (error) {
+                    console.error('Error validating voucher:', error);
+                    alert('An unexpected error occurred while validating the voucher.');
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            });
+        </script>
     </body>
 </html>

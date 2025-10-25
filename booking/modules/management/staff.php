@@ -1,16 +1,14 @@
 <?php
-session_start();
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
 // Error handling for production
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-
 
 /**
  * Staff Management Dashboard
  * Hotel PMS Training System for Students
  */
 
-session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once dirname(__DIR__, 3) . '/includes/functions.php';
 require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
@@ -61,8 +59,7 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Staff</p>
-                            <p id="staff-total-count" class="text-2xl font-semibold text-gray-900"><?php
-session_start(); echo (int) $user_stats['total_users']; ?></p>
+                            <p id="staff-total-count" class="text-2xl font-semibold text-gray-900"><?php echo (int) $user_stats['total_users']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -76,8 +73,7 @@ session_start(); echo (int) $user_stats['total_users']; ?></p>
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active Staff</p>
-                            <p id="staff-active-count" class="text-2xl font-semibold text-gray-900"><?php
-session_start(); echo (int) $user_stats['active_users']; ?></p>
+                            <p id="staff-active-count" class="text-2xl font-semibold text-gray-900"><?php echo (int) $user_stats['active_users']; ?></p>
                         </div>
                     </div>
                 </div>
@@ -117,13 +113,9 @@ session_start(); echo (int) $user_stats['active_users']; ?></p>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
                         <select id="staff-role-filter" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                             <option value="">All Roles</option>
-                            <?php
-session_start(); foreach ($available_roles as $role_key => $role_name): ?>
-                                <option value="<?php
-session_start(); echo $role_key; ?>"><?php
-session_start(); echo $role_name; ?></option>
-                            <?php
-session_start(); endforeach; ?>
+                            <?php foreach ($available_roles as $role_key => $role_name): ?>
+                                <option value="<?php echo $role_key; ?>"><?php echo $role_name; ?></option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div>
@@ -322,5 +314,4 @@ session_start(); endforeach; ?>
         </div>
 
         <!-- Include footer -->
-        <?php
-session_start(); include '../../includes/footer.php'; ?>
+        <?php include '../../includes/footer.php'; ?>

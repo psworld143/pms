@@ -103,8 +103,6 @@ $navigation_items = [
         'submenu' => [
             'dashboard' => ['url' => booking_url('modules/training/training-dashboard.php'), 'label' => 'Training Dashboard'],
             'scenarios' => ['url' => booking_url('modules/training/scenarios.php'), 'label' => 'Scenarios'],
-            'customer_service' => ['url' => booking_url('modules/training/customer-service.php'), 'label' => 'Customer Service'],
-            'problem_solving' => ['url' => booking_url('modules/training/problem-solving.php'), 'label' => 'Problem Solving'],
             'progress' => ['url' => booking_url('modules/training/progress.php'), 'label' => 'Staff Progress'],
             'certificates' => ['url' => booking_url('modules/training/certificates.php'), 'label' => 'Certificates']
         ]

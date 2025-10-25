@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Inventory Training API Test</h1>
+    <div id="results"></div>
+    
+    <script>
+    $(document).ready(function() {
+        console.log('Testing APIs...');
+        
+        // Test get-inventory-scenarios.php
+        $.get('./api/get-inventory-scenarios.php')
+            .done(function(response) {
+                console.log('Scenarios API Success:', response);
+                $('#results').append('<p>✅ Scenarios API: ' + (response.success ? 'Success' : 'Failed') + '</p>');
+            })
+            .fail(function(xhr, status, error) {
+                console.error('Scenarios API Error:', xhr.status, error);
+                $('#results').append('<p>❌ Scenarios API: Error ' + xhr.status + ' - ' + error + '</p>');
+            });
+        
+        // Test get-inventory-training-history.php
+        $.get('./api/get-inventory-training-history.php')
+            .done(function(response) {
+                console.log('History API Success:', response);
+                $('#results').append('<p>✅ History API: ' + (response.success ? 'Success' : 'Failed') + '</p>');
+            })
+            .fail(function(xhr, status, error) {
+                console.error('History API Error:', xhr.status, error);
+                $('#results').append('<p>❌ History API: Error ' + xhr.status + ' - ' + error + '</p>');
+            });
+    });
+    </script>
+</body>
+</html>

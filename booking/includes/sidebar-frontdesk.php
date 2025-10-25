@@ -191,18 +191,6 @@ $navigation_items = [
                 'icon' => 'fas fa-theater-masks',
                 'active' => isActiveUrl(booking_url('modules/training/scenarios.php'), $current_url)
             ],
-            'customer_service' => [
-                'url' => booking_url('modules/training/customer-service.php'), 
-                'label' => 'Customer Service', 
-                'icon' => 'fas fa-headset',
-                'active' => isActiveUrl(booking_url('modules/training/customer-service.php'), $current_url)
-            ],
-            'problem_solving' => [
-                'url' => booking_url('modules/training/problem-solving.php'), 
-                'label' => 'Problem Solving', 
-                'icon' => 'fas fa-lightbulb',
-                'active' => isActiveUrl(booking_url('modules/training/problem-solving.php'), $current_url)
-            ],
             'progress' => [
                 'url' => booking_url('modules/training/progress.php'), 
                 'label' => 'My Progress', 

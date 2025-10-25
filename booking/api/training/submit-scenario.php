@@ -2,20 +2,48 @@
 session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
-header('Content-Type: application/json');
 
-if (!isset($_SESSION['user_id'])) { echo json_encode(['success'=>false,'message'=>'Unauthorized']); exit; }
+// Check if user is logged in
+if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
+    echo json_encode(['success' => false, 'message' => 'Unauthorized']);
+    exit();
+}
+
+$user_id = $_SESSION['user_id'];
 
 try {
-  $input = json_decode(file_get_contents('php://input'), true);
-  $scenario_id = (int)($input['scenario_id'] ?? 0);
-  $answers = $input['answers'] ?? [];
-  if (!$scenario_id) throw new Exception('Invalid scenario');
-  $res = submitScenarioAttempt($scenario_id, $answers, $_SESSION['user_id']);
-  echo json_encode($res);
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input) {
+            throw new Exception('Invalid JSON input');
+        }
+        
+        $scenario_id = $input['scenario_id'] ?? null;
+        $answers = $input['answers'] ?? [];
+        
+        if (!$scenario_id) {
+            throw new Exception('Scenario ID is required');
+        }
+        
+        $result = submitTrainingScenario($user_id, $scenario_id, $answers);
+        
+        if ($result['success']) {
+            echo json_encode($result);
+        } else {
+            http_response_code(400);
+            echo json_encode($result);
+        }
+        
+    } else {
+        http_response_code(405);
+        echo json_encode(['success' => false, 'message' => 'Method not allowed']);
+    }
+    
 } catch (Exception $e) {
-  error_log('submit-scenario: '.$e->getMessage());
-  echo json_encode(['success'=>false,'message'=>'Failed to submit']);
+    error_log("Error in submit-scenario.php: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Server error occurred']);
 }
 ?>
-
