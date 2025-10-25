@@ -61,9 +61,9 @@ try {
     // Use local.php configuration if available, otherwise fall back to environment variables
     $dbHost = DB_HOST ?: 'localhost';
     $dbPort = DB_PORT ?: 3306;
-    $dbUser = DB_USER ?: 'root';
-    $dbPass = DB_PASS ?: '';
-    $dbName = DB_NAME ?: 'pms_hotel';
+    $dbUser = DB_USER ?: 'pms_pms_hotel';
+    $dbPass = DB_PASS ?: '020894HotelPMS';
+    $dbName = DB_NAME ?: 'pms_pms_hotel';
 
     // Debug: Log actual values being used
     error_log("Database connection attempt - Host: $dbHost, User: $dbUser, DB: $dbName, Pass: " . (empty($dbPass) ? 'EMPTY' : 'SET'));
