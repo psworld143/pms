@@ -28,8 +28,8 @@ if (file_exists(__DIR__ . '/../booking/config/cyberpanel-config.php')) {
 
 // Database configuration (supports env overrides & conditional defines)
 if (!defined('DB_HOST')) { define('DB_HOST', getenv('PMS_DB_HOST') ?: 'localhost'); }
-if (!defined('DB_NAME')) { define('DB_NAME', getenv('PMS_DB_NAME') ?: 'pms_pms_hotel'); }
-if (!defined('DB_USER')) { define('DB_USER', getenv('PMS_DB_USER') ?: 'pms_pms_hotel'); }
+if (!defined('DB_NAME')) { define('DB_NAME', getenv('PMS_DB_NAME') ?: 'pms_hotel'); }
+if (!defined('DB_USER')) { define('DB_USER', getenv('PMS_DB_USER') ?: 'pms_hotel'); }
 if (!defined('DB_PASS')) { define('DB_PASS', getenv('PMS_DB_PASS') ?: '020894HotelPMS'); }
 // Optional overrides
 if (!defined('DB_PORT')) { $envPort = getenv('PMS_DB_PORT'); define('DB_PORT', $envPort !== false && $envPort !== '' ? (int)$envPort : 3306); }
@@ -61,9 +61,9 @@ try {
     // Use local.php configuration if available, otherwise fall back to environment variables
     $dbHost = DB_HOST ?: 'localhost';
     $dbPort = DB_PORT ?: 3306;
-    $dbUser = DB_USER ?: 'pms_pms_hotel';
-    $dbPass = DB_PASS ?: '020894HotelPMS';
-    $dbName = DB_NAME ?: 'pms_pms_hotel';
+    $dbUser = DB_USER ?: 'root';
+    $dbPass = DB_PASS ?: '';
+    $dbName = DB_NAME ?: 'pms_hotel';
 
     // Debug: Log actual values being used
     error_log("Database connection attempt - Host: $dbHost, User: $dbUser, DB: $dbName, Pass: " . (empty($dbPass) ? 'EMPTY' : 'SET'));

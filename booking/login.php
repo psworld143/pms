@@ -1,28 +1,8 @@
 <?php
 // VPS Session Fix - Robust session configuration
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
-// Check if session fix file exists
-if (file_exists('../vps_session_fix.php')) {
-    require_once '../vps_session_fix.php';
-} else {
-    session_start();
-}
-
-// Check if database file exists
-if (!file_exists('../includes/database.php')) {
-    die('Error: Database configuration not found. Please deploy files to server.');
-}
+require_once '../vps_session_fix.php';
 
 require_once '../includes/database.php';
-
-// Check if functions file exists
-if (!file_exists('includes/functions.php')) {
-    die('Error: Booking functions not found. Path: ' . __DIR__ . '/includes/functions.php');
-}
-
 require_once 'includes/functions.php';
 
 $error = '';
