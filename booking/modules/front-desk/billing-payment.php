@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
@@ -32,7 +36,11 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Today's Revenue</p>
-                        <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($billing_stats['today_revenue'], 2); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($billing_stats['today_revenue'], 2); ?></p>
                     </div>
                 </div>
             </div>
@@ -46,7 +54,11 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Pending Bills</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($billing_stats['pending_bills']); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($billing_stats['pending_bills']); ?></p>
                     </div>
                 </div>
             </div>
@@ -60,7 +72,11 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Total Discounts</p>
-                        <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($billing_stats['total_discounts'], 2); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($billing_stats['total_discounts'], 2); ?></p>
                     </div>
                 </div>
             </div>
@@ -74,7 +90,11 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Loyalty Points</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($billing_stats['total_loyalty_points']); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($billing_stats['total_loyalty_points']); ?></p>
                     </div>
                 </div>
             </div>
@@ -249,7 +269,11 @@ include '../../includes/sidebar-unified.php';
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Bill Date</label>
                         <input type="date" name="bill_date" id="bill_date" 
-                               value="<?php echo date('Y-m-d'); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo date('Y-m-d'); ?>"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                     </div>
                 </div>
@@ -420,13 +444,21 @@ include '../../includes/sidebar-unified.php';
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Valid From</label>
                         <input type="date" name="valid_from" id="voucher_valid_from" 
-                               value="<?php echo date('Y-m-d'); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo date('Y-m-d'); ?>"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Valid Until</label>
                         <input type="date" name="valid_until" id="voucher_valid_until" 
-                               value="<?php echo date('Y-m-d', strtotime('+30 days')); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo date('Y-m-d', strtotime('+30 days')); ?>"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                     </div>
                 </div>
@@ -523,6 +555,14 @@ include '../../includes/sidebar-unified.php';
     </div>
 
     <script src="../../assets/js/main.js"></script>
-    <script src="../../assets/js/billing-payment.js?v=<?php echo time(); ?>"></script>
+    <script src="../../assets/js/billing-payment.js?v=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo time(); ?>"></script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>

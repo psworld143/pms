@@ -1,14 +1,53 @@
 /**
  * Maintenance Management JavaScript
+ * Version: 2.0 - Fixed showNotification errors
  */
 
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    // Initialize immediately - showNotification function is defined above
     initializeMaintenance();
 });
 
 function initializeMaintenance() {
     setupEventListeners();
+}
+
+// Fallback notification function
+function showNotification(message, type = 'info') {
+    // Try Utils.showNotification first
+    if (typeof Utils !== 'undefined' && Utils.showNotification) {
+        Utils.showNotification(message, type);
+        return;
+    }
+    
+    // Try window.Utils.showNotification
+    if (typeof window.Utils !== 'undefined' && window.Utils.showNotification) {
+        window.Utils.showNotification(message, type);
+        return;
+    }
+    
+    // Fallback to console and alert
+    console.log(`[${type.toUpperCase()}] ${message}`);
+    
+    // Create a simple notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 p-4 rounded-md shadow-lg z-50 ${
+        type === 'error' ? 'bg-red-500 text-white' :
+        type === 'success' ? 'bg-green-500 text-white' :
+        type === 'warning' ? 'bg-yellow-500 text-black' :
+        'bg-blue-500 text-white'
+    }`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    // Remove notification after 5 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+        }
+    }, 5000);
 }
 
 function setupEventListeners() {
@@ -209,3 +248,4 @@ window.submitMaintenanceForm = submitMaintenanceForm;
 window.viewMaintenanceRequest = viewMaintenanceRequest;
 window.closeMaintenanceDetailsModal = closeMaintenanceDetailsModal;
 window.updateMaintenanceStatus = updateMaintenanceStatus;
+window.showNotification = showNotification; // Export notification function globally

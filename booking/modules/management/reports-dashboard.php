@@ -1,5 +1,9 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/booking-paths.php';
@@ -49,7 +53,8 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Monthly Revenue</p>
-                        <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($management_stats['monthly_revenue'], 2); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900">₱<?php
+session_start(); echo number_format($management_stats['monthly_revenue'], 2); ?></p>
                     </div>
                 </div>
             </div>
@@ -63,7 +68,8 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Total Guests</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($management_stats['total_guests']); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($management_stats['total_guests']); ?></p>
                     </div>
                 </div>
             </div>
@@ -77,7 +83,8 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Low Stock Items</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($management_stats['low_stock_items']); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($management_stats['low_stock_items']); ?></p>
                     </div>
                 </div>
             </div>
@@ -450,6 +457,8 @@ include '../../includes/sidebar-unified.php';
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="../../assets/js/main.js"></script>
-    <script src="../../assets/js/management-reports.js?v=<?php echo time() + 1; ?>"></script>
+    <script src="../../assets/js/management-reports.js?v=<?php
+session_start(); echo time() + 1; ?>"></script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+session_start(); include '../../includes/footer.php'; ?>

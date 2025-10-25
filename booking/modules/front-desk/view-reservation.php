@@ -1,6 +1,12 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/../includes/database.php';
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 // Check if user is logged in and has front desk access
 if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['front_desk', 'manager'])) {
@@ -18,16 +24,22 @@ if (!$reservation_id) {
 // Get reservation details
 $reservation = getReservationDetails($reservation_id);
 if (!$reservation) {
+    error_log("Reservation not found: " . $reservation_id);
     header('Location: manage-reservations.php');
     exit();
 }
 
-// Get additional reservation data
-$guest_details = getGuestDetails($reservation['guest_id'] ?? null);
-$room_details = getRoomDetails($reservation['room_id'] ?? null);
-$billing_details = getBillingDetails($reservation_id);
-$check_in_details = getCheckInDetails($reservation_id);
-$additional_services = getAdditionalServicesForReservation($reservation_id);
+// Get additional reservation data with error handling
+try {
+    $guest_details = getGuestDetails($reservation['guest_id'] ?? null);
+    $room_details = getRoomDetails($reservation['room_id'] ?? null);
+    $billing_details = getBillingDetails($reservation_id);
+    $check_in_details = getCheckInDetails($reservation_id);
+    $additional_services = getAdditionalServicesForReservation($reservation_id);
+} catch (Exception $e) {
+    error_log("Error loading reservation data: " . $e->getMessage());
+    $guest_details = $room_details = $billing_details = $check_in_details = $additional_services = [];
+}
 
 // Calculate nights if not already set
 $nights = $reservation['nights'] ?? ((strtotime($reservation['check_out_date']) - strtotime($reservation['check_in_date'])) / (60 * 60 * 24));
@@ -45,8 +57,11 @@ include '../../includes/sidebar-unified.php';
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-semibold text-gray-800">View Reservation</h2>
                 <div class="text-right">
-                    <div class="text-sm text-gray-600">Reservation #<?php echo htmlspecialchars($reservation['reservation_number']); ?></div>
-                    <div class="text-sm text-gray-600">Status: <span class="font-medium <?php echo $reservation['status'] === 'confirmed' ? 'text-green-600' : ($reservation['status'] === 'checked_in' ? 'text-blue-600' : 'text-gray-600'); ?>"><?php echo ucfirst($reservation['status']); ?></span></div>
+                    <div class="text-sm text-gray-600">Reservation #<?php
+session_start(); echo htmlspecialchars($reservation['reservation_number']); ?></div>
+                    <div class="text-sm text-gray-600">Status: <span class="font-medium <?php
+session_start(); echo $reservation['status'] === 'confirmed' ? 'text-green-600' : ($reservation['status'] === 'checked_in' ? 'text-blue-600' : 'text-gray-600'); ?>"><?php
+session_start(); echo ucfirst($reservation['status']); ?></span></div>
                 </div>
             </div>
 
@@ -59,7 +74,8 @@ include '../../includes/sidebar-unified.php';
                             <i class="fas fa-user text-white text-xl"></i>
                         </div>
                         <div>
-                            <h4 class="text-lg font-bold text-gray-800"><?php echo htmlspecialchars($reservation['first_name'] . ' ' . $reservation['last_name']); ?></h4>
+                            <h4 class="text-lg font-bold text-gray-800"><?php
+session_start(); echo htmlspecialchars($reservation['first_name'] . ' ' . $reservation['last_name']); ?></h4>
                             <p class="text-gray-600">Guest</p>
                         </div>
                     </div>
@@ -69,8 +85,10 @@ include '../../includes/sidebar-unified.php';
                             <i class="fas fa-bed text-white text-xl"></i>
                         </div>
                         <div>
-                            <h4 class="text-lg font-bold text-gray-800"><?php echo htmlspecialchars($reservation['room_number']); ?></h4>
-                            <p class="text-gray-600"><?php echo ucfirst($reservation['room_type']); ?></p>
+                            <h4 class="text-lg font-bold text-gray-800"><?php
+session_start(); echo htmlspecialchars($reservation['room_number']); ?></h4>
+                            <p class="text-gray-600"><?php
+session_start(); echo ucfirst($reservation['room_type']); ?></p>
                         </div>
                     </div>
                     
@@ -79,7 +97,9 @@ include '../../includes/sidebar-unified.php';
                             <i class="fas fa-calendar-alt text-white text-xl"></i>
                         </div>
                         <div>
-                            <h4 class="text-lg font-bold text-gray-800"><?php echo date('M d', strtotime($reservation['check_in_date'])); ?> - <?php echo date('M d', strtotime($reservation['check_out_date'])); ?></h4>
+                            <h4 class="text-lg font-bold text-gray-800"><?php
+session_start(); echo date('M d', strtotime($reservation['check_in_date'])); ?> - <?php
+session_start(); echo date('M d', strtotime($reservation['check_out_date'])); ?></h4>
                             <p class="text-gray-600">Stay Duration</p>
                         </div>
                     </div>
@@ -89,7 +109,8 @@ include '../../includes/sidebar-unified.php';
                             <i class="fas fa-dollar-sign text-white text-xl"></i>
                         </div>
                         <div>
-                            <h4 class="text-lg font-bold text-gray-800">₱<?php echo number_format($reservation['total_amount'], 2); ?></h4>
+                            <h4 class="text-lg font-bold text-gray-800">₱<?php
+session_start(); echo number_format($reservation['total_amount'], 2); ?></h4>
                             <p class="text-gray-600">Total Amount</p>
                         </div>
                     </div>
@@ -102,27 +123,33 @@ include '../../includes/sidebar-unified.php';
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                        <p class="text-gray-900 font-medium"><?php echo htmlspecialchars($reservation['first_name'] . ' ' . $reservation['last_name']); ?></p>
+                        <p class="text-gray-900 font-medium"><?php
+session_start(); echo htmlspecialchars($reservation['first_name'] . ' ' . $reservation['last_name']); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                        <p class="text-gray-900"><?php echo htmlspecialchars($reservation['email'] ?? 'Not provided'); ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo htmlspecialchars($reservation['email'] ?? 'Not provided'); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                        <p class="text-gray-900"><?php echo htmlspecialchars($reservation['phone']); ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo htmlspecialchars($reservation['phone']); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Adults</label>
-                        <p class="text-gray-900"><?php echo $reservation['adults']; ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo $reservation['adults']; ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Children</label>
-                        <p class="text-gray-900"><?php echo $reservation['children'] ?? 0; ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo $reservation['children'] ?? 0; ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Special Requests</label>
-                        <p class="text-gray-900"><?php echo htmlspecialchars($reservation['special_requests'] ?? 'None'); ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo htmlspecialchars($reservation['special_requests'] ?? 'None'); ?></p>
                     </div>
                 </div>
             </div>
@@ -133,27 +160,33 @@ include '../../includes/sidebar-unified.php';
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Room Number</label>
-                        <p class="text-gray-900 font-medium"><?php echo htmlspecialchars($reservation['room_number']); ?></p>
+                        <p class="text-gray-900 font-medium"><?php
+session_start(); echo htmlspecialchars($reservation['room_number']); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Room Type</label>
-                        <p class="text-gray-900"><?php echo ucfirst($reservation['room_type']); ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo ucfirst($reservation['room_type']); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Room Rate</label>
-                        <p class="text-gray-900">₱<?php echo number_format(getRoomTypes()[$reservation['room_type'] ?? 'standard']['rate'], 2); ?> per night</p>
+                        <p class="text-gray-900">₱<?php
+session_start(); echo number_format(getRoomTypes()[$reservation['room_type'] ?? 'standard']['rate'], 2); ?> per night</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
-                        <p class="text-gray-900"><?php echo date('F d, Y', strtotime($reservation['check_in_date'])); ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo date('F d, Y', strtotime($reservation['check_in_date'])); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-                        <p class="text-gray-900"><?php echo date('F d, Y', strtotime($reservation['check_out_date'])); ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo date('F d, Y', strtotime($reservation['check_out_date'])); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Nights</label>
-                        <p class="text-gray-900"><?php echo $nights; ?> night(s)</p>
+                        <p class="text-gray-900"><?php
+session_start(); echo $nights; ?> night(s)</p>
                     </div>
                 </div>
             </div>
@@ -164,63 +197,79 @@ include '../../includes/sidebar-unified.php';
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Room Charges</label>
-                        <p class="text-gray-900 font-medium">₱<?php echo number_format(getRoomTypes()[$reservation['room_type'] ?? 'standard']['rate'] * $nights, 2); ?></p>
+                        <p class="text-gray-900 font-medium">₱<?php
+session_start(); echo number_format(getRoomTypes()[$reservation['room_type'] ?? 'standard']['rate'] * $nights, 2); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Additional Services</label>
-                        <p class="text-gray-900">₱<?php echo number_format($billing_details['services_total'] ?? 0, 2); ?></p>
+                        <p class="text-gray-900">₱<?php
+session_start(); echo number_format($billing_details['services_total'] ?? 0, 2); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Taxes & Fees</label>
-                        <p class="text-gray-900">₱<?php echo number_format($billing_details['taxes'] ?? 0, 2); ?></p>
+                        <p class="text-gray-900">₱<?php
+session_start(); echo number_format($billing_details['taxes'] ?? 0, 2); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
-                        <p class="text-gray-900 font-bold text-lg">₱<?php echo number_format($reservation['total_amount'], 2); ?></p>
+                        <p class="text-gray-900 font-bold text-lg">₱<?php
+session_start(); echo number_format($reservation['total_amount'], 2); ?></p>
                     </div>
                 </div>
                 
-                <?php if (!empty($additional_services)): ?>
+                <?php
+session_start(); if (!empty($additional_services)): ?>
                 <div class="mt-6">
                     <h4 class="font-medium text-gray-900 mb-3">Additional Services</h4>
                     <div class="bg-gray-50 rounded-lg p-4">
                         <div class="space-y-2">
-                            <?php foreach ($additional_services as $service): ?>
+                            <?php
+session_start(); foreach ($additional_services as $service): ?>
                             <div class="flex justify-between items-center">
-                                <span class="text-gray-700"><?php echo htmlspecialchars($service['service_name']); ?></span>
-                                <span class="font-medium">₱<?php echo number_format($service['amount'], 2); ?></span>
+                                <span class="text-gray-700"><?php
+session_start(); echo htmlspecialchars($service['service_name']); ?></span>
+                                <span class="font-medium">₱<?php
+session_start(); echo number_format($service['amount'], 2); ?></span>
                             </div>
-                            <?php endforeach; ?>
+                            <?php
+session_start(); endforeach; ?>
                         </div>
                     </div>
                 </div>
-                <?php endif; ?>
+                <?php
+session_start(); endif; ?>
             </div>
 
             <!-- Check-in/Check-out Status -->
-            <?php if ($check_in_details): ?>
+            <?php
+session_start(); if ($check_in_details): ?>
             <div class="bg-white rounded-lg p-6 shadow-md mb-8">
                 <h3 class="text-xl font-semibold text-gray-800 mb-6">Check-in/Check-out Status</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
-                        <p class="text-gray-900"><?php echo $check_in_details['checked_in_at'] ? date('F d, Y g:i A', strtotime($check_in_details['checked_in_at'])) : 'Not checked in'; ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo $check_in_details['checked_in_at'] ? date('F d, Y g:i A', strtotime($check_in_details['checked_in_at'])) : 'Not checked in'; ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-                        <p class="text-gray-900"><?php echo $check_in_details['checked_out_at'] ? date('F d, Y g:i A', strtotime($check_in_details['checked_out_at'])) : 'Not checked out'; ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo $check_in_details['checked_out_at'] ? date('F d, Y g:i A', strtotime($check_in_details['checked_out_at'])) : 'Not checked out'; ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Checked in by</label>
-                        <p class="text-gray-900"><?php echo htmlspecialchars($check_in_details['checked_in_by'] ?? 'N/A'); ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo htmlspecialchars($check_in_details['checked_in_by'] ?? 'N/A'); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Checked out by</label>
-                        <p class="text-gray-900"><?php echo htmlspecialchars($check_in_details['checked_out_by'] ?? 'N/A'); ?></p>
+                        <p class="text-gray-900"><?php
+session_start(); echo htmlspecialchars($check_in_details['checked_out_by'] ?? 'N/A'); ?></p>
                     </div>
                 </div>
             </div>
-            <?php endif; ?>
+            <?php
+session_start(); endif; ?>
 
             <!-- Reservation Timeline -->
             <div class="bg-white rounded-lg p-6 shadow-md mb-8">
@@ -232,45 +281,55 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div>
                             <p class="font-medium text-gray-900">Reservation Created</p>
-                            <p class="text-sm text-gray-600"><?php echo date('F d, Y g:i A', strtotime($reservation['created_at'])); ?></p>
+                            <p class="text-sm text-gray-600"><?php
+session_start(); echo date('F d, Y g:i A', strtotime($reservation['created_at'])); ?></p>
                         </div>
                     </div>
                     
-                    <?php if ($reservation['status'] === 'confirmed' || $reservation['status'] === 'checked_in' || $reservation['status'] === 'checked_out'): ?>
+                    <?php
+session_start(); if ($reservation['status'] === 'confirmed' || $reservation['status'] === 'checked_in' || $reservation['status'] === 'checked_out'): ?>
                     <div class="flex items-center">
                         <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center mr-4">
                             <i class="fas fa-check text-white text-sm"></i>
                         </div>
                         <div>
                             <p class="font-medium text-gray-900">Reservation Confirmed</p>
-                            <p class="text-sm text-gray-600"><?php echo date('F d, Y g:i A', strtotime($reservation['confirmed_at'] ?? $reservation['created_at'])); ?></p>
+                            <p class="text-sm text-gray-600"><?php
+session_start(); echo date('F d, Y g:i A', strtotime($reservation['confirmed_at'] ?? $reservation['created_at'])); ?></p>
                         </div>
                     </div>
-                    <?php endif; ?>
+                    <?php
+session_start(); endif; ?>
                     
-                    <?php if ($check_in_details && $check_in_details['checked_in_at']): ?>
+                    <?php
+session_start(); if ($check_in_details && $check_in_details['checked_in_at']): ?>
                     <div class="flex items-center">
                         <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center mr-4">
                             <i class="fas fa-check text-white text-sm"></i>
                         </div>
                         <div>
                             <p class="font-medium text-gray-900">Guest Checked In</p>
-                            <p class="text-sm text-gray-600"><?php echo date('F d, Y g:i A', strtotime($check_in_details['checked_in_at'])); ?></p>
+                            <p class="text-sm text-gray-600"><?php
+session_start(); echo date('F d, Y g:i A', strtotime($check_in_details['checked_in_at'])); ?></p>
                         </div>
                     </div>
-                    <?php endif; ?>
+                    <?php
+session_start(); endif; ?>
                     
-                    <?php if ($check_in_details && $check_in_details['checked_out_at']): ?>
+                    <?php
+session_start(); if ($check_in_details && $check_in_details['checked_out_at']): ?>
                     <div class="flex items-center">
                         <div class="w-8 h-8 bg-red-500 rounded-full flex items-center justify-center mr-4">
                             <i class="fas fa-check text-white text-sm"></i>
                         </div>
                         <div>
                             <p class="font-medium text-gray-900">Guest Checked Out</p>
-                            <p class="text-sm text-gray-600"><?php echo date('F d, Y g:i A', strtotime($check_in_details['checked_out_at'])); ?></p>
+                            <p class="text-sm text-gray-600"><?php
+session_start(); echo date('F d, Y g:i A', strtotime($check_in_details['checked_out_at'])); ?></p>
                         </div>
                     </div>
-                    <?php endif; ?>
+                    <?php
+session_start(); endif; ?>
                 </div>
             </div>
 
@@ -282,7 +341,8 @@ include '../../includes/sidebar-unified.php';
                         <i class="fas fa-arrow-left text-gray-600 text-xl mr-3"></i>
                         <span class="font-medium text-gray-800">Back to Reservations</span>
                     </a>
-                    <a href="modify-reservation.php?id=<?php echo $reservation_id; ?>" class="flex items-center p-4 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-300">
+                    <a href="modify-reservation.php?id=<?php
+session_start(); echo $reservation_id; ?>" class="flex items-center p-4 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-300">
                         <i class="fas fa-edit text-blue-600 text-xl mr-3"></i>
                         <span class="font-medium text-blue-800">Modify Reservation</span>
                     </a>
@@ -290,17 +350,22 @@ include '../../includes/sidebar-unified.php';
                         <i class="fas fa-print text-green-600 text-xl mr-3"></i>
                         <span class="font-medium text-green-800">Print Reservation</span>
                     </button>
-                    <?php if ($reservation['status'] === 'confirmed'): ?>
-                    <a href="check-in.php?id=<?php echo $reservation_id; ?>" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
+                    <?php
+session_start(); if ($reservation['status'] === 'confirmed'): ?>
+                    <a href="check-in.php?id=<?php
+session_start(); echo $reservation_id; ?>" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
                         <i class="fas fa-sign-in-alt text-purple-600 text-xl mr-3"></i>
                         <span class="font-medium text-purple-800">Check In Guest</span>
                     </a>
-                    <?php elseif ($reservation['status'] === 'checked_in'): ?>
-                    <a href="check-out.php?id=<?php echo $reservation_id; ?>" class="flex items-center p-4 bg-red-50 border-2 border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 transition-all duration-300">
+                    <?php
+session_start(); elseif ($reservation['status'] === 'checked_in'): ?>
+                    <a href="check-out.php?id=<?php
+session_start(); echo $reservation_id; ?>" class="flex items-center p-4 bg-red-50 border-2 border-red-200 rounded-lg hover:bg-red-100 hover:border-red-300 transition-all duration-300">
                         <i class="fas fa-sign-out-alt text-red-600 text-xl mr-3"></i>
                         <span class="font-medium text-red-800">Check Out Guest</span>
                     </a>
-                    <?php endif; ?>
+                    <?php
+session_start(); endif; ?>
                 </div>
             </div>
         </main>
@@ -313,4 +378,5 @@ include '../../includes/sidebar-unified.php';
         }
     </script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+session_start(); include '../../includes/footer.php'; ?>

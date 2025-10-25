@@ -256,11 +256,11 @@
         }
 
         if (!state.requests.length) {
-            elements.tableBody.innerHTML = '
+            elements.tableBody.innerHTML = `
                 <tr>
                     <td colspan="4" class="px-6 py-6 text-center text-sm text-gray-500">No maintenance requests match the current filters.</td>
                 </tr>
-            ';
+            `;
             return;
         }
 
@@ -352,13 +352,13 @@
             return;
         }
         if (isLoading) {
-            elements.tableBody.innerHTML = '
+            elements.tableBody.innerHTML = `
                 <tr>
                     <td colspan="4" class="px-6 py-6 text-center text-sm text-gray-500">
                         <i class="fas fa-spinner fa-spin mr-2"></i>Loading maintenance requests...
                     </td>
                 </tr>
-            ';
+            `;
         }
     }
 

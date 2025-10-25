@@ -29,6 +29,36 @@ class ReservationManager {
         }
     }
 
+    // Load discounts for dropdown
+    async loadDiscounts() {
+        try {
+            const response = await fetch('../../api/get-discounts.php', {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'X-API-Key': 'pms_users_api_2024'
+                }
+            });
+            const result = await response.json();
+            
+            if (result.success && result.discounts) {
+                const discountSelect = document.getElementById('edit_discount_template');
+                if (discountSelect) {
+                    discountSelect.innerHTML = '<option value="">No Discount</option>';
+                    
+                    result.discounts.forEach(discount => {
+                        const option = document.createElement('option');
+                        option.value = discount.id;
+                        option.textContent = `${discount.discount_name} (${discount.discount_type === 'percentage' ? discount.discount_value + '%' : '₱' + discount.discount_value})`;
+                        discountSelect.appendChild(option);
+                    });
+                }
+            }
+        } catch (error) {
+            console.error('Error loading discounts:', error);
+        }
+    }
+
     // Display reservations
     displayReservations(reservations) {
         const container = document.getElementById('reservations-list');
@@ -65,12 +95,12 @@ class ReservationManager {
                                     <div class="flex-shrink-0 h-10 w-10">
                                         <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
                                             <span class="text-white font-medium">
-                                                ${reservation.guest_name.charAt(0).toUpperCase()}
+                                                ${(reservation.guest_name || 'G').charAt(0).toUpperCase()}
                                             </span>
                                         </div>
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">${reservation.guest_name}</div>
+                                        <div class="text-sm font-medium text-gray-900">${reservation.guest_name || 'Unknown Guest'}</div>
                                         <div class="text-sm text-gray-500">${reservation.email || ''}</div>
                                     </div>
                                 </div>
@@ -130,6 +160,12 @@ class ReservationManager {
         const editForm = document.getElementById('edit-reservation-form');
         if (editForm) {
             editForm.addEventListener('submit', this.handleEditReservation.bind(this));
+        }
+
+        // Discount selection change
+        const discountSelect = document.getElementById('edit_discount_template');
+        if (discountSelect) {
+            discountSelect.addEventListener('change', (e) => this.handleDiscountChange(e));
         }
 
         // Search functionality
@@ -225,6 +261,7 @@ class ReservationManager {
 
     // Edit reservation
     editReservation(reservationId) {
+        this.loadDiscounts();
         this.loadReservationForEdit(reservationId);
     }
 
@@ -265,7 +302,7 @@ class ReservationManager {
     showEditModal() {
         const modal = document.getElementById('edit-modal');
         if (modal) {
-            modal.classList.remove('hidden');
+            modal.style.display = 'flex';
         }
     }
 
@@ -273,7 +310,157 @@ class ReservationManager {
     closeEditModal() {
         const modal = document.getElementById('edit-modal');
         if (modal) {
-            modal.classList.add('hidden');
+            modal.style.display = 'none';
+        }
+        // Clear voucher validation and applied discounts
+        const voucherResult = document.getElementById('voucher-validation-result');
+        const appliedDiscounts = document.getElementById('applied-discounts');
+        if (voucherResult) voucherResult.classList.add('hidden');
+        if (appliedDiscounts) appliedDiscounts.innerHTML = '';
+    }
+
+    // Validate voucher code
+    async validateVoucher() {
+        const voucherCode = document.getElementById('edit_voucher_code').value.trim();
+        const resultDiv = document.getElementById('voucher-validation-result');
+        
+        if (!voucherCode) {
+            alert('Please enter a voucher code.');
+            return;
+        }
+
+        try {
+            const response = await fetch('../../api/validate-voucher.php', {
+                method: 'POST',
+                credentials: 'include',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-API-Key': 'pms_users_api_2024'
+                },
+                body: JSON.stringify({ voucher_code: voucherCode })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                const voucher = result.voucher;
+                resultDiv.innerHTML = `
+                    <div class="bg-green-50 border border-green-200 rounded-md p-3">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-check-circle text-green-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-green-800">Valid Voucher</h4>
+                                <div class="mt-1 text-sm text-green-700">
+                                    <p><strong>Type:</strong> ${voucher.voucher_type}</p>
+                                    <p><strong>Value:</strong> ${voucher.voucher_type === 'percentage' ? voucher.voucher_value + '%' : '₱' + voucher.voucher_value}</p>
+                                    <p><strong>Valid Until:</strong> ${voucher.valid_until}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+                
+                // Add voucher to applied discounts
+                this.addAppliedDiscount('voucher', voucher.voucher_code, voucher.voucher_type, voucher.voucher_value);
+            } else {
+                resultDiv.innerHTML = `
+                    <div class="bg-red-50 border border-red-200 rounded-md p-3">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <i class="fas fa-times-circle text-red-400"></i>
+                            </div>
+                            <div class="ml-3">
+                                <h4 class="text-sm font-medium text-red-800">Invalid Voucher</h4>
+                                <p class="mt-1 text-sm text-red-700">${result.message}</p>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                resultDiv.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error('Error validating voucher:', error);
+            alert('An error occurred while validating the voucher.');
+        }
+    }
+
+    // Add applied discount to display
+    addAppliedDiscount(type, name, discountType, value) {
+        const container = document.getElementById('applied-discounts');
+        if (!container) return;
+        
+        const discountId = type + '_' + Date.now();
+        
+        const discountElement = document.createElement('div');
+        discountElement.id = discountId;
+        discountElement.setAttribute('data-type', type);
+        discountElement.className = 'flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-md';
+        
+        const valueText = discountType === 'percentage' ? value + '%' : '₱' + value;
+        
+        discountElement.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-${type === 'voucher' ? 'ticket-alt' : 'tag'} text-blue-600 mr-2"></i>
+                <span class="text-sm font-medium text-blue-900">${name}</span>
+                <span class="ml-2 text-sm text-blue-700">(${valueText})</span>
+            </div>
+            <button onclick="reservationManager.removeAppliedDiscount('${discountId}')" class="text-red-600 hover:text-red-800">
+                <i class="fas fa-times"></i>
+            </button>
+        `;
+        
+        container.appendChild(discountElement);
+    }
+
+    // Remove applied discount
+    removeAppliedDiscount(discountId) {
+        const element = document.getElementById(discountId);
+        if (element) {
+            element.remove();
+        }
+    }
+
+    // Handle discount selection change
+    handleDiscountChange(event) {
+        const selectedValue = event.target.value;
+        const appliedDiscounts = document.getElementById('applied-discounts');
+        
+        // Remove any existing discount from applied discounts
+        const existingDiscount = appliedDiscounts.querySelector('[data-type="discount"]');
+        if (existingDiscount) {
+            existingDiscount.remove();
+        }
+        
+        if (selectedValue) {
+            // Get the selected option text to extract discount info
+            const selectedOption = event.target.options[event.target.selectedIndex];
+            const optionText = selectedOption.textContent;
+            
+            // Extract discount name and value from option text
+            const match = optionText.match(/^(.+?)\s+\((.+?)\)$/);
+            if (match) {
+                const discountName = match[1];
+                const valueText = match[2];
+                
+                // Determine discount type and value
+                let discountType, value;
+                if (valueText.includes('%')) {
+                    discountType = 'percentage';
+                    value = parseFloat(valueText.replace('%', ''));
+                } else if (valueText.includes('₱')) {
+                    discountType = 'fixed';
+                    value = parseFloat(valueText.replace('₱', ''));
+                } else {
+                    discountType = 'fixed';
+                    value = parseFloat(valueText);
+                }
+                
+                // Add to applied discounts
+                this.addAppliedDiscount('discount', discountName, discountType, value);
+            }
         }
     }
 
@@ -491,6 +678,18 @@ function closeCancelModal() {
 function confirmCancelReservation() {
     if (window.reservationManager) {
         window.reservationManager.confirmCancelReservation();
+    }
+}
+
+function validateVoucher() {
+    if (window.reservationManager) {
+        window.reservationManager.validateVoucher();
+    }
+}
+
+function removeAppliedDiscount(discountId) {
+    if (window.reservationManager) {
+        window.reservationManager.removeAppliedDiscount(discountId);
     }
 }
 

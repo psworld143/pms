@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'vps_session_fix.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'functions.php';
@@ -37,7 +41,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                             <i class="fas fa-calendar-check text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800"><?php echo $stats['today_checkins']; ?></h3>
+                            <h3 class="text-3xl font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $stats['today_checkins']; ?></h3>
                             <p class="text-gray-600">Today's Check-ins</p>
                         </div>
                     </div>
@@ -49,7 +57,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                             <i class="fas fa-sign-out-alt text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800"><?php echo $stats['today_checkouts']; ?></h3>
+                            <h3 class="text-3xl font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $stats['today_checkouts']; ?></h3>
                             <p class="text-gray-600">Today's Check-outs</p>
                         </div>
                     </div>
@@ -61,7 +73,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                             <i class="fas fa-user-clock text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800"><?php echo $stats['pending_reservations']; ?></h3>
+                            <h3 class="text-3xl font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $stats['pending_reservations']; ?></h3>
                             <p class="text-gray-600">Pending Reservations</p>
                         </div>
                     </div>
@@ -73,7 +89,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                             <i class="fas fa-exclamation-triangle text-white text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-3xl font-bold text-gray-800"><?php echo $stats['overbookings']; ?></h3>
+                            <h3 class="text-3xl font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $stats['overbookings']; ?></h3>
                             <p class="text-gray-600">Overbookings</p>
                         </div>
                     </div>
@@ -143,4 +163,8 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
     <script src="../../assets/js/main.js"></script>
     <script src="../../assets/js/front-desk.js"></script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>

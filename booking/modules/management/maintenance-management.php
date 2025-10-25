@@ -1,7 +1,13 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/config/database.php';
-require_once dirname(__DIR__, 2) . '/includes/functions.php';
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
+session_start();
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
 require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
 require_once dirname(__DIR__, 2) . '/includes/maintenance-helpers.php';
 
@@ -25,7 +31,7 @@ $totalPages = max(1, (int)ceil($totalRequests / $limit));
 $summary = getMaintenanceSummary();
 $assignees = getMaintenanceAssignees();
 
-$issueTypes = ['plumbing', 'electrical', 'hvac', 'furniture', 'appliances', 'structural', 'other'];
+$issueTypes = ['plumbing', 'electrical', 'hvac', 'furniture', 'appliance', 'other'];
 $priorities = ['low', 'medium', 'high', 'urgent'];
 $statusOptions = ['reported', 'assigned', 'in_progress', 'completed'];
 
@@ -89,7 +95,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active Requests</p>
-                            <p id="maintenance-summary-active" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['active'] ?? 0); ?></p>
+                            <p id="maintenance-summary-active" class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($summary['active'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -102,7 +109,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Completed Today</p>
-                            <p id="maintenance-summary-completed-today" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['completed_today'] ?? 0); ?></p>
+                            <p id="maintenance-summary-completed-today" class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($summary['completed_today'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -115,7 +123,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Urgent</p>
-                            <p id="maintenance-summary-urgent" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['urgent'] ?? 0); ?></p>
+                            <p id="maintenance-summary-urgent" class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($summary['urgent'] ?? 0); ?></p>
                         </div>
                     </div>
                 </div>
@@ -128,7 +137,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Avg. Completion (min)</p>
-                            <p id="maintenance-summary-average" class="text-2xl font-semibold text-gray-900"><?php echo number_format($summary['average_completion_minutes'] ?? 0, 1); ?></p>
+                            <p id="maintenance-summary-average" class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo number_format($summary['average_completion_minutes'] ?? 0, 1); ?></p>
                         </div>
                     </div>
                 </div>
@@ -141,21 +151,33 @@ include '../../includes/sidebar-unified.php';
                         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
                             <select id="maintenance-filter-status" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                                 <option value="">All Statuses</option>
-                                <?php foreach ($statusOptions as $status): ?>
-                                    <option value="<?php echo $status; ?>"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach ($statusOptions as $status): ?>
+                                    <option value="<?php
+session_start(); echo $status; ?>"><?php
+session_start(); echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                             <select id="maintenance-filter-priority" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                                 <option value="">All Priorities</option>
-                                <?php foreach ($priorities as $priority): ?>
-                                    <option value="<?php echo $priority; ?>"><?php echo htmlspecialchars(ucfirst($priority), ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach ($priorities as $priority): ?>
+                                    <option value="<?php
+session_start(); echo $priority; ?>"><?php
+session_start(); echo htmlspecialchars(ucfirst($priority), ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                             <select id="maintenance-filter-assignee" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary">
                                 <option value="">All Assignees</option>
-                                <?php foreach ($assignees as $assignee): ?>
-                                    <option value="<?php echo (int)$assignee['id']; ?>"><?php echo htmlspecialchars($assignee['name'], ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach ($assignees as $assignee): ?>
+                                    <option value="<?php
+session_start(); echo (int)$assignee['id']; ?>"><?php
+session_start(); echo htmlspecialchars($assignee['name'], ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                             <input type="text" id="maintenance-filter-search" placeholder="Search description, room, user" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-primary" />
                         </div>
@@ -171,13 +193,17 @@ include '../../includes/sidebar-unified.php';
                                 </tr>
                             </thead>
                             <tbody id="maintenance-table-body" class="bg-white divide-y divide-gray-200">
-                                <?php if (empty($initialRequests)): ?>
+                                <?php
+session_start(); if (empty($initialRequests)): ?>
                                     <tr>
                                         <td colspan="4" class="px-6 py-6 text-center text-sm text-gray-500">No maintenance requests found.</td>
                                     </tr>
-                                <?php else: ?>
-                                    <?php foreach ($initialRequests as $request): ?>
+                                <?php
+session_start(); else: ?>
+                                    <?php
+session_start(); foreach ($initialRequests as $request): ?>
                                         <?php
+session_start();
                                             $roomLabel = $request['room_number'] ? 'Room ' . $request['room_number'] : 'Room #' . $request['room_id'];
                                             $priorityLabel = ucfirst($request['priority'] ?? 'medium');
                                             $statusLabel = ucwords(str_replace('_', ' ', $request['status'] ?? 'reported'));
@@ -189,32 +215,54 @@ include '../../includes/sidebar-unified.php';
                                                 default => 'bg-green-100 text-green-700'
                                             };
                                         ?>
-                                        <tr data-request-id="<?php echo (int)$request['id']; ?>">
+                                        <tr data-request-id="<?php
+session_start(); echo (int)$request['id']; ?>">
                                             <td class="px-6 py-4 align-top text-sm text-gray-700">
-                                                <div class="font-semibold text-gray-900"><?php echo htmlspecialchars($roomLabel, ENT_QUOTES, 'UTF-8'); ?> &middot; <?php echo htmlspecialchars($issueLabel, ENT_QUOTES, 'UTF-8'); ?></div>
+                                                <div class="font-semibold text-gray-900"><?php
+session_start(); echo htmlspecialchars($roomLabel, ENT_QUOTES, 'UTF-8'); ?> &middot; <?php
+session_start(); echo htmlspecialchars($issueLabel, ENT_QUOTES, 'UTF-8'); ?></div>
                                                 <div class="text-xs text-gray-500 mb-1 flex flex-wrap gap-2">
-                                                    <span class="px-2 py-0.5 rounded-full text-xs <?php echo $priorityBadge; ?>"><?php echo htmlspecialchars($priorityLabel, ENT_QUOTES, 'UTF-8'); ?></span>
-                                                    <span class="text-gray-500">Reported by: <?php echo htmlspecialchars($request['reported_by_name'] ?? 'System', ENT_QUOTES, 'UTF-8'); ?></span>
-                                                    <span class="text-gray-400"><?php echo htmlspecialchars(date('M j, Y g:i A', strtotime($request['created_at'] ?? 'now')), ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    <span class="px-2 py-0.5 rounded-full text-xs <?php
+session_start(); echo $priorityBadge; ?>"><?php
+session_start(); echo htmlspecialchars($priorityLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    <span class="text-gray-500">Reported by: <?php
+session_start(); echo htmlspecialchars($request['reported_by_name'] ?? 'System', ENT_QUOTES, 'UTF-8'); ?></span>
+                                                    <span class="text-gray-400"><?php
+session_start(); echo htmlspecialchars(date('M j, Y g:i A', strtotime($request['created_at'] ?? 'now')), ENT_QUOTES, 'UTF-8'); ?></span>
                                                 </div>
-                                                <div class="text-sm text-gray-600"><?php echo nl2br(htmlspecialchars($request['description'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
-                                                <?php if (!empty($request['notes'])): ?>
-                                                    <div class="mt-2 text-xs text-gray-500">Notes: <?php echo nl2br(htmlspecialchars($request['notes'], ENT_QUOTES, 'UTF-8')); ?></div>
-                                                <?php endif; ?>
+                                                <div class="text-sm text-gray-600"><?php
+session_start(); echo nl2br(htmlspecialchars($request['description'] ?? '', ENT_QUOTES, 'UTF-8')); ?></div>
+                                                <?php
+session_start(); if (!empty($request['notes'])): ?>
+                                                    <div class="mt-2 text-xs text-gray-500">Notes: <?php
+session_start(); echo nl2br(htmlspecialchars($request['notes'], ENT_QUOTES, 'UTF-8')); ?></div>
+                                                <?php
+session_start(); endif; ?>
                                             </td>
                                             <td class="px-6 py-4 align-top text-sm text-gray-700">
                                                 <select class="maintenance-assignee-select w-full border border-gray-300 rounded-md text-sm px-2 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
                                                     <option value="">Unassigned</option>
-                                                    <?php foreach ($assignees as $assignee): ?>
-                                                        <option value="<?php echo (int)$assignee['id']; ?>" <?php echo (int)$assignee['id'] === (int)($request['assigned_to'] ?? 0) ? 'selected' : ''; ?>><?php echo htmlspecialchars($assignee['name'], ENT_QUOTES, 'UTF-8'); ?> (<?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $assignee['role'])), ENT_QUOTES, 'UTF-8'); ?>)</option>
-                                                    <?php endforeach; ?>
+                                                    <?php
+session_start(); foreach ($assignees as $assignee): ?>
+                                                        <option value="<?php
+session_start(); echo (int)$assignee['id']; ?>" <?php
+session_start(); echo (int)$assignee['id'] === (int)($request['assigned_to'] ?? 0) ? 'selected' : ''; ?>><?php
+session_start(); echo htmlspecialchars($assignee['name'], ENT_QUOTES, 'UTF-8'); ?> (<?php
+session_start(); echo htmlspecialchars(ucwords(str_replace('_', ' ', $assignee['role'])), ENT_QUOTES, 'UTF-8'); ?>)</option>
+                                                    <?php
+session_start(); endforeach; ?>
                                                 </select>
                                             </td>
                                             <td class="px-6 py-4 align-top text-sm text-gray-700">
                                                 <select class="maintenance-status-select w-full border border-gray-300 rounded-md text-sm px-2 py-2 focus:outline-none focus:ring-2 focus:ring-primary">
-                                                    <?php foreach ($statusOptions as $status): ?>
-                                                        <option value="<?php echo $status; ?>" <?php echo $status === ($request['status'] ?? 'reported') ? 'selected' : ''; ?>><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></option>
-                                                    <?php endforeach; ?>
+                                                    <?php
+session_start(); foreach ($statusOptions as $status): ?>
+                                                        <option value="<?php
+session_start(); echo $status; ?>" <?php
+session_start(); echo $status === ($request['status'] ?? 'reported') ? 'selected' : ''; ?>><?php
+session_start(); echo htmlspecialchars(ucwords(str_replace('_', ' ', $status)), ENT_QUOTES, 'UTF-8'); ?></option>
+                                                    <?php
+session_start(); endforeach; ?>
                                                 </select>
                                             </td>
                                             <td class="px-6 py-4 align-top text-right text-sm text-gray-600">
@@ -224,8 +272,10 @@ include '../../includes/sidebar-unified.php';
                                                 </button>
                                             </td>
                                         </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                    <?php
+session_start(); endforeach; ?>
+                                <?php
+session_start(); endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -233,13 +283,20 @@ include '../../includes/sidebar-unified.php';
                         <div class="flex items-center gap-2 text-sm text-gray-500">
                             <span>Rows per page</span>
                             <select id="maintenance-limit" class="border border-gray-300 rounded-md text-sm px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary">
-                                <?php foreach ([10, 25, 50, 100] as $optionLimit): ?>
-                                    <option value="<?php echo $optionLimit; ?>" <?php echo $optionLimit === $limit ? 'selected' : ''; ?>><?php echo $optionLimit; ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach ([10, 25, 50, 100] as $optionLimit): ?>
+                                    <option value="<?php
+session_start(); echo $optionLimit; ?>" <?php
+session_start(); echo $optionLimit === $limit ? 'selected' : ''; ?>><?php
+session_start(); echo $optionLimit; ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                         </div>
                         <div class="flex items-center gap-2 text-sm text-gray-600">
-                            <span>Page <span id="maintenance-page-current"><?php echo $initialPage; ?></span> of <span id="maintenance-page-total"><?php echo $totalPages; ?></span></span>
+                            <span>Page <span id="maintenance-page-current"><?php
+session_start(); echo $initialPage; ?></span> of <span id="maintenance-page-total"><?php
+session_start(); echo $totalPages; ?></span></span>
                             <div class="flex items-center gap-2">
                                 <button id="maintenance-page-prev" class="px-3 py-2 border border-gray-300 rounded-md text-sm text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
                                     <i class="fas fa-chevron-left"></i>
@@ -259,6 +316,7 @@ include '../../includes/sidebar-unified.php';
                             <select id="maintenance-room" name="room_id" class="w-full border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" required>
                                 <option value="">Select room</option>
                                 <?php
+session_start();
                                 try {
                                     $roomsStmt = $pdo->query("SELECT id, room_number FROM rooms ORDER BY room_number");
                                     foreach ($roomsStmt->fetchAll() as $room) {
@@ -273,17 +331,26 @@ include '../../includes/sidebar-unified.php';
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1" for="maintenance-issue">Issue Type</label>
                             <select id="maintenance-issue" name="issue_type" class="w-full border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" required>
-                                <?php foreach ($issueTypes as $type): ?>
-                                    <option value="<?php echo $type; ?>"><?php echo htmlspecialchars(ucwords(str_replace('_', ' ', $type)), ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach ($issueTypes as $type): ?>
+                                    <option value="<?php
+session_start(); echo $type; ?>"><?php
+session_start(); echo htmlspecialchars(ucwords(str_replace('_', ' ', $type)), ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1" for="maintenance-priority">Priority</label>
                             <select id="maintenance-priority" name="priority" class="w-full border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary" required>
-                                <?php foreach ($priorities as $priority): ?>
-                                    <option value="<?php echo $priority; ?>" <?php echo $priority === 'medium' ? 'selected' : ''; ?>><?php echo htmlspecialchars(ucfirst($priority), ENT_QUOTES, 'UTF-8'); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach ($priorities as $priority): ?>
+                                    <option value="<?php
+session_start(); echo $priority; ?>" <?php
+session_start(); echo $priority === 'medium' ? 'selected' : ''; ?>><?php
+session_start(); echo htmlspecialchars(ucfirst($priority), ENT_QUOTES, 'UTF-8'); ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                         </div>
                         <div>
@@ -302,6 +369,8 @@ include '../../includes/sidebar-unified.php';
             </div>
         </main>
 
-        <?php include '../../includes/footer.php'; ?>
-<?php // end file ?>
+        <?php
+session_start(); include '../../includes/footer.php'; ?>
+<?php
+session_start(); // end file ?>
 

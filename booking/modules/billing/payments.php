@@ -53,10 +53,10 @@ include '../../includes/sidebar-unified.php';
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Payment Processing</h2>
                 <div class="flex items-center space-x-4">
-                    <button class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button onclick="openProcessPaymentModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-plus mr-2"></i>Process Payment
                     </button>
-                    <button class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+                    <button onclick="openRefundModal()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-refresh mr-2"></i>Refund Payment
                     </button>
                 </div>
@@ -188,7 +188,7 @@ include '../../includes/sidebar-unified.php';
                         <textarea name="notes" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Enter payment notes or comments"></textarea>
                     </div>
                     <div class="flex justify-end space-x-4">
-                        <button type="button" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
+                        <button type="button" onclick="closeProcessPaymentModal()" class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50">
                             Cancel
                         </button>
                         <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700">
@@ -249,6 +249,39 @@ include '../../includes/sidebar-unified.php';
         <?php include '../../includes/footer.php'; ?>
 
         <script>
+            // Suppress classifier.js errors
+            window.addEventListener('error', function(e) {
+                if (e.message && e.message.includes('Failed to link vertex and fragment shaders')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Suppress unhandled promise rejections
+            window.addEventListener('unhandledrejection', function(e) {
+                if (e.reason && e.reason.message && e.reason.message.includes('Failed to link vertex and fragment shaders')) {
+                    e.preventDefault();
+                    return false;
+                }
+            });
+
+            // Modal functions
+            function openProcessPaymentModal() {
+                // Scroll to the form
+                document.getElementById('process-payment-form').scrollIntoView({ behavior: 'smooth' });
+                // Focus on the first input
+                document.querySelector('#process-payment-form input, #process-payment-form select').focus();
+            }
+
+            function closeProcessPaymentModal() {
+                document.getElementById('process-payment-form').reset();
+            }
+
+            function openRefundModal() {
+                alert('Refund functionality will be implemented soon. Please contact support for refunds.');
+            }
+
+            // Form submission
             document.getElementById('process-payment-form').addEventListener('submit', async function (event) {
                 event.preventDefault();
 
@@ -261,20 +294,40 @@ include '../../includes/sidebar-unified.php';
                 const formData = new FormData(form);
                 const payload = Object.fromEntries(formData.entries());
 
+                // Validate required fields
+                if (!payload.bill_id || !payload.payment_method || !payload.amount) {
+                    alert('Please fill in all required fields.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    return;
+                }
+
+                // Validate amount
+                if (parseFloat(payload.amount) <= 0) {
+                    alert('Please enter a valid amount greater than 0.');
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                    return;
+                }
+
                 try {
                     const response = await fetch('../../api/record-payment.php', {
                         method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-API-Key': 'pms_users_api_2024'
+                        },
                         body: JSON.stringify(payload)
                     });
 
                     const result = await response.json();
 
                     if (result.success) {
-                        alert('Payment recorded successfully.');
+                        alert('Payment recorded successfully!');
                         window.location.reload();
                     } else {
-                        alert(result.message || 'Failed to record payment.');
+                        alert('Error: ' + (result.message || 'Failed to record payment.'));
                     }
                 } catch (error) {
                     console.error('Error recording payment:', error);

@@ -1,7 +1,8 @@
 <?php
 session_start();
-require_once '../../config/database.php';;
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../login.php');
@@ -9,490 +10,890 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$user_name = $_SESSION['user_name'];
+$user_name = $_SESSION['user_name'] ?? 'User';
 
-// Fetch comprehensive training progress data
+// Get user training progress
+$progress_data = getUserTrainingProgress($user_id);
+$stats = $progress_data['stats'] ?? ['total_attempts' => 0, 'completed_attempts' => 0, 'avg_score' => 0, 'total_minutes' => 0];
+$recent_activity = $progress_data['recent_activity'] ?? [];
+$certificates = $progress_data['certificates'] ?? [];
+
+// Calculate additional metrics
+$completion_rate = $stats['total_attempts'] > 0 ? round(($stats['completed_attempts'] / $stats['total_attempts']) * 100) : 0;
+$total_hours = round(($stats['total_minutes'] ?? 0) / 60, 1);
+
+// Get dynamic score distribution
+$score_distribution = getScoreDistribution($user_id) ?? [];
+
+// Get progress over time data
+$progress_over_time = getProgressOverTime($user_id) ?? [];
+
+// Get scenario-specific progress
+$scenario_progress = getScenarioSpecificProgress($user_id) ?? [];
+
+// Get leaderboard data
+$leaderboard = [];
 try {
-    // Get overall training statistics
-    $stmt = $pdo->prepare("
+    $stmt = $pdo->query("
         SELECT 
-            COUNT(*) as total_attempts,
-            COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_scenarios,
-            AVG(CASE WHEN status = 'completed' THEN score END) as avg_score,
-            SUM(CASE WHEN status = 'completed' THEN duration_minutes END) as total_time,
-            COUNT(CASE WHEN score >= 90 THEN 1 END) as excellent_count,
-            COUNT(CASE WHEN score >= 80 AND score < 90 THEN 1 END) as good_count,
-            COUNT(CASE WHEN score >= 70 AND score < 80 THEN 1 END) as satisfactory_count,
-            COUNT(CASE WHEN score < 70 THEN 1 END) as needs_improvement_count
-        FROM training_attempts 
-        WHERE user_id = ?
-    ");
-    $stmt->execute([$user_id]);
-    $overall_stats = $stmt->fetch();
-
-    // Get progress by scenario type
-    $stmt = $pdo->prepare("
-        SELECT 
-            scenario_type,
-            COUNT(*) as attempts,
-            COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed,
-            AVG(CASE WHEN status = 'completed' THEN score END) as avg_score,
-            SUM(CASE WHEN status = 'completed' THEN duration_minutes END) as total_time
-        FROM training_attempts 
-        WHERE user_id = ?
-        GROUP BY scenario_type
-    ");
-    $stmt->execute([$user_id]);
-    $progress_by_type = $stmt->fetchAll();
-
-    // Get recent training activity
-    $stmt = $pdo->prepare("
-        SELECT 
-            ta.*,
-            CASE 
-                WHEN ta.scenario_type = 'scenario' THEN ts.title
-                WHEN ta.scenario_type = 'customer_service' THEN css.title
-                WHEN ta.scenario_type = 'problem_solving' THEN ps.title
-                ELSE 'Unknown Scenario'
-            END as scenario_title,
-            ta.scenario_type
-        FROM training_attempts ta
-        LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'scenario'
-        LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.id AND ta.scenario_type = 'customer_service'
-        LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem_solving'
-        WHERE ta.user_id = ?
-        ORDER BY ta.created_at DESC
+            u.user_name,
+            COUNT(ta.id) as total_attempts,
+            COUNT(CASE WHEN ta.status = 'completed' THEN 1 END) as completed_attempts,
+            AVG(CASE WHEN ta.status = 'completed' THEN ta.score END) as avg_score,
+            SUM(CASE WHEN ta.status = 'completed' THEN ta.duration_minutes ELSE 0 END) as total_minutes
+        FROM users u
+        LEFT JOIN training_attempts ta ON u.user_id = ta.user_id
+        WHERE u.user_role IN ('front_desk', 'housekeeping', 'manager')
+        GROUP BY u.user_id, u.user_name
+        HAVING total_attempts > 0
+        ORDER BY avg_score DESC, completed_attempts DESC
         LIMIT 10
     ");
-    $stmt->execute([$user_id]);
-    $recent_activity = $stmt->fetchAll();
-
-    // Get performance trends (last 30 days)
-    $stmt = $pdo->prepare("
-        SELECT 
-            DATE(created_at) as date,
-            COUNT(*) as attempts,
-            AVG(score) as avg_score
-        FROM training_attempts 
-        WHERE user_id = ? AND status = 'completed' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
-        GROUP BY DATE(created_at)
-        ORDER BY date DESC
-    ");
-    $stmt->execute([$user_id]);
-    $performance_trends = $stmt->fetchAll();
-
-    // Get achievements and milestones
-    $stmt = $pdo->prepare("
-        SELECT 
-            COUNT(CASE WHEN scenario_type = 'scenario' THEN 1 END) as training_scenarios_completed,
-            COUNT(CASE WHEN scenario_type = 'customer_service' THEN 1 END) as customer_service_completed,
-            COUNT(CASE WHEN scenario_type = 'problem_solving' THEN 1 END) as problem_solving_completed,
-            COUNT(CASE WHEN score >= 95 THEN 1 END) as perfect_scores,
-            COUNT(CASE WHEN score >= 90 THEN 1 END) as excellent_scores,
-            COUNT(CASE WHEN score >= 80 THEN 1 END) as good_scores
-        FROM training_attempts 
-        WHERE user_id = ? AND status = 'completed'
-    ");
-    $stmt->execute([$user_id]);
-    $achievements = $stmt->fetch();
-
-    // Get learning path progress
-    $stmt = $pdo->prepare("
-        SELECT 
-            'Training Scenarios' as category,
-            COUNT(*) as total,
-            COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
-        FROM training_attempts 
-        WHERE user_id = ? AND scenario_type = 'scenario'
-        UNION ALL
-        SELECT 
-            'Customer Service' as category,
-            COUNT(*) as total,
-            COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
-        FROM training_attempts 
-        WHERE user_id = ? AND scenario_type = 'customer_service'
-        UNION ALL
-        SELECT 
-            'Problem Solving' as category,
-            COUNT(*) as total,
-            COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed
-        FROM training_attempts 
-        WHERE user_id = ? AND scenario_type = 'problem_solving'
-    ");
-    $stmt->execute([$user_id, $user_id, $user_id]);
-    $learning_path = $stmt->fetchAll();
-
-    // Calculate overall completion percentage
-    $total_scenarios = $overall_stats['total_attempts'];
-    $completed_scenarios = $overall_stats['completed_scenarios'];
-    $completion_percentage = $total_scenarios > 0 ? ($completed_scenarios / $total_scenarios) * 100 : 0;
-
-} catch (PDOException $e) {
-    error_log("Error fetching training progress: " . $e->getMessage());
-    $overall_stats = [
-        'total_attempts' => 0,
-        'completed_scenarios' => 0,
-        'avg_score' => 0,
-        'total_time' => 0,
-        'excellent_count' => 0,
-        'good_count' => 0,
-        'satisfactory_count' => 0,
-        'needs_improvement_count' => 0
-    ];
-    $progress_by_type = [];
-    $recent_activity = [];
-    $performance_trends = [];
-    $achievements = [
-        'training_scenarios_completed' => 0,
-        'customer_service_completed' => 0,
-        'problem_solving_completed' => 0,
-        'perfect_scores' => 0,
-        'excellent_scores' => 0,
-        'good_scores' => 0
-    ];
-    $learning_path = [];
-    $completion_percentage = 0;
+    $leaderboard = $stmt->fetchAll();
+} catch (Exception $e) {
+    // Handle error silently
 }
 
-// Set page title for unified header
-$page_title = 'Training Progress';
-
-// Include unified navigation (automatically selects based on user role)
+$page_title = 'Staff Progress';
 include '../../includes/header-unified.php';
 include '../../includes/sidebar-unified.php';
 ?>
 
         <!-- Main Content -->
         <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
-            
-
             <!-- Page Header -->
-            <div class="mb-6">
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
                 <div class="flex items-center justify-between">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800">Your Learning Journey</h2>
-                        <p class="text-gray-600 mt-1">Track your progress, achievements, and performance across all training modules</p>
+                <h1 class="text-2xl font-bold text-gray-900">Staff Progress</h1>
+                <p class="text-gray-600 mt-1">Track your training progress and achievements</p>
                     </div>
-                    <div class="flex space-x-3">
-                        <button class="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors">
-                            <i class="fas fa-download mr-2"></i>Export Report
+            <div class="flex items-center space-x-4">
+                <div class="flex space-x-2">
+                    <button onclick="refreshProgressData()" class="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm">
+                        <i class="fas fa-sync-alt mr-1"></i>Refresh
                         </button>
-                        <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                            <i class="fas fa-certificate mr-2"></i>View Certificates
+                    <button onclick="exportProgressReport()" class="px-3 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors text-sm">
+                        <i class="fas fa-download mr-1"></i>Export
                         </button>
+                    </div>
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Welcome back,</p>
+                    <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($user_name); ?></p>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-chart-line text-white text-xl"></i>
+                </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Overall Progress Overview -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-800">Overall Progress</h3>
-                    <span class="text-2xl font-bold text-purple-600"><?php echo number_format($completion_percentage, 1); ?>%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-3 mb-4">
-                    <div class="bg-gradient-to-r from-purple-500 to-indigo-600 h-3 rounded-full transition-all duration-500" style="width: <?php echo $completion_percentage; ?>%"></div>
-                </div>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                    <div>
-                        <p class="text-sm text-gray-600">Total Attempts</p>
-                        <p class="text-xl font-bold text-gray-900"><?php echo $overall_stats['total_attempts']; ?></p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-600">Completed</p>
-                        <p class="text-xl font-bold text-green-600"><?php echo $overall_stats['completed_scenarios']; ?></p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-600">Average Score</p>
-                        <p class="text-xl font-bold text-blue-600"><?php echo number_format($overall_stats['avg_score'] ?? 0, 1); ?>%</p>
-                    </div>
-                    <div>
-                        <p class="text-sm text-gray-600">Training Time</p>
-                        <p class="text-xl font-bold text-purple-600"><?php echo round($overall_stats['total_time'] / 60, 1); ?>h</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Performance Statistics -->
+    <!-- Progress Overview -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        <div class="bg-white rounded-lg shadow-sm border p-6">
                     <div class="flex items-center">
-                        <div class="p-3 bg-green-100 rounded-lg">
-                            <i class="fas fa-crown text-green-600 text-xl"></i>
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-play-circle text-blue-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Excellent (90%+)</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $overall_stats['excellent_count']; ?></p>
+                    <p class="text-sm font-medium text-gray-600">Total Attempts</p>
+                    <p class="text-2xl font-bold text-gray-900"><?php echo $stats['total_attempts']; ?></p>
                         </div>
                     </div>
                 </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+
+        <div class="bg-white rounded-lg shadow-sm border p-6">
                     <div class="flex items-center">
-                        <div class="p-3 bg-blue-100 rounded-lg">
-                            <i class="fas fa-star text-blue-600 text-xl"></i>
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Good (80-89%)</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $overall_stats['good_count']; ?></p>
+                    <p class="text-sm font-medium text-gray-600">Completed</p>
+                    <p class="text-2xl font-bold text-gray-900"><?php echo $stats['completed_attempts']; ?></p>
                         </div>
                     </div>
                 </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        
+        <div class="bg-white rounded-lg shadow-sm border p-6">
                     <div class="flex items-center">
-                        <div class="p-3 bg-yellow-100 rounded-lg">
-                            <i class="fas fa-check text-yellow-600 text-xl"></i>
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-star text-yellow-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Satisfactory (70-79%)</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $overall_stats['satisfactory_count']; ?></p>
+                    <p class="text-sm font-medium text-gray-600">Average Score</p>
+                    <p class="text-2xl font-bold text-gray-900"><?php echo round($stats['avg_score']); ?>%</p>
                         </div>
                     </div>
                 </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
+        
+        <div class="bg-white rounded-lg shadow-sm border p-6">
                     <div class="flex items-center">
-                        <div class="p-3 bg-red-100 rounded-lg">
-                            <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-purple-600 text-xl"></i>
                         </div>
                         <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Needs Improvement</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $overall_stats['needs_improvement_count']; ?></p>
+                    <p class="text-sm font-medium text-gray-600">Time Spent</p>
+                    <p class="text-2xl font-bold text-gray-900"><?php echo $total_hours; ?>h</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Progress by Training Type -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <?php foreach ($progress_by_type as $progress): ?>
-                    <?php 
-                    $type_icons = [
-                        'scenario' => 'fas fa-play-circle',
-                        'customer_service' => 'fas fa-headset',
-                        'problem_solving' => 'fas fa-puzzle-piece'
-                    ];
-                    $type_colors = [
-                        'scenario' => 'bg-purple-100 text-purple-600',
-                        'customer_service' => 'bg-blue-100 text-blue-600',
-                        'problem_solving' => 'bg-orange-100 text-orange-600'
-                    ];
-                    $type_names = [
-                        'scenario' => 'Training Scenarios',
-                        'customer_service' => 'Customer Service',
-                        'problem_solving' => 'Problem Solving'
-                    ];
-                    $completion_rate = $progress['attempts'] > 0 ? ($progress['completed'] / $progress['attempts']) * 100 : 0;
-                    ?>
-                    <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                        <div class="flex items-center mb-4">
-                            <div class="p-3 rounded-lg <?php echo $type_colors[$progress['scenario_type']]; ?>">
-                                <i class="<?php echo $type_icons[$progress['scenario_type']]; ?> text-xl"></i>
-                            </div>
-                            <div class="ml-3">
-                                <h4 class="text-lg font-semibold text-gray-800"><?php echo $type_names[$progress['scenario_type']]; ?></h4>
-                                <p class="text-sm text-gray-500"><?php echo $progress['completed']; ?> of <?php echo $progress['attempts']; ?> completed</p>
-                            </div>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2 mb-3">
-                            <div class="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 rounded-full" style="width: <?php echo $completion_rate; ?>%"></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <p class="text-gray-600">Avg Score</p>
-                                <p class="font-semibold text-gray-900"><?php echo number_format($progress['avg_score'] ?? 0, 1); ?>%</p>
-                            </div>
-                            <div>
-                                <p class="text-gray-600">Time</p>
-                                <p class="font-semibold text-gray-900"><?php echo round($progress['total_time'] / 60, 1); ?>h</p>
+    <!-- Progress Charts -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Completion Rate -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Completion Rate</h3>
+            <div class="flex items-center justify-center">
+                <div class="relative w-32 h-32">
+                    <svg class="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
+                        <path class="text-gray-200" stroke="currentColor" stroke-width="3" fill="none"
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <path class="text-blue-600" stroke="currentColor" stroke-width="3" fill="none"
+                              stroke-dasharray="<?php echo $completion_rate; ?>, 100"
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                    </svg>
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="text-2xl font-bold text-gray-900"><?php echo $completion_rate; ?>%</span>
                             </div>
                         </div>
                     </div>
+            <p class="text-center text-sm text-gray-600 mt-4"><?php echo $stats['completed_attempts']; ?> of <?php echo $stats['total_attempts']; ?> scenarios completed</p>
+            </div>
+
+        <!-- Score Distribution -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Score Distribution</h3>
+            <div class="space-y-3">
+                <?php 
+                $ranges = [
+                    ['min' => 90, 'max' => 100, 'label' => '90-100%', 'color' => 'green', 'class' => 'bg-green-500'],
+                    ['min' => 80, 'max' => 89, 'label' => '80-89%', 'color' => 'blue', 'class' => 'bg-blue-500'],
+                    ['min' => 70, 'max' => 79, 'label' => '70-79%', 'color' => 'yellow', 'class' => 'bg-yellow-500'],
+                    ['min' => 0, 'max' => 69, 'label' => 'Below 70%', 'color' => 'red', 'class' => 'bg-red-500']
+                ];
+                
+                foreach ($ranges as $range): 
+                    $count = $score_distribution[$range['min'] . '-' . $range['max']] ?? 0;
+                    $total_scores = array_sum($score_distribution);
+                    $percentage = $total_scores > 0 ? round(($count / $total_scores) * 100) : 0;
+                ?>
+                <div class="flex items-center justify-between">
+                    <span class="text-sm text-gray-600"><?php echo $range['label']; ?></span>
+                    <div class="flex-1 mx-4">
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="<?php echo $range['class']; ?> h-2 rounded-full transition-all duration-500" 
+                                 style="width: <?php echo $percentage; ?>%"></div>
+                                </div>
+                            </div>
+                    <span class="text-sm font-medium text-gray-900"><?php echo $percentage; ?>%</span>
+                        </div>
                 <?php endforeach; ?>
-            </div>
+                                </div>
+            <?php if ($total_scores > 0): ?>
+            <div class="mt-4 text-center text-sm text-gray-500">
+                Based on <?php echo $total_scores; ?> completed attempts
+                            </div>
+            <?php endif; ?>
+                                </div>
+                            </div>
 
-            <!-- Achievements and Milestones -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                <!-- Achievements -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Achievements</h3>
-                    <div class="space-y-4">
-                        <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                            <div class="flex items-center">
-                                <i class="fas fa-trophy text-yellow-500 text-xl mr-3"></i>
-                                <div>
-                                    <p class="font-medium text-gray-800">Perfect Scores</p>
-                                    <p class="text-sm text-gray-600">95% or higher</p>
-                                </div>
-                            </div>
-                            <span class="text-2xl font-bold text-green-600"><?php echo $achievements['perfect_scores']; ?></span>
+    <!-- Progress Over Time & Scenario Analysis -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <!-- Progress Over Time -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Progress Over Time</h3>
+            <div class="h-64 flex items-center justify-center">
+                <canvas id="progressChart" width="400" height="200"></canvas>
                         </div>
-                        <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                            <div class="flex items-center">
-                                <i class="fas fa-medal text-blue-500 text-xl mr-3"></i>
-                                <div>
-                                    <p class="font-medium text-gray-800">Excellent Performance</p>
-                                    <p class="text-sm text-gray-600">90% or higher</p>
-                                </div>
-                            </div>
-                            <span class="text-2xl font-bold text-blue-600"><?php echo $achievements['excellent_scores']; ?></span>
-                        </div>
-                        <div class="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                            <div class="flex items-center">
-                                <i class="fas fa-star text-purple-500 text-xl mr-3"></i>
-                                <div>
-                                    <p class="font-medium text-gray-800">Good Performance</p>
-                                    <p class="text-sm text-gray-600">80% or higher</p>
-                                </div>
-                            </div>
-                            <span class="text-2xl font-bold text-purple-600"><?php echo $achievements['good_scores']; ?></span>
-                        </div>
+            <div class="mt-4 text-center text-sm text-gray-500">
+                Last 30 days performance trend
                     </div>
                 </div>
 
-                <!-- Learning Path Progress -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Learning Path Progress</h3>
+        <!-- Scenario Analysis -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Scenario Performance</h3>
                     <div class="space-y-4">
-                        <?php foreach ($learning_path as $path): ?>
-                            <?php 
-                            $path_completion = $path['total'] > 0 ? ($path['completed'] / $path['total']) * 100 : 0;
-                            $path_icons = [
-                                'Training Scenarios' => 'fas fa-play-circle text-purple-500',
-                                'Customer Service' => 'fas fa-headset text-blue-500',
-                                'Problem Solving' => 'fas fa-puzzle-piece text-orange-500'
-                            ];
-                            ?>
-                            <div>
+                <?php if (empty($scenario_progress)): ?>
+                    <div class="text-center py-8">
+                        <i class="fas fa-chart-bar text-gray-400 text-3xl mb-3"></i>
+                        <p class="text-gray-500">No scenario data available</p>
+                        <p class="text-sm text-gray-400">Complete some scenarios to see performance analysis</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($scenario_progress as $scenario): ?>
+                        <div class="border border-gray-200 rounded-lg p-4">
                                 <div class="flex items-center justify-between mb-2">
-                                    <div class="flex items-center">
-                                        <i class="<?php echo $path_icons[$path['category']]; ?> text-xl mr-3"></i>
-                                        <span class="font-medium text-gray-800"><?php echo $path['category']; ?></span>
+                                <h4 class="font-medium text-gray-900"><?php echo htmlspecialchars($scenario['title']); ?></h4>
+                                <span class="text-sm font-bold text-gray-900"><?php echo round($scenario['avg_score']); ?>%</span>
                                     </div>
-                                    <span class="text-sm font-semibold text-gray-600"><?php echo $path['completed']; ?>/<?php echo $path['total']; ?></span>
+                            <div class="flex items-center justify-between text-sm text-gray-600">
+                                <span><?php echo $scenario['attempts']; ?> attempts</span>
+                                <span><?php echo $scenario['best_score']; ?>% best</span>
+                                <span class="px-2 py-1 text-xs rounded-full <?php echo $scenario['avg_score'] >= 80 ? 'bg-green-100 text-green-800' : ($scenario['avg_score'] >= 60 ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'); ?>">
+                                    <?php echo $scenario['avg_score'] >= 80 ? 'Excellent' : ($scenario['avg_score'] >= 60 ? 'Good' : 'Needs Improvement'); ?>
+                                </span>
                                 </div>
-                                <div class="w-full bg-gray-200 rounded-full h-2">
-                                    <div class="bg-gradient-to-r from-purple-500 to-indigo-600 h-2 rounded-full transition-all duration-500" style="width: <?php echo $path_completion; ?>%"></div>
+                            <div class="mt-2 w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500" 
+                                     style="width: <?php echo min(100, $scenario['avg_score']); ?>%"></div>
                                 </div>
                             </div>
-                        <?php endforeach; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
                     </div>
                 </div>
             </div>
 
-            <!-- Recent Activity and Performance Trends -->
+    <!-- Recent Activity & Certificates -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
                 <!-- Recent Activity -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
-                    <div class="space-y-3">
-                        <?php if (empty($recent_activity)): ?>
-                            <p class="text-sm text-gray-500">No recent activity</p>
-                        <?php else: ?>
-                            <?php foreach ($recent_activity as $activity): ?>
-                                <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                                    <div class="flex items-center">
-                                        <div class="w-10 h-10 bg-gradient-to-r from-purple-500 to-indigo-600 rounded-full flex items-center justify-center mr-3">
-                                            <i class="fas fa-play text-white text-sm"></i>
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+            <div class="space-y-4">
+                <?php if (empty($recent_activity)): ?>
+                    <div class="text-center py-8">
+                        <i class="fas fa-history text-gray-400 text-3xl mb-3"></i>
+                        <p class="text-gray-500">No recent activity</p>
+                        <p class="text-sm text-gray-400">Start a training scenario to see your progress here</p>
                                         </div>
-                                        <div>
-                                            <p class="font-medium text-gray-800"><?php echo htmlspecialchars($activity['scenario_title']); ?></p>
-                                            <p class="text-sm text-gray-500"><?php echo date('M j, Y g:i A', strtotime($activity['created_at'])); ?></p>
+                <?php else: ?>
+                    <?php foreach ($recent_activity as $activity): ?>
+                        <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-lg">
+                            <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-play text-blue-600"></i>
                                         </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($activity['scenario_title']); ?></p>
+                                <p class="text-xs text-gray-500">
+                                    <?php echo ucfirst($activity['scenario_type']); ?> • 
+                                    <?php echo date('M j, Y', strtotime($activity['created_at'])); ?>
+                                </p>
                                     </div>
                                     <div class="text-right">
-                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
-                                            <?php 
-                                            if ($activity['score'] >= 90) echo 'bg-green-100 text-green-800';
-                                            elseif ($activity['score'] >= 80) echo 'bg-blue-100 text-blue-800';
-                                            elseif ($activity['score'] >= 70) echo 'bg-yellow-100 text-yellow-800';
-                                            else echo 'bg-red-100 text-red-800';
-                                            ?>">
-                                            <?php echo number_format($activity['score'] ?? 0, 1); ?>%
-                                        </span>
+                                <p class="text-sm font-bold text-gray-900"><?php echo $activity['score']; ?>%</p>
+                                <p class="text-xs text-gray-500"><?php echo ucfirst($activity['status']); ?></p>
+                                    </div>
+                                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                                        </div>
+                </div>
+
+        <!-- Certificates -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <h3 class="text-lg font-semibold text-gray-900 mb-4">Certificates Earned</h3>
+            <div class="space-y-4">
+                <?php if (empty($certificates)): ?>
+                    <div class="text-center py-8">
+                        <i class="fas fa-certificate text-gray-400 text-3xl mb-3"></i>
+                        <p class="text-gray-500">No certificates yet</p>
+                        <p class="text-sm text-gray-400">Complete scenarios with high scores to earn certificates</p>
+                    </div>
+                <?php else: ?>
+                    <?php foreach ($certificates as $certificate): ?>
+                        <div class="flex items-center space-x-4 p-3 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                                <i class="fas fa-certificate text-yellow-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($certificate['scenario_title']); ?></p>
+                                <p class="text-xs text-gray-500">
+                                    <?php echo ucfirst($certificate['scenario_type']); ?> • 
+                                    <?php echo date('M j, Y', strtotime($certificate['earned_at'])); ?>
+                                </p>
+                                    </div>
+                                    <div class="text-right">
+                                <p class="text-sm font-bold text-gray-900"><?php echo $certificate['score']; ?>%</p>
+                                <button onclick="downloadCertificate(<?php echo $certificate['id']; ?>)" 
+                                        class="text-xs text-blue-600 hover:text-blue-800">
+                                    Download
+                                </button>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Performance Trends -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Performance Trends (Last 30 Days)</h3>
-                    <?php if (empty($performance_trends)): ?>
-                        <p class="text-sm text-gray-500">No performance data available</p>
+    <!-- Leaderboard -->
+    <div class="bg-white rounded-lg shadow-sm border p-6">
+        <h3 class="text-lg font-semibold text-gray-900 mb-4">Team Leaderboard</h3>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Completed</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Avg Score</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time Spent</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <?php if (empty($leaderboard)): ?>
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500">
+                                No leaderboard data available
+                            </td>
+                        </tr>
                     <?php else: ?>
-                        <div class="space-y-3">
-                            <?php foreach (array_slice($performance_trends, 0, 7) as $trend): ?>
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600"><?php echo date('M j', strtotime($trend['date'])); ?></span>
-                                    <div class="flex items-center space-x-4">
-                                        <span class="text-sm text-gray-500"><?php echo $trend['attempts']; ?> attempts</span>
-                                        <span class="text-sm font-semibold text-gray-800"><?php echo number_format($trend['avg_score'] ?? 0, 1); ?>%</span>
+                        <?php foreach ($leaderboard as $index => $member): ?>
+                            <tr class="<?php echo $member['user_name'] === $user_name ? 'bg-blue-50' : ''; ?>">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <?php if ($index < 3): ?>
+                                        <i class="fas fa-trophy text-yellow-500 mr-2"></i>
+                                    <?php endif; ?>
+                                    #<?php echo $index + 1; ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?php echo htmlspecialchars($member['user_name']); ?>
+                                    <?php if ($member['user_name'] === $user_name): ?>
+                                        <span class="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">You</span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?php echo $member['completed_attempts']; ?>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?php echo round($member['avg_score']); ?>%
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <?php echo round($member['total_minutes'] / 60, 1); ?>h
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                <h3 class="text-lg font-semibold text-gray-800 mb-4">Next Steps</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <button onclick="window.location.href='scenarios.php'" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
-                        <i class="fas fa-play-circle text-purple-600 text-xl mr-3"></i>
-                        <div class="text-left">
-                            <span class="font-medium text-purple-800">Continue Training</span>
-                            <p class="text-sm text-purple-600">Start new scenarios</p>
-                        </div>
-                    </button>
-                    <button onclick="window.location.href='certificates.php'" class="flex items-center p-4 bg-green-50 border-2 border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-all duration-300">
-                        <i class="fas fa-certificate text-green-600 text-xl mr-3"></i>
-                        <div class="text-left">
-                            <span class="font-medium text-green-800">View Certificates</span>
-                            <p class="text-sm text-green-600">Download achievements</p>
-                        </div>
-                    </button>
-                    <button onclick="window.location.href='leaderboard.php'" class="flex items-center p-4 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-300">
-                        <i class="fas fa-trophy text-blue-600 text-xl mr-3"></i>
-                        <div class="text-left">
-                            <span class="font-medium text-blue-800">Leaderboard</span>
-                            <p class="text-sm text-blue-600">Compare performance</p>
-                        </div>
-                    </button>
-                </div>
-            </div>
         </main>
-    </div>
 
-    <?php include '../../includes/footer.php'; ?>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+/* Export Modal Styles */
+.export-modal {
+    animation: fadeIn 0.3s ease-out;
+}
 
+.export-modal .modal-content {
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideIn {
+    from { 
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.export-format-btn {
+    transition: all 0.2s ease;
+}
+
+.export-format-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.export-format-btn:active {
+    transform: translateY(0);
+}
+</style>
     <script>
-        // Update current date and time
-        function updateDateTime() {
-            const now = new Date();
-            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
-            
-            $('#current-date').text(now.toLocaleDateString('en-US', dateOptions));
-            $('#current-time').text(now.toLocaleTimeString('en-US', timeOptions));
+// Progress chart data
+const progressData = <?php echo json_encode($progress_over_time); ?>;
+const scoreDistribution = <?php echo json_encode($score_distribution); ?>;
+
+// Initialize progress chart
+document.addEventListener('DOMContentLoaded', function() {
+    initializeProgressChart();
+    initializeInteractiveFeatures();
+});
+
+function initializeProgressChart() {
+    const chartElement = document.getElementById('progressChart');
+    if (!chartElement) {
+        console.warn('Progress chart element not found');
+        return;
+    }
+    
+    const ctx = chartElement.getContext('2d');
+    
+    // Prepare data for the last 30 days
+    const labels = [];
+    const scores = [];
+    const today = new Date();
+    
+    for (let i = 29; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        
+        const dateStr = date.toISOString().split('T')[0];
+        const dayData = progressData.find(d => d.date === dateStr);
+        scores.push(dayData ? dayData.avg_score : null);
+    }
+    
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Average Score',
+                data: scores,
+                borderColor: 'rgb(59, 130, 246)',
+                backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointBackgroundColor: 'rgb(59, 130, 246)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                pointRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                },
+                x: {
+                    ticks: {
+                        maxTicksLimit: 10
+                    }
+                }
+            },
+            elements: {
+                point: {
+                    hoverRadius: 6
+                }
+            }
         }
+    });
+}
 
-        // Update time every second
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-
-        // Animate progress bars on page load
-        $(document).ready(function() {
-            $('.bg-gradient-to-r').each(function() {
-                const width = $(this).css('width');
-                $(this).css('width', '0%');
-                setTimeout(() => {
-                    $(this).css('width', width);
-                }, 500);
+function initializeInteractiveFeatures() {
+    // Add hover effects to progress cards
+    const progressCards = document.querySelectorAll('.bg-white.rounded-lg.shadow-sm.border');
+    progressCards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.classList.add('shadow-lg', 'transform', 'scale-105');
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.classList.remove('shadow-lg', 'transform', 'scale-105');
+        });
+    });
+    
+    // Add click handlers for scenario analysis
+    const scenarioCards = document.querySelectorAll('[data-scenario-id]');
+    scenarioCards.forEach(card => {
+        card.addEventListener('click', function() {
+            const scenarioId = this.dataset.scenarioId;
+            showScenarioDetails(scenarioId);
             });
         });
-    </script>
+}
+
+function downloadCertificate(certificateId) {
+    // Show loading state
+    const button = event.target;
+    const originalText = button.textContent;
+    button.textContent = 'Downloading...';
+    button.disabled = true;
+    
+    // Open certificate download in new window
+    const downloadWindow = window.open(`../../modules/training/download-certificate.php?id=${certificateId}`, '_blank');
+    
+    // Reset button state after a delay
+    setTimeout(() => {
+        button.textContent = originalText;
+        button.disabled = false;
+    }, 2000);
+}
+
+function showScenarioDetails(scenarioId) {
+    // This would open a modal with detailed scenario analysis
+    alert('Scenario details for ID: ' + scenarioId);
+}
+
+function refreshProgressData() {
+    // Refresh the page to get updated data
+    location.reload();
+}
+
+function exportProgressReport() {
+    // Show loading state
+    const exportBtn = event.target;
+    const originalText = exportBtn.innerHTML;
+    exportBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Exporting...';
+    exportBtn.disabled = true;
+    
+    try {
+        // Generate comprehensive progress report
+        const reportData = {
+            user: {
+                name: '<?php echo addslashes($user_name); ?>',
+                id: <?php echo $user_id; ?>
+            },
+            stats: <?php echo json_encode($stats); ?>,
+            scoreDistribution: scoreDistribution,
+            progressOverTime: progressData,
+            scenarioProgress: <?php echo json_encode($scenario_progress); ?>,
+            recentActivity: <?php echo json_encode($recent_activity); ?>,
+            certificates: <?php echo json_encode($certificates); ?>,
+            reportInfo: {
+                generatedAt: new Date().toISOString(),
+                generatedBy: 'Hotel PMS Training System',
+                version: '1.0'
+            }
+        };
+        
+        // Create multiple export formats
+        const formats = [
+            {
+                name: 'JSON',
+                data: JSON.stringify(reportData, null, 2),
+                mimeType: 'application/json',
+                extension: 'json'
+            },
+            {
+                name: 'CSV',
+                data: generateCSVReport(reportData),
+                mimeType: 'text/csv',
+                extension: 'csv'
+            },
+            {
+                name: 'HTML',
+                data: generateHTMLReport(reportData),
+                mimeType: 'text/html',
+                extension: 'html'
+            }
+        ];
+        
+        // Show format selection dialog
+        showExportFormatDialog(formats, reportData);
+        
+    } catch (error) {
+        console.error('Export error:', error);
+        alert('Error generating export: ' + error.message);
+    } finally {
+        // Reset button state
+        exportBtn.innerHTML = originalText;
+        exportBtn.disabled = false;
+    }
+}
+
+function generateCSVReport(data) {
+    let csv = 'Training Progress Report\n';
+    csv += `User,${data.user.name}\n`;
+    csv += `Generated,${data.reportInfo.generatedAt}\n\n`;
+    
+    // Stats section
+    csv += 'Overall Statistics\n';
+    csv += 'Metric,Value\n';
+    csv += `Total Attempts,${data.stats.total_attempts}\n`;
+    csv += `Completed Attempts,${data.stats.completed_attempts}\n`;
+    csv += `Average Score,${Math.round(data.stats.avg_score)}%\n`;
+    csv += `Total Time Spent,${Math.round(data.stats.total_minutes / 60, 1)} hours\n\n`;
+    
+    // Score distribution
+    csv += 'Score Distribution\n';
+    csv += 'Range,Count,Percentage\n';
+    const totalScores = Object.values(data.scoreDistribution).reduce((a, b) => a + b, 0);
+    Object.entries(data.scoreDistribution).forEach(([range, count]) => {
+        const percentage = totalScores > 0 ? Math.round((count / totalScores) * 100) : 0;
+        csv += `${range},${count},${percentage}%\n`;
+    });
+    csv += '\n';
+    
+    // Scenario progress
+    csv += 'Scenario Performance\n';
+    csv += 'Scenario,Attempts,Average Score,Best Score,Status\n';
+    data.scenarioProgress.forEach(scenario => {
+        const status = scenario.avg_score >= 80 ? 'Excellent' : (scenario.avg_score >= 60 ? 'Good' : 'Needs Improvement');
+        csv += `"${scenario.title}",${scenario.attempts},${Math.round(scenario.avg_score)}%,${scenario.best_score}%,${status}\n`;
+    });
+    
+    return csv;
+}
+
+function generateHTMLReport(data) {
+    const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Training Progress Report - ${data.user.name}</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+            .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+            .header { text-align: center; border-bottom: 2px solid #007bff; padding-bottom: 20px; margin-bottom: 30px; }
+            .section { margin-bottom: 30px; }
+            .section h2 { color: #007bff; border-left: 4px solid #007bff; padding-left: 10px; }
+            .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+            .stat-card { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; }
+            .stat-value { font-size: 24px; font-weight: bold; color: #007bff; }
+            .stat-label { color: #666; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+            th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+            th { background: #f8f9fa; font-weight: bold; }
+            .status-excellent { color: #28a745; font-weight: bold; }
+            .status-good { color: #ffc107; font-weight: bold; }
+            .status-needs-improvement { color: #dc3545; font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>Training Progress Report</h1>
+                <p><strong>User:</strong> ${data.user.name}</p>
+                <p><strong>Generated:</strong> ${new Date(data.reportInfo.generatedAt).toLocaleString()}</p>
+            </div>
+            
+            <div class="section">
+                <h2>Overall Statistics</h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">${data.stats.total_attempts}</div>
+                        <div class="stat-label">Total Attempts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${data.stats.completed_attempts}</div>
+                        <div class="stat-label">Completed</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${Math.round(data.stats.avg_score)}%</div>
+                        <div class="stat-label">Average Score</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">${Math.round(data.stats.total_minutes / 60, 1)}h</div>
+                        <div class="stat-label">Time Spent</div>
+                        </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h2>Scenario Performance</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Scenario</th>
+                            <th>Attempts</th>
+                            <th>Average Score</th>
+                            <th>Best Score</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.scenarioProgress.map(scenario => `
+                            <tr>
+                                <td>${scenario.title}</td>
+                                <td>${scenario.attempts}</td>
+                                <td>${Math.round(scenario.avg_score)}%</td>
+                                <td>${scenario.best_score}%</td>
+                                <td class="status-${scenario.avg_score >= 80 ? 'excellent' : (scenario.avg_score >= 60 ? 'good' : 'needs-improvement')}">
+                                    ${scenario.avg_score >= 80 ? 'Excellent' : (scenario.avg_score >= 60 ? 'Good' : 'Needs Improvement')}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="section">
+                <h2>Recent Activity</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Scenario</th>
+                            <th>Score</th>
+                            <th>Status</th>
+                            <th>Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.recentActivity.map(activity => `
+                            <tr>
+                                <td>${activity.scenario_title}</td>
+                                <td>${activity.score}%</td>
+                                <td>${activity.status}</td>
+                                <td>${new Date(activity.created_at).toLocaleDateString()}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        </div>
 </body>
 </html>
+    `;
+    return html;
+}
+
+function showExportFormatDialog(formats, data) {
+    // Create modal dialog
+    const modal = document.createElement('div');
+    modal.className = 'export-modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+    modal.innerHTML = `
+        <div class="modal-content bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-xl">
+            <div class="text-center mb-6">
+                <div class="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fas fa-download text-blue-600 text-2xl"></i>
+                </div>
+                <h3 class="text-xl font-semibold text-gray-900 mb-2">Export Progress Report</h3>
+                <p class="text-gray-600">Choose your preferred export format</p>
+                        </div>
+            <div class="space-y-3">
+                ${formats.map(format => `
+                    <button onclick="downloadReport('${format.name}', '${format.mimeType}', '${format.extension}')" 
+                            class="export-format-btn w-full px-4 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-left flex items-center">
+                        <i class="fas fa-file-${format.extension === 'json' ? 'code' : format.extension === 'csv' ? 'csv' : 'code'} mr-3"></i>
+                        <div>
+                            <div class="font-medium">Export as ${format.name}</div>
+                            <div class="text-sm text-blue-100">Download ${format.name.toLowerCase()} file</div>
+                        </div>
+                    </button>
+                `).join('')}
+                        </div>
+            <div class="mt-6 flex justify-end">
+                <button onclick="closeExportDialog()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-times mr-2"></i>Cancel
+                    </button>
+                </div>
+            </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Store data globally for download functions
+    window.exportData = data;
+    window.exportFormats = formats;
+    window.exportModal = modal;
+    
+    // Add click outside to close
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeExportDialog();
+        }
+    });
+    
+    // Add escape key to close
+    const escapeHandler = function(e) {
+        if (e.key === 'Escape') {
+            closeExportDialog();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+
+function downloadReport(formatName, mimeType, extension) {
+    const format = window.exportFormats.find(f => f.name === formatName);
+    if (!format) return;
+    
+    try {
+        const dataBlob = new Blob([format.data], { type: mimeType });
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `progress_report_${new Date().toISOString().split('T')[0]}.${extension}`;
+        link.click();
+        
+        URL.revokeObjectURL(url);
+        closeExportDialog();
+        
+        // Show success notification
+        showNotification(`Progress report exported successfully as ${formatName}`, 'success');
+        
+    } catch (error) {
+        console.error('Export error:', error);
+        showNotification('Error exporting report. Please try again.', 'error');
+    }
+}
+
+function showNotification(message, type = 'info') {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform translate-x-full ${
+        type === 'success' ? 'bg-green-500 text-white' : 
+        type === 'error' ? 'bg-red-500 text-white' : 
+        'bg-blue-500 text-white'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+            <span>${message}</span>
+    </div>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.classList.remove('translate-x-full');
+    }, 100);
+    
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        notification.classList.add('translate-x-full');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 3000);
+}
+
+function closeExportDialog() {
+    if (window.exportModal) {
+        document.body.removeChild(window.exportModal);
+        window.exportModal = null;
+    }
+}
+
+// Add keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+            case 'r':
+                e.preventDefault();
+                refreshProgressData();
+                break;
+            case 'e':
+                e.preventDefault();
+                exportProgressReport();
+                break;
+        }
+    }
+        });
+    </script>
+
+<?php include '../../includes/footer.php'; ?>

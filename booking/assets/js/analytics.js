@@ -81,7 +81,7 @@
                 const revenueData = await fetchJson(ENDPOINTS.revenue);
                 console.log('Revenue response:', revenueData);
                 if (revenueData.success) {
-                    renderRevenueChart(revenueData.data || []);
+                    renderRevenueChart(revenueData.data?.daily || []);
                     console.log('✅ Revenue loaded successfully');
                 } else {
                     console.error('❌ Revenue API error:', revenueData.message);
@@ -100,8 +100,8 @@
                 const occupancyData = await fetchJson(ENDPOINTS.occupancy);
                 console.log('Occupancy response:', occupancyData);
                 if (occupancyData.success) {
-                    renderOccupancySummary(occupancyData.summary || {}, occupancyData.data || []);
-                    renderOccupancyChart(occupancyData.data || []);
+                    renderOccupancySummary(occupancyData.summary || {}, occupancyData.data?.daily || []);
+                    renderOccupancyChart(occupancyData.data?.daily || []);
                     console.log('✅ Occupancy loaded successfully');
                 } else {
                     console.error('❌ Occupancy API error:', occupancyData.message);
@@ -202,8 +202,8 @@
     }
 
     function renderOccupancySummary(summary, timeline) {
-        const occupancyToday = summary.today_rate ?? null;
-        const occupancyAverage = summary.average_rate ?? null;
+        const occupancyToday = summary.today_rate ? parseFloat(summary.today_rate) : null;
+        const occupancyAverage = summary.average_rate ? parseFloat(summary.average_rate) : null;
 
         updatePercentCard('analytics-occupancy', occupancyToday);
         updatePercentCard('analytics-room-utilization', occupancyAverage);

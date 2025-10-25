@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
@@ -39,8 +43,20 @@ include '../../includes/sidebar-unified.php';
             <div class="flex justify-between items-center mb-8">
                 <h2 class="text-3xl font-semibold text-gray-800">Modify Reservation</h2>
                 <div class="text-right">
-                    <div class="text-sm text-gray-600">Reservation #<?php echo htmlspecialchars($reservation['reservation_number']); ?></div>
-                    <div class="text-sm text-gray-600">Status: <span class="font-medium <?php echo $reservation['status'] === 'confirmed' ? 'text-green-600' : 'text-blue-600'; ?>"><?php echo ucfirst($reservation['status']); ?></span></div>
+                    <div class="text-sm text-gray-600">Reservation #<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['reservation_number']); ?></div>
+                    <div class="text-sm text-gray-600">Status: <span class="font-medium <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $reservation['status'] === 'confirmed' ? 'text-green-600' : 'text-blue-600'; ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ucfirst($reservation['status']); ?></span></div>
                 </div>
             </div>
 
@@ -53,7 +69,11 @@ include '../../includes/sidebar-unified.php';
                         <i class="fas fa-user text-white text-xl"></i>
                     </div>
                     <div>
-                        <h4 class="text-lg font-bold text-gray-800"><?php echo htmlspecialchars($reservation['first_name'] . ' ' . $reservation['last_name']); ?></h4>
+                        <h4 class="text-lg font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['first_name'] . ' ' . $reservation['last_name']); ?></h4>
                         <p class="text-gray-600">Guest</p>
                     </div>
                 </div>
@@ -63,8 +83,16 @@ include '../../includes/sidebar-unified.php';
                         <i class="fas fa-bed text-white text-xl"></i>
                     </div>
                     <div>
-                        <h4 class="text-lg font-bold text-gray-800"><?php echo htmlspecialchars($reservation['room_number']); ?></h4>
-                        <p class="text-gray-600"><?php echo ucfirst($reservation['room_type']); ?></p>
+                        <h4 class="text-lg font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['room_number']); ?></h4>
+                        <p class="text-gray-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ucfirst($reservation['room_type']); ?></p>
                     </div>
                 </div>
                 
@@ -73,7 +101,15 @@ include '../../includes/sidebar-unified.php';
                         <i class="fas fa-calendar-alt text-white text-xl"></i>
                     </div>
                     <div>
-                        <h4 class="text-lg font-bold text-gray-800"><?php echo date('M d', strtotime($reservation['check_in_date'])); ?> - <?php echo date('M d', strtotime($reservation['check_out_date'])); ?></h4>
+                        <h4 class="text-lg font-bold text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo date('M d', strtotime($reservation['check_in_date'])); ?> - <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo date('M d', strtotime($reservation['check_out_date'])); ?></h4>
                         <p class="text-gray-600">Stay Duration</p>
                     </div>
                 </div>
@@ -83,7 +119,11 @@ include '../../includes/sidebar-unified.php';
                         <i class="fas fa-dollar-sign text-white text-xl"></i>
                     </div>
                     <div>
-                        <h4 class="text-lg font-bold text-gray-800">₱<?php echo number_format($reservation['total_amount'], 2); ?></h4>
+                        <h4 class="text-lg font-bold text-gray-800">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($reservation['total_amount'], 2); ?></h4>
                         <p class="text-gray-600">Total Amount</p>
                     </div>
                 </div>
@@ -96,17 +136,29 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg p-6 shadow-md">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
                 <form id="basic-info-form" class="space-y-4">
-                    <input type="hidden" name="reservation_id" value="<?php echo $reservation_id; ?>">
+                    <input type="hidden" name="reservation_id" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $reservation_id; ?>">
                     
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                            <input type="text" name="first_name" value="<?php echo htmlspecialchars($reservation['first_name']); ?>" 
+                            <input type="text" name="first_name" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['first_name']); ?>" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Last Name</label>
-                            <input type="text" name="last_name" value="<?php echo htmlspecialchars($reservation['last_name']); ?>" 
+                            <input type="text" name="last_name" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['last_name']); ?>" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                     </div>
@@ -114,12 +166,20 @@ include '../../includes/sidebar-unified.php';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                            <input type="email" name="email" value="<?php echo htmlspecialchars($reservation['email'] ?? ''); ?>" 
+                            <input type="email" name="email" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['email'] ?? ''); ?>" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
-                            <input type="tel" name="phone" value="<?php echo htmlspecialchars($reservation['phone']); ?>" 
+                            <input type="tel" name="phone" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['phone']); ?>" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                     </div>
@@ -127,12 +187,20 @@ include '../../includes/sidebar-unified.php';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Check-in Date</label>
-                            <input type="date" name="check_in_date" value="<?php echo $reservation['check_in_date']; ?>" 
+                            <input type="date" name="check_in_date" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $reservation['check_in_date']; ?>" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Check-out Date</label>
-                            <input type="date" name="check_out_date" value="<?php echo $reservation['check_out_date']; ?>" 
+                            <input type="date" name="check_out_date" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $reservation['check_out_date']; ?>" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                     </div>
@@ -140,12 +208,20 @@ include '../../includes/sidebar-unified.php';
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Adults</label>
-                            <input type="number" name="adults" value="<?php echo $reservation['adults']; ?>" min="1" max="10" 
+                            <input type="number" name="adults" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $reservation['adults']; ?>" min="1" max="10" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Children</label>
-                            <input type="number" name="children" value="<?php echo $reservation['children'] ?? 0; ?>" min="0" max="10" 
+                            <input type="number" name="children" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $reservation['children'] ?? 0; ?>" min="0" max="10" 
                                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                         </div>
                     </div>
@@ -153,7 +229,11 @@ include '../../includes/sidebar-unified.php';
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Special Requests</label>
                         <textarea name="special_requests" rows="3" 
-                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"><?php echo htmlspecialchars($reservation['special_requests'] ?? ''); ?></textarea>
+                                  class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['special_requests'] ?? ''); ?></textarea>
                     </div>
                     
                     <button type="submit" class="w-full bg-primary text-white py-2 px-4 rounded-md hover:bg-primary-dark transition-colors">
@@ -172,19 +252,35 @@ include '../../includes/sidebar-unified.php';
                     <div class="grid grid-cols-2 gap-4 text-sm">
                         <div>
                             <span class="text-gray-500">Room Number:</span>
-                            <span class="font-medium"><?php echo htmlspecialchars($reservation['room_number']); ?></span>
+                            <span class="font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['room_number']); ?></span>
                         </div>
                         <div>
                             <span class="text-gray-500">Type:</span>
-                            <span class="font-medium"><?php echo ucfirst($reservation['room_type']); ?></span>
+                            <span class="font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ucfirst($reservation['room_type']); ?></span>
                         </div>
                         <div>
                             <span class="text-gray-500">Rate:</span>
-                            <span class="font-medium">₱<?php echo number_format($room_types[$reservation['room_type']]['rate'], 2); ?>/night</span>
+                            <span class="font-medium">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($room_types[$reservation['room_type']]['rate'], 2); ?>/night</span>
                         </div>
                         <div>
                             <span class="text-gray-500">Status:</span>
-                            <span class="font-medium text-green-600"><?php echo ucfirst($reservation['room_status']); ?></span>
+                            <span class="font-medium text-green-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ucfirst($reservation['room_status']); ?></span>
                         </div>
                     </div>
                 </div>
@@ -193,18 +289,46 @@ include '../../includes/sidebar-unified.php';
                 <div class="border-t pt-4 mb-4">
                     <h4 class="font-medium text-gray-900 mb-3">Room Transfer</h4>
                     <form id="room-transfer-form" class="space-y-3">
-                        <input type="hidden" name="reservation_id" value="<?php echo $reservation_id; ?>">
+                        <input type="hidden" name="reservation_id" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $reservation_id; ?>">
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">New Room Type</label>
                             <select name="new_room_type" id="new-room-type" 
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                                 <option value="">Select Room Type</option>
-                                <?php foreach ($room_types as $type => $info): ?>
-                                <option value="<?php echo $type; ?>" <?php echo $type === $reservation['room_type'] ? 'selected' : ''; ?>>
-                                    <?php echo ucfirst($type); ?> - ₱<?php echo number_format($info['rate'], 2); ?>/night
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); foreach ($room_types as $type => $info): ?>
+                                <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $type; ?>" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $type === $reservation['room_type'] ? 'selected' : ''; ?>>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ucfirst($type); ?> - ₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($info['rate'], 2); ?>/night
                                 </option>
-                                <?php endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endforeach; ?>
                             </select>
                         </div>
                         
@@ -232,23 +356,51 @@ include '../../includes/sidebar-unified.php';
                 <div class="border-t pt-4">
                     <h4 class="font-medium text-gray-900 mb-3">Room Upgrade</h4>
                     <form id="room-upgrade-form" class="space-y-3">
-                        <input type="hidden" name="reservation_id" value="<?php echo $reservation_id; ?>">
+                        <input type="hidden" name="reservation_id" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $reservation_id; ?>">
                         
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Upgrade To</label>
                             <select name="upgrade_room_type" id="upgrade-room-type" 
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                                 <option value="">Select Upgrade</option>
-                                <?php 
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); 
                                 $current_rate = $room_types[$reservation['room_type']]['rate'];
                                 foreach ($room_types as $type => $info): 
                                     if ($info['rate'] > $current_rate):
                                 ?>
-                                <option value="<?php echo $type; ?>">
-                                    <?php echo ucfirst($type); ?> - ₱<?php echo number_format($info['rate'], 2); ?>/night 
-                                    (+₱<?php echo number_format($info['rate'] - $current_rate, 2); ?>)
+                                <option value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $type; ?>">
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ucfirst($type); ?> - ₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($info['rate'], 2); ?>/night 
+                                    (+₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($info['rate'] - $current_rate, 2); ?>)
                                 </option>
-                                <?php 
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); 
                                     endif;
                                 endforeach; 
                                 ?>
@@ -365,7 +517,11 @@ include '../../includes/sidebar-unified.php';
                 </button>
             </div>
             <form id="group-booking-form" class="space-y-4">
-                <input type="hidden" name="reservation_id" value="<?php echo $reservation_id; ?>">
+                <input type="hidden" name="reservation_id" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $reservation_id; ?>">
                 
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Group Name</label>
@@ -409,8 +565,16 @@ include '../../includes/sidebar-unified.php';
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">Cancel Reservation</h3>
                 <p class="text-gray-600 mb-4">Are you sure you want to cancel this reservation? This action cannot be undone.</p>
                 <div class="space-y-2 text-sm text-gray-600 mb-6">
-                    <p><strong>Reservation:</strong> <?php echo htmlspecialchars($reservation['reservation_number']); ?></p>
-                    <p><strong>Guest:</strong> <?php echo htmlspecialchars($reservation['first_name'] . ' ' . $reservation['last_name']); ?></p>
+                    <p><strong>Reservation:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['reservation_number']); ?></p>
+                    <p><strong>Guest:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($reservation['first_name'] . ' ' . $reservation['last_name']); ?></p>
                 </div>
                 <div class="flex justify-center space-x-4">
                     <button onclick="closeCancelModal()" 
@@ -429,4 +593,8 @@ include '../../includes/sidebar-unified.php';
     <script src="../../assets/js/main.js"></script>
     <script src="../../assets/js/modify-reservation.js"></script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>

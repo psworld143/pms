@@ -21,6 +21,11 @@ if (file_exists(__DIR__ . '/database.local.php')) {
     error_log("database.local.php not found at: " . __DIR__ . '/database.local.php');
 }
 
+// CyberPanel/Hostinger specific configuration
+if (file_exists(__DIR__ . '/../booking/config/cyberpanel-config.php')) {
+    include __DIR__ . '/../booking/config/cyberpanel-config.php';
+}
+
 // Database configuration (supports env overrides & conditional defines)
 if (!defined('DB_HOST')) { define('DB_HOST', getenv('PMS_DB_HOST') ?: 'localhost'); }
 if (!defined('DB_NAME')) { define('DB_NAME', getenv('PMS_DB_NAME') ?: 'pms_hotel'); }

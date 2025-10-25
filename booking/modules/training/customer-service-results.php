@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 require_once '../../includes/session-config.php';
 session_start();
 require_once '../../config/database.php';
@@ -25,21 +28,45 @@ include '../../includes/sidebar-unified.php';
         <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
             <div class="bg-white rounded-lg shadow p-6 mb-6">
                 <div class="flex items-center justify-between mb-4">
-                    <h1 class="text-2xl font-bold text-gray-900"><?php echo htmlspecialchars($item['title'] ?? 'Case'); ?></h1>
+                    <h1 class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($item['title'] ?? 'Case'); ?></h1>
                     <div class="text-right">
-                        <div class="text-3xl font-bold text-blue-600"><?php echo number_format($attempt['score'] ?? 0, 1); ?>%</div>
-                        <div class="text-sm text-gray-500">Completed: <?php echo htmlspecialchars($attempt['completed_at'] ?? $attempt['created_at']); ?></div>
+                        <div class="text-3xl font-bold text-blue-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($attempt['score'] ?? 0, 1); ?>%</div>
+                        <div class="text-sm text-gray-500">Completed: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($attempt['completed_at'] ?? $attempt['created_at']); ?></div>
                     </div>
                 </div>
-                <p class="text-gray-600 mb-2">Duration: <?php echo (int)($attempt['duration_minutes'] ?? 0); ?> min</p>
-                <p class="text-gray-600">Type: <?php echo htmlspecialchars(ucfirst($item['type'] ?? '')); ?> • Difficulty: <?php echo htmlspecialchars(ucfirst($item['difficulty'] ?? '')); ?></p>
+                <p class="text-gray-600 mb-2">Duration: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (int)($attempt['duration_minutes'] ?? 0); ?> min</p>
+                <p class="text-gray-600">Type: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($item['type'] ?? '')); ?> • Difficulty: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(ucfirst($item['difficulty'] ?? '')); ?></p>
             </div>
             <div class="bg-white rounded-lg shadow p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">Your Response</h3>
-                <div class="text-gray-700 whitespace-pre-line"><?php echo htmlspecialchars($answers['response'] ?? 'No response recorded'); ?></div>
+                <div class="text-gray-700 whitespace-pre-line"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($answers['response'] ?? 'No response recorded'); ?></div>
             </div>
         </main>
     </div>
 
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
 

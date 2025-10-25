@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
@@ -92,11 +96,23 @@ include '../../includes/sidebar-unified.php';
             <p class="text-gray-600">Update guest information</p>
         </div>
         
-        <?php if (isset($error)): ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); if (isset($error)): ?>
             <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-                <?php echo htmlspecialchars($error); ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($error); ?>
             </div>
-        <?php endif; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endif; ?>
         
         <div class="bg-white rounded-lg shadow-sm border p-6">
             <form method="POST" class="space-y-6">
@@ -104,40 +120,64 @@ include '../../includes/sidebar-unified.php';
                     <div>
                         <label for="first_name" class="block text-sm font-medium text-gray-700">First Name *</label>
                         <input type="text" id="first_name" name="first_name" required
-                               value="<?php echo htmlspecialchars($guest['first_name']); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['first_name']); ?>"
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                     </div>
                     
                     <div>
                         <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name *</label>
                         <input type="text" id="last_name" name="last_name" required
-                               value="<?php echo htmlspecialchars($guest['last_name']); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['last_name']); ?>"
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                     </div>
                     
                     <div>
                         <label for="email" class="block text-sm font-medium text-gray-700">Email *</label>
                         <input type="email" id="email" name="email" required
-                               value="<?php echo htmlspecialchars($guest['email']); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['email']); ?>"
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                     </div>
                     
                     <div>
                         <label for="phone" class="block text-sm font-medium text-gray-700">Phone *</label>
                         <input type="tel" id="phone" name="phone" required
-                               value="<?php echo htmlspecialchars($guest['phone']); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['phone']); ?>"
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                     </div>
                     
                     <div>
                         <label for="id_number" class="block text-sm font-medium text-gray-700">ID Number</label>
                         <input type="text" id="id_number" name="id_number"
-                               value="<?php echo htmlspecialchars($guest['id_number'] ?? ''); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['id_number'] ?? ''); ?>"
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                     </div>
                     
                     <div class="flex items-center">
-                        <input type="checkbox" id="is_vip" name="is_vip" <?php echo $guest['is_vip'] ? 'checked' : ''; ?> class="mr-2">
+                        <input type="checkbox" id="is_vip" name="is_vip" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $guest['is_vip'] ? 'checked' : ''; ?> class="mr-2">
                         <label for="is_vip" class="text-sm font-medium text-gray-700">VIP Guest</label>
                     </div>
                 </div>
@@ -146,21 +186,33 @@ include '../../includes/sidebar-unified.php';
                     <div>
                         <label for="address" class="block text-sm font-medium text-gray-700">Address</label>
                         <input type="text" id="address" name="address"
-                               value="<?php echo htmlspecialchars($guest['address'] ?? ''); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['address'] ?? ''); ?>"
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                     </div>
                     
                     <div>
                         <label for="date_of_birth" class="block text-sm font-medium text-gray-700">Date of Birth</label>
                         <input type="date" id="date_of_birth" name="date_of_birth"
-                               value="<?php echo htmlspecialchars($guest['date_of_birth'] ?? ''); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['date_of_birth'] ?? ''); ?>"
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                     </div>
                     
                     <div>
                         <label for="nationality" class="block text-sm font-medium text-gray-700">Nationality</label>
                         <input type="text" id="nationality" name="nationality"
-                               value="<?php echo htmlspecialchars($guest['nationality'] ?? ''); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['nationality'] ?? ''); ?>"
                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                     </div>
                     
@@ -168,10 +220,26 @@ include '../../includes/sidebar-unified.php';
                         <label for="id_type" class="block text-sm font-medium text-gray-700">ID Type</label>
                         <select id="id_type" name="id_type" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary">
                             <option value="">Select ID Type</option>
-                            <option value="passport" <?php echo ($guest['id_type'] ?? '') === 'passport' ? 'selected' : ''; ?>>Passport</option>
-                            <option value="driver_license" <?php echo ($guest['id_type'] ?? '') === 'driver_license' ? 'selected' : ''; ?>>Driver License</option>
-                            <option value="national_id" <?php echo ($guest['id_type'] ?? '') === 'national_id' ? 'selected' : ''; ?>>National ID</option>
-                            <option value="other" <?php echo ($guest['id_type'] ?? '') === 'other' ? 'selected' : ''; ?>>Other</option>
+                            <option value="passport" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ($guest['id_type'] ?? '') === 'passport' ? 'selected' : ''; ?>>Passport</option>
+                            <option value="driver_license" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ($guest['id_type'] ?? '') === 'driver_license' ? 'selected' : ''; ?>>Driver License</option>
+                            <option value="national_id" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ($guest['id_type'] ?? '') === 'national_id' ? 'selected' : ''; ?>>National ID</option>
+                            <option value="other" <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo ($guest['id_type'] ?? '') === 'other' ? 'selected' : ''; ?>>Other</option>
                         </select>
                     </div>
                 </div>
@@ -180,13 +248,21 @@ include '../../includes/sidebar-unified.php';
                     <div>
                         <label for="preferences" class="block text-sm font-medium text-gray-700">Preferences</label>
                         <textarea id="preferences" name="preferences" rows="3"
-                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"><?php echo htmlspecialchars($guest['preferences'] ?? ''); ?></textarea>
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['preferences'] ?? ''); ?></textarea>
                     </div>
                     
                     <div>
                         <label for="service_notes" class="block text-sm font-medium text-gray-700">Service Notes</label>
                         <textarea id="service_notes" name="service_notes" rows="3"
-                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"><?php echo htmlspecialchars($guest['service_notes'] ?? ''); ?></textarea>
+                                  class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($guest['service_notes'] ?? ''); ?></textarea>
                     </div>
                 </div>
                 
@@ -203,4 +279,8 @@ include '../../includes/sidebar-unified.php';
     </div>
 </main>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>

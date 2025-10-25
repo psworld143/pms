@@ -13,20 +13,16 @@ ob_start();
 
 // Direct database connection without debug output
 try {
-    $host = 'localhost';
-    $dbname = 'pms_pms_hotel';
-    $username = 'pms_pms_hotel';
-    $password = '020894HotelPMS';
+    // Use the same database configuration as the main system
+    require_once __DIR__ . '/../../includes/database.php';
     
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password, [
-        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-        PDO::ATTR_EMULATE_PREPARES => false
-    ]);
-} catch (PDOException $e) {
+    if (!isset($pdo) || !$pdo) {
+        throw new Exception('Database connection not established');
+    }
+} catch (Exception $e) {
     ob_clean();
     header('Content-Type: application/json');
-    echo json_encode(['success' => false, 'message' => 'Database connection failed']);
+    echo json_encode(['success' => false, 'message' => 'Database connection failed: ' . $e->getMessage()]);
     exit();
 }
 

@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 // Configure session cookie parameters for better compatibility
 session_set_cookie_params([
     'lifetime' => 0,
@@ -98,7 +101,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4 flex-1">
                             <p class="text-sm font-medium text-blue-700">Completed Scenarios</p>
-                            <p class="text-3xl font-bold text-blue-900"><?php echo number_format($training_stats['completed_scenarios'] ?? 0); ?></p>
+                            <p class="text-3xl font-bold text-blue-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($training_stats['completed_scenarios'] ?? 0); ?></p>
                             <p class="text-xs text-blue-600 mt-1">Total completed</p>
                         </div>
                     </div>
@@ -114,7 +120,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4 flex-1">
                             <p class="text-sm font-medium text-green-700">Average Score</p>
-                            <p class="text-3xl font-bold text-green-900"><?php echo number_format($training_stats['average_score'] ?? 0, 1); ?>%</p>
+                            <p class="text-3xl font-bold text-green-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($training_stats['average_score'] ?? 0, 1); ?>%</p>
                             <p class="text-xs text-green-600 mt-1">Overall performance</p>
                         </div>
                     </div>
@@ -130,7 +139,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4 flex-1">
                             <p class="text-sm font-medium text-purple-700">Training Hours</p>
-                            <p class="text-3xl font-bold text-purple-900"><?php echo number_format($training_stats['training_hours'] ?? 0, 1); ?>h</p>
+                            <p class="text-3xl font-bold text-purple-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($training_stats['training_hours'] ?? 0, 1); ?>h</p>
                             <p class="text-xs text-purple-600 mt-1">Time invested</p>
                         </div>
                     </div>
@@ -146,7 +158,10 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4 flex-1">
                             <p class="text-sm font-medium text-yellow-700">Certificates</p>
-                            <p class="text-3xl font-bold text-yellow-900"><?php echo number_format($training_stats['certificates_earned'] ?? 0); ?></p>
+                            <p class="text-3xl font-bold text-yellow-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($training_stats['certificates_earned'] ?? 0); ?></p>
                             <p class="text-xs text-yellow-600 mt-1">Achievements earned</p>
                         </div>
                     </div>
@@ -166,7 +181,10 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4 flex-1">
                         <p class="text-sm font-medium text-indigo-700">Current Streak</p>
-                        <p class="text-3xl font-bold text-indigo-900"><?php echo number_format($current_streak); ?> days</p>
+                        <p class="text-3xl font-bold text-indigo-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($current_streak); ?> days</p>
                         <p class="text-xs text-indigo-600 mt-1">Consistent training</p>
                     </div>
                 </div>
@@ -182,7 +200,10 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4 flex-1">
                         <p class="text-sm font-medium text-pink-700">Achievement Points</p>
-                        <p class="text-3xl font-bold text-pink-900"><?php echo number_format($achievement_points); ?></p>
+                        <p class="text-3xl font-bold text-pink-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($achievement_points); ?></p>
                         <p class="text-xs text-pink-600 mt-1">Total earned</p>
                     </div>
                 </div>
@@ -198,7 +219,10 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="ml-4 flex-1">
                         <p class="text-sm font-medium text-teal-700">Team Rank</p>
-                        <p class="text-3xl font-bold text-teal-900">#<?php echo number_format($team_rank); ?></p>
+                        <p class="text-3xl font-bold text-teal-900">#<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($team_rank); ?></p>
                         <p class="text-xs text-teal-600 mt-1">Among colleagues</p>
                     </div>
                 </div>
@@ -218,6 +242,9 @@ include '../../includes/sidebar-unified.php';
             </div>
             <div id="trivia-content" class="text-gray-700">
                 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
                 $trivia_facts = [
                     "The world's largest hotel is the First World Hotel in Malaysia with 7,351 rooms.",
                     "The Burj Al Arab in Dubai has a helipad on its roof, 210 meters above the ground.",
@@ -282,19 +309,31 @@ include '../../includes/sidebar-unified.php';
                 <div class="space-y-3">
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Scenarios Completed</span>
-                        <span class="font-semibold text-green-600"><?php echo number_format($week_completed); ?></span>
+                        <span class="font-semibold text-green-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($week_completed); ?></span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Average Score</span>
-                        <span class="font-semibold text-blue-600"><?php echo number_format($week_avg); ?>%</span>
+                        <span class="font-semibold text-blue-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($week_avg); ?>%</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Time Spent</span>
-                        <span class="font-semibold text-purple-600"><?php echo number_format(round($week_minutes/60,1),1); ?>h</span>
+                        <span class="font-semibold text-purple-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format(round($week_minutes/60,1),1); ?>h</span>
                     </div>
                     <div class="flex justify-between items-center">
                         <span class="text-gray-600">Streak Days</span>
-                        <span class="font-semibold text-orange-600"><?php echo number_format($current_streak); ?> days</span>
+                        <span class="font-semibold text-orange-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($current_streak); ?> days</span>
                     </div>
                 </div>
             </div>
@@ -306,6 +345,9 @@ include '../../includes/sidebar-unified.php';
                 </h3>
                 <div id="motivation-content" class="text-gray-700">
                     <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
                     $motivational_quotes = [
                         "Excellence is not a skill. It's an attitude. - Ralph Marston",
                         "The only way to do great work is to love what you do. - Steve Jobs",
@@ -330,133 +372,37 @@ include '../../includes/sidebar-unified.php';
 
         <!-- Quick Start Training -->
         <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Quick Start Training</h3>
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-medium text-gray-900">Quick Start Training</h3>
+                <a href="scenarios.php" class="text-sm text-blue-600 hover:text-blue-800 font-medium">
+                    <i class="fas fa-external-link-alt mr-1"></i>View All Scenarios
+                </a>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <button onclick="startScenario('front_desk_basic')" class="flex items-center p-4 bg-blue-50 border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-300">
-                    <i class="fas fa-user-tie text-blue-600 text-xl mr-3"></i>
+                <a href="scenarios.php" class="flex items-center p-4 bg-gradient-to-r from-blue-50 to-blue-100 border-2 border-blue-200 rounded-lg hover:bg-blue-100 hover:border-blue-300 transition-all duration-300 group">
+                    <i class="fas fa-graduation-cap text-blue-600 text-xl mr-3 group-hover:scale-110 transition-transform"></i>
                     <div class="text-left">
-                        <span class="font-medium text-blue-800">Front Desk Basics</span>
-                        <p class="text-sm text-blue-600">Learn check-in/check-out procedures</p>
+                        <span class="font-medium text-blue-800">Front Desk Check-in Process</span>
+                        <p class="text-sm text-blue-600">Learn essential check-in and check-out procedures</p>
                     </div>
-                </button>
-                <button onclick="startScenario('customer_service')" class="flex items-center p-4 bg-green-50 border-2 border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-all duration-300">
-                    <i class="fas fa-headset text-green-600 text-xl mr-3"></i>
+                </a>
+                <a href="scenarios.php" class="flex items-center p-4 bg-gradient-to-r from-green-50 to-green-100 border-2 border-green-200 rounded-lg hover:bg-green-100 hover:border-green-300 transition-all duration-300 group">
+                    <i class="fas fa-headset text-green-600 text-xl mr-3 group-hover:scale-110 transition-transform"></i>
                     <div class="text-left">
-                        <span class="font-medium text-green-800">Customer Service</span>
-                        <p class="text-sm text-green-600">Handle guest complaints and requests</p>
+                        <span class="font-medium text-green-800">Customer Service Excellence</span>
+                        <p class="text-sm text-green-600">Handle guest complaints and special requests</p>
                     </div>
-                </button>
-                <button onclick="startScenario('problem_solving')" class="flex items-center p-4 bg-purple-50 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300">
-                    <i class="fas fa-lightbulb text-purple-600 text-xl mr-3"></i>
+                </a>
+                <a href="scenarios.php" class="flex items-center p-4 bg-gradient-to-r from-purple-50 to-purple-100 border-2 border-purple-200 rounded-lg hover:bg-purple-100 hover:border-purple-300 transition-all duration-300 group">
+                    <i class="fas fa-lightbulb text-purple-600 text-xl mr-3 group-hover:scale-110 transition-transform"></i>
                     <div class="text-left">
-                        <span class="font-medium text-purple-800">Problem Solving</span>
-                        <p class="text-sm text-purple-600">Resolve common hotel issues</p>
+                        <span class="font-medium text-purple-800">Problem Solving & Crisis Management</span>
+                        <p class="text-sm text-purple-600">Handle hotel problems and crisis situations</p>
                     </div>
-                </button>
+                </a>
             </div>
         </div>
 
-        <!-- Training Interface -->
-        <div class="bg-white rounded-lg shadow-sm border p-6 mb-8">
-            <h3 class="text-lg font-medium text-gray-900 mb-6">Training Modules</h3>
-            
-            <!-- Tab Navigation -->
-            <div class="border-b border-gray-200 mb-6">
-                <nav class="flex space-x-8">
-                    <button id="tab-scenarios" class="tab-button py-2 px-1 border-b-2 border-primary text-primary font-medium text-sm">
-                        <i class="fas fa-graduation-cap mr-2"></i>Scenarios
-                    </button>
-                    <button id="tab-customer-service" class="tab-button py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
-                        <i class="fas fa-headset mr-2"></i>Customer Service
-                    </button>
-                    <button id="tab-problems" class="tab-button py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
-                        <i class="fas fa-lightbulb mr-2"></i>Problem Solving
-                    </button>
-                    <button id="tab-progress" class="tab-button py-2 px-1 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium text-sm">
-                        <i class="fas fa-chart-line mr-2"></i>Progress
-                    </button>
-                </nav>
-            </div>
-
-            <!-- Tab Content -->
-            <div id="tab-content-scenarios" class="tab-content active">
-                <!-- Scenarios Tab -->
-                <div class="mb-4">
-                    <div class="flex flex-wrap gap-4">
-                        <div>
-                            <label for="scenario-difficulty-filter" class="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
-                            <select id="scenario-difficulty-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">All Difficulties</option>
-                                <option value="beginner">Beginner</option>
-                                <option value="intermediate">Intermediate</option>
-                                <option value="advanced">Advanced</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="scenario-category-filter" class="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                            <select id="scenario-category-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">All Categories</option>
-                                <option value="front_desk">Front Desk</option>
-                                <option value="housekeeping">Housekeeping</option>
-                                <option value="maintenance">Maintenance</option>
-                                <option value="concierge">Concierge</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div id="scenarios-container">
-                    <!-- Scenarios will be loaded here -->
-                </div>
-            </div>
-
-            <div id="tab-content-customer-service" class="tab-content hidden">
-                <!-- Customer Service Tab -->
-                <div class="mb-4">
-                    <div class="flex flex-wrap gap-4">
-                        <div>
-                            <label for="service-type-filter" class="block text-sm font-medium text-gray-700 mb-1">Service Type</label>
-                            <select id="service-type-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">All Types</option>
-                                <option value="complaints">Complaints</option>
-                                <option value="requests">Requests</option>
-                                <option value="emergencies">Emergencies</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div id="customer-service-container">
-                    <!-- Customer service scenarios will be loaded here -->
-                </div>
-            </div>
-
-            <div id="tab-content-problems" class="tab-content hidden">
-                <!-- Problem Solving Tab -->
-                <div class="mb-4">
-                    <div class="flex flex-wrap gap-4">
-                        <div>
-                            <label for="problem-severity-filter" class="block text-sm font-medium text-gray-700 mb-1">Severity</label>
-                            <select id="problem-severity-filter" class="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
-                                <option value="">All Severities</option>
-                                <option value="low">Low</option>
-                                <option value="medium">Medium</option>
-                                <option value="high">High</option>
-                                <option value="critical">Critical</option>
-                            </select>
-                        </div>
-                    </div>
-                </div>
-                <div id="problems-container">
-                    <!-- Problem scenarios will be loaded here -->
-                </div>
-            </div>
-
-            <div id="tab-content-progress" class="tab-content hidden">
-                <!-- Progress Tab -->
-                <div id="progress-container">
-                    <!-- Progress content will be loaded here -->
-                </div>
-            </div>
-        </div>
         </main>
 
     <!-- Scenario Modal -->
@@ -553,44 +499,15 @@ include '../../includes/sidebar-unified.php';
         </div>
     </div>
 
-    <style>
-        .tab-content {
-            display: none;
-        }
-        .tab-content.active {
-            display: block;
-        }
-        .tab-button {
-            transition: all 0.3s ease;
-        }
-        .tab-button:hover {
-            border-color: #3b82f6;
-            color: #3b82f6;
-        }
-    </style>
 
     <script src="../../assets/js/main.js"></script>
     <script src="../../assets/js/training-dashboard.js"></script>
     
     <script>
-        // Add event listeners for tab buttons
+        // Add card hover effects and animations for Quick Start Training
         document.addEventListener('DOMContentLoaded', function() {
-            // Tab button event listeners
-            document.getElementById('tab-scenarios').addEventListener('click', function() {
-                switchTrainingTab('scenarios');
-            });
-            document.getElementById('tab-customer-service').addEventListener('click', function() {
-                switchTrainingTab('customer-service');
-            });
-            document.getElementById('tab-problems').addEventListener('click', function() {
-                switchTrainingTab('problems');
-            });
-            document.getElementById('tab-progress').addEventListener('click', function() {
-                switchTrainingTab('progress');
-            });
-
             // Add card hover effects and animations
-            const cards = document.querySelectorAll('.bg-gradient-to-br');
+            const cards = document.querySelectorAll('.bg-gradient-to-r');
             cards.forEach((card, index) => {
                 // Add staggered animation on load
                 card.style.opacity = '0';
@@ -655,4 +572,7 @@ include '../../includes/sidebar-unified.php';
         }
     </script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>

@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 require_once '../../includes/session-config.php';
 session_start();
 require_once '../../config/database.php';;
@@ -103,17 +106,29 @@ include '../../includes/sidebar-unified.php';
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div class="flex items-center justify-between mb-4">
                     <div>
-                        <h1 class="text-3xl font-bold text-gray-900"><?php echo htmlspecialchars($scenario['title']); ?></h1>
-                        <p class="text-gray-600 mt-2"><?php echo htmlspecialchars($scenario['description']); ?></p>
+                        <h1 class="text-3xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($scenario['title']); ?></h1>
+                        <p class="text-gray-600 mt-2"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($scenario['description']); ?></p>
                     </div>
                     <div class="text-right">
                         <div class="flex items-center space-x-4">
                             <div class="text-center">
-                                <div class="text-2xl font-bold text-blue-600"><?php echo $scenario['points']; ?></div>
+                                <div class="text-2xl font-bold text-blue-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['points']; ?></div>
                                 <div class="text-sm text-gray-500">Points</div>
                             </div>
                             <div class="text-center">
-                                <div class="text-2xl font-bold text-green-600"><?php echo $scenario['estimated_time']; ?></div>
+                                <div class="text-2xl font-bold text-green-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['estimated_time']; ?></div>
                                 <div class="text-sm text-gray-500">Minutes</div>
                             </div>
                         </div>
@@ -123,7 +138,10 @@ include '../../includes/sidebar-unified.php';
                 <!-- Scenario Tags -->
                 <div class="flex items-center space-x-4 mb-6">
                     <span class="px-3 py-1 text-sm font-medium rounded-full 
-                        <?php 
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                         switch ($scenario['type']) {
                             case 'complaints': echo 'bg-red-100 text-red-800'; break;
                             case 'requests': echo 'bg-blue-100 text-blue-800'; break;
@@ -131,10 +149,16 @@ include '../../includes/sidebar-unified.php';
                             default: echo 'bg-gray-100 text-gray-800';
                         }
                         ?>">
-                        <?php echo ucfirst($scenario['type']); ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst($scenario['type']); ?>
                     </span>
                     <span class="px-3 py-1 text-sm font-medium rounded-full 
-                        <?php 
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                         switch ($scenario['difficulty']) {
                             case 'beginner': echo 'bg-green-100 text-green-800'; break;
                             case 'intermediate': echo 'bg-yellow-100 text-yellow-800'; break;
@@ -142,7 +166,10 @@ include '../../includes/sidebar-unified.php';
                             default: echo 'bg-gray-100 text-gray-800';
                         }
                         ?>">
-                        <?php echo ucfirst($scenario['difficulty']); ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst($scenario['difficulty']); ?>
                     </span>
                 </div>
 
@@ -153,14 +180,20 @@ include '../../includes/sidebar-unified.php';
                             <i class="fas fa-info-circle text-blue-600 mr-2"></i>
                             Situation
                         </h3>
-                        <p class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($scenario['situation'])); ?></p>
+                        <p class="text-gray-700 leading-relaxed"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo nl2br(htmlspecialchars($scenario['situation'])); ?></p>
                     </div>
                     <div class="bg-blue-50 rounded-lg p-4">
                         <h3 class="text-lg font-semibold text-gray-900 mb-3">
                             <i class="fas fa-user text-blue-600 mr-2"></i>
                             Guest Request
                         </h3>
-                        <p class="text-gray-700 leading-relaxed"><?php echo nl2br(htmlspecialchars($scenario['guest_request'])); ?></p>
+                        <p class="text-gray-700 leading-relaxed"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo nl2br(htmlspecialchars($scenario['guest_request'])); ?></p>
                     </div>
                 </div>
             </div>
@@ -176,15 +209,24 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-3">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Total Attempts:</span>
-                            <span class="font-semibold"><?php echo $scenario['attempt_count']; ?></span>
+                            <span class="font-semibold"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['attempt_count']; ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Completed:</span>
-                            <span class="font-semibold"><?php echo $scenario['completed_count']; ?></span>
+                            <span class="font-semibold"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario['completed_count']; ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Average Score:</span>
-                            <span class="font-semibold"><?php echo number_format($scenario['avg_score'] ?? 0, 1); ?>%</span>
+                            <span class="font-semibold"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($scenario['avg_score'] ?? 0, 1); ?>%</span>
                         </div>
                     </div>
                 </div>
@@ -198,16 +240,25 @@ include '../../includes/sidebar-unified.php';
                     <div class="space-y-3">
                         <div class="flex justify-between">
                             <span class="text-gray-600">Attempts:</span>
-                            <span class="font-semibold"><?php echo count($user_attempts); ?></span>
+                            <span class="font-semibold"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo count($user_attempts); ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Best Score:</span>
-                            <span class="font-semibold text-green-600"><?php echo $best_score > 0 ? number_format($best_score, 1) . '%' : 'Not attempted'; ?></span>
+                            <span class="font-semibold text-green-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $best_score > 0 ? number_format($best_score, 1) . '%' : 'Not attempted'; ?></span>
                         </div>
                         <div class="flex justify-between">
                             <span class="text-gray-600">Status:</span>
                             <span class="font-semibold">
-                                <?php 
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                                 if ($in_progress_attempt) {
                                     echo '<span class="text-yellow-600">In Progress</span>';
                                 } elseif ($best_score >= 80) {
@@ -230,33 +281,60 @@ include '../../includes/sidebar-unified.php';
                         Quick Actions
                     </h3>
                     <div class="space-y-3">
-                        <?php if ($in_progress_attempt): ?>
-                            <a href="customer-service-training.php?id=<?php echo $scenario_id; ?>&attempt_id=<?php echo $in_progress_attempt['id']; ?>" 
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if ($in_progress_attempt): ?>
+                            <a href="customer-service-training.php?id=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario_id; ?>&attempt_id=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $in_progress_attempt['id']; ?>" 
                                class="w-full bg-yellow-600 text-white px-4 py-2 rounded-md hover:bg-yellow-700 transition-colors text-center block">
                                 <i class="fas fa-play mr-2"></i>
                                 Continue Training
                             </a>
-                        <?php else: ?>
-                            <a href="customer-service-training.php?id=<?php echo $scenario_id; ?>" 
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                            <a href="customer-service-training.php?id=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario_id; ?>" 
                                class="w-full bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-center block">
                                 <i class="fas fa-play mr-2"></i>
                                 Start Training
                             </a>
-                        <?php endif; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                         
-                        <?php if (count($user_attempts) > 0): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (count($user_attempts) > 0): ?>
                             <button onclick="viewAttemptHistory()" 
                                     class="w-full bg-gray-600 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors">
                                 <i class="fas fa-history mr-2"></i>
                                 View History
                             </button>
-                        <?php endif; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                     </div>
                 </div>
             </div>
 
             <!-- Attempt History (if any) -->
-            <?php if (count($user_attempts) > 0): ?>
+            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (count($user_attempts) > 0): ?>
             <div class="bg-white rounded-lg shadow-md p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4">
                     <i class="fas fa-history text-gray-600 mr-2"></i>
@@ -274,27 +352,45 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <?php foreach ($user_attempts as $attempt): ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($user_attempts as $attempt): ?>
                             <tr>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?php echo date('M d, Y H:i', strtotime($attempt['created_at'])); ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo date('M d, Y H:i', strtotime($attempt['created_at'])); ?>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full 
-                                        <?php 
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                                         if ($attempt['score'] >= 80) echo 'bg-green-100 text-green-800';
                                         elseif ($attempt['score'] >= 60) echo 'bg-yellow-100 text-yellow-800';
                                         else echo 'bg-red-100 text-red-800';
                                         ?>">
-                                        <?php echo number_format($attempt['score'] ?? 0, 1); ?>%
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($attempt['score'] ?? 0, 1); ?>%
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <?php echo $attempt['duration_minutes']; ?> min
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $attempt['duration_minutes']; ?> min
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <span class="px-2 py-1 text-xs font-medium rounded-full 
-                                        <?php 
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                                         switch ($attempt['status']) {
                                             case 'completed': echo 'bg-green-100 text-green-800'; break;
                                             case 'in_progress': echo 'bg-yellow-100 text-yellow-800'; break;
@@ -302,25 +398,52 @@ include '../../includes/sidebar-unified.php';
                                             default: echo 'bg-gray-100 text-gray-800';
                                         }
                                         ?>">
-                                        <?php echo ucfirst(str_replace('_', ' ', $attempt['status'])); ?>
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst(str_replace('_', ' ', $attempt['status'])); ?>
                                     </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <?php if ($attempt['status'] === 'in_progress'): ?>
-                                        <a href="customer-service-training.php?id=<?php echo $scenario_id; ?>&attempt_id=<?php echo $attempt['id']; ?>" 
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if ($attempt['status'] === 'in_progress'): ?>
+                                        <a href="customer-service-training.php?id=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario_id; ?>&attempt_id=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $attempt['id']; ?>" 
                                            class="text-blue-600 hover:text-blue-900">Continue</a>
-                                    <?php elseif ($attempt['status'] === 'completed'): ?>
-                                        <button onclick="viewResults(<?php echo $attempt['id']; ?>)" 
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); elseif ($attempt['status'] === 'completed'): ?>
+                                        <button onclick="viewResults(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $attempt['id']; ?>)" 
                                                 class="text-green-600 hover:text-green-900">View Results</button>
-                                    <?php endif; ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                                 </td>
                             </tr>
-                            <?php endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
-            <?php endif; ?>
+            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
         </main>
     </div>
 
@@ -339,4 +462,7 @@ include '../../includes/sidebar-unified.php';
         }
     </script>
     
-    <?php include '../../includes/footer.php'; ?>
+    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>

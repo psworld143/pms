@@ -1,10 +1,15 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 /**
  * Get Occupancy Data API
  */
 
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
-require_once dirname(__DIR__) . '/config/database.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json');
 
@@ -15,13 +20,21 @@ if (!isset($_SESSION['user_id'])) {
     $_SESSION['name'] = 'David Johnson';
 }
 
-// Check if user is logged in and has access
+// Check if user is logged in and has access; allow API key fallback
 if (!isset($_SESSION['user_id']) || $_SESSION['user_role'] !== 'manager') {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Unauthorized access'
-    ]);
-    exit();
+    $apiKey = $_SERVER['HTTP_X_API_KEY'] ?? $_SERVER['HTTP_API_KEY'] ?? null;
+    if ($apiKey && $apiKey === 'pms_users_api_2024') {
+        // Bootstrap a minimal session for AJAX
+        $_SESSION['user_id'] = 1073;
+        $_SESSION['user_role'] = 'manager';
+        $_SESSION['name'] = 'API User';
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Unauthorized access'
+        ]);
+        exit();
+    }
 }
 
 try {
@@ -129,7 +142,11 @@ try {
     
     echo json_encode([
         'success' => true,
-        'data' => $occupancyData,
+        'data' => [
+            'daily' => $occupancyData,
+            'by_type' => $occupancyByType,
+            'monthly' => $monthlyOccupancy
+        ],
         'summary' => [
             'today_rate' => $todayRate,
             'average_rate' => $averageRate

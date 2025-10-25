@@ -1,8 +1,14 @@
 <?php
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
-require_once '../config/database.php';
-require_once '../includes/booking-paths.php';
-require_once '../includes/maintenance-helpers.php';
+session_start();
+// Error handling
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
+session_start();
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/booking-paths.php';
+require_once __DIR__ . '/../includes/maintenance-helpers.php';
 
 booking_initialize_paths();
 

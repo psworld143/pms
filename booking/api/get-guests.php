@@ -1,11 +1,18 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 /**
  * Get Guests API
  * Hotel PMS - Guest Management Module
  */
 
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/includes/database.php';
+require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../includes/functions.php';
+
+header('Content-Type: application/json');
 
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
@@ -60,9 +67,7 @@ try {
     }
     
     // Add GROUP BY and ORDER BY
-    $sql .= " GROUP BY g.id ORDER BY g.created_at DESC LIMIT ? OFFSET ?";
-    $params[] = $per_page;
-    $params[] = $offset;
+    $sql .= " GROUP BY g.id ORDER BY g.created_at DESC LIMIT $per_page OFFSET $offset";
     
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);

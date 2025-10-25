@@ -1,4 +1,7 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 require_once "../../includes/session-config.php";
 session_start();
 require_once "../../config/database.php";
@@ -132,82 +135,157 @@ include "../../includes/sidebar-unified.php";
             <div class="bg-white rounded-lg shadow-md p-4 mb-6">
                 <div class="flex items-center justify-between mb-2">
                     <h2 class="text-lg font-semibold text-gray-900">
-                        <?php echo htmlspecialchars($scenario["title"]); ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($scenario["title"]); ?>
                     </h2>
                     <div class="text-sm text-gray-600">
-                        Question <?php echo $current_question; ?> of <?php echo count($questions); ?>
+                        Question <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $current_question; ?> of <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo count($questions); ?>
                     </div>
                 </div>
                 <div class="w-full bg-gray-200 rounded-full h-2">
                     <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-                         style="width: <?php echo count($questions) > 0 ? ($current_question - 1) / count($questions) * 100 : 0; ?>%"></div>
+                         style="width: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo count($questions) > 0 ? ($current_question - 1) / count($questions) * 100 : 0; ?>%"></div>
                 </div>
             </div>
 
             <!-- Question Container -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
-                <?php if ($current_question <= count($questions)): ?>
-                    <?php $question = $questions[$current_question - 1]; ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if ($current_question <= count($questions)): ?>
+                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); $question = $questions[$current_question - 1]; ?>
                     
                     <div class="mb-6">
                         <h3 class="text-xl font-semibold text-gray-900 mb-4">
-                            Question <?php echo $current_question; ?>
+                            Question <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $current_question; ?>
                         </h3>
                         <p class="text-lg text-gray-700 leading-relaxed">
-                            <?php echo htmlspecialchars($question["question"]); ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($question["question"]); ?>
                         </p>
                     </div>
 
                     <form id="questionForm" method="POST" action="process-training-answer.php">
-                        <input type="hidden" name="attempt_id" value="<?php echo $attempt_id; ?>">
-                        <input type="hidden" name="scenario_id" value="<?php echo $scenario_id; ?>">
-                        <input type="hidden" name="question_number" value="<?php echo $current_question; ?>">
-                        <input type="hidden" name="question_id" value="<?php echo $question["id"]; ?>">
+                        <input type="hidden" name="attempt_id" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $attempt_id; ?>">
+                        <input type="hidden" name="scenario_id" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario_id; ?>">
+                        <input type="hidden" name="question_number" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $current_question; ?>">
+                        <input type="hidden" name="question_id" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $question["id"]; ?>">
                         <input type="hidden" name="scenario_type" value="problem_solving">
                         
                         <div class="space-y-4">
-                            <?php foreach ($question["options_array"] as $value => $text): ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($question["options_array"] as $value => $text): ?>
                                 <label class="flex items-center p-4 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
-                                    <input type="radio" name="answer" value="<?php echo $value; ?>" 
+                                    <input type="radio" name="answer" value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $value; ?>" 
                                            class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300"
-                                           <?php echo (isset($answers[$current_question]) && $answers[$current_question] === $value) ? "checked" : ""; ?>
+                                           <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (isset($answers[$current_question]) && $answers[$current_question] === $value) ? "checked" : ""; ?>
                                            required>
                                     <span class="ml-3 text-gray-700">
-                                        <span class="font-medium"><?php echo $value; ?>.</span>
-                                        <?php echo htmlspecialchars($text); ?>
+                                        <span class="font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $value; ?>.</span>
+                                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($text); ?>
                                     </span>
                                 </label>
-                            <?php endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                         </div>
 
                         <div class="flex justify-between mt-8">
-                            <?php if ($current_question > 1): ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if ($current_question > 1): ?>
                                 <button type="button" onclick="previousQuestion()" 
                                         class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors">
                                     <i class="fas fa-arrow-left mr-2"></i>
                                     Previous
                                 </button>
-                            <?php else: ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                                 <div></div>
-                            <?php endif; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
 
-                            <?php if ($current_question < count($questions)): ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if ($current_question < count($questions)): ?>
                                 <button type="submit" 
                                         class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                                     Next
                                     <i class="fas fa-arrow-right ml-2"></i>
                                 </button>
-                            <?php else: ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                                 <button type="submit" 
                                         class="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors">
                                     <i class="fas fa-check mr-2"></i>
                                     Complete Training
                                 </button>
-                            <?php endif; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                         </div>
                     </form>
 
-                <?php else: ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
                     <!-- Training Complete -->
                     <div class="text-center py-12">
                         <div class="text-6xl text-green-500 mb-4">
@@ -217,13 +295,19 @@ include "../../includes/sidebar-unified.php";
                         <p class="text-gray-600 mb-6">
                             You have completed all questions for this scenario. Click below to view your results.
                         </p>
-                        <a href="problem-solving-results.php?attempt_id=<?php echo $attempt_id; ?>" 
+                        <a href="problem-solving-results.php?attempt_id=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $attempt_id; ?>" 
                            class="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">
                             <i class="fas fa-chart-bar mr-2"></i>
                             View Results
                         </a>
                     </div>
-                <?php endif; ?>
+                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
             </div>
 
             <!-- Scenario Context -->
@@ -234,15 +318,24 @@ include "../../includes/sidebar-unified.php";
                 </h4>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                     <div>
-                        <strong>Description:</strong> <?php echo htmlspecialchars($scenario["description"]); ?>
+                        <strong>Description:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($scenario["description"]); ?>
                     </div>
                     <div>
-                        <strong>Resources:</strong> <?php echo htmlspecialchars($scenario["resources"]); ?>
+                        <strong>Resources:</strong> <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($scenario["resources"]); ?>
                     </div>
                     <div>
                         <strong>Severity:</strong> 
                         <span class="px-2 py-1 text-xs rounded-full 
-                            <?php 
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                             switch($scenario["severity"]) {
                                 case "low": echo "bg-green-100 text-green-800"; break;
                                 case "medium": echo "bg-yellow-100 text-yellow-800"; break;
@@ -250,13 +343,19 @@ include "../../includes/sidebar-unified.php";
                                 default: echo "bg-gray-100 text-gray-800";
                             }
                             ?>">
-                            <?php echo ucfirst($scenario["severity"]); ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst($scenario["severity"]); ?>
                         </span>
                     </div>
                     <div>
                         <strong>Difficulty:</strong> 
                         <span class="px-2 py-1 text-xs rounded-full 
-                            <?php 
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); 
                             switch($scenario["difficulty"]) {
                                 case "beginner": echo "bg-green-100 text-green-800"; break;
                                 case "intermediate": echo "bg-yellow-100 text-yellow-800"; break;
@@ -264,7 +363,10 @@ include "../../includes/sidebar-unified.php";
                                 default: echo "bg-gray-100 text-gray-800";
                             }
                             ?>">
-                            <?php echo ucfirst($scenario["difficulty"]); ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst($scenario["difficulty"]); ?>
                         </span>
                     </div>
                 </div>
@@ -273,9 +375,18 @@ include "../../includes/sidebar-unified.php";
 
         <script>
         function previousQuestion() {
-            const currentQuestion = <?php echo $current_question; ?>;
+            const currentQuestion = <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $current_question; ?>;
             if (currentQuestion > 1) {
-                window.location.href = `problem-solving-training.php?id=<?php echo $scenario_id; ?>&attempt_id=<?php echo $attempt_id; ?>&question=${currentQuestion - 1}`;
+                window.location.href = `problem-solving-training.php?id=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $scenario_id; ?>&attempt_id=<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $attempt_id; ?>&question=${currentQuestion - 1}`;
             }
         }
 
@@ -292,4 +403,7 @@ include "../../includes/sidebar-unified.php";
         });
         </script>
 
-<?php include "../../includes/footer.php"; ?>
+<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include "../../includes/footer.php"; ?>

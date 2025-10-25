@@ -1,11 +1,17 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 /**
  * Guest Feedback Intelligence
  * Hotel PMS Training System for Students
  */
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/config/database.php';
-require_once dirname(__DIR__, 2) . '/includes/functions.php';
+session_start();
+require_once __DIR__ . '/../../config/database.php';
+require_once __DIR__ . '/../../includes/functions.php';
 require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
 require_once dirname(__DIR__, 2) . '/includes/guest-feedback-helpers.php';
 
@@ -86,7 +92,8 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-500">Average Rating</p>
-                            <p id="feedback-average-rating" class="mt-2 text-3xl font-semibold text-gray-900"><?php echo $averageRatingDisplay; ?></p>
+                            <p id="feedback-average-rating" class="mt-2 text-3xl font-semibold text-gray-900"><?php
+session_start(); echo $averageRatingDisplay; ?></p>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-yellow-500/10 text-yellow-500 flex items-center justify-center">
                             <i class="fas fa-star"></i>
@@ -97,7 +104,8 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-500">Total Reviews</p>
-                            <p id="feedback-total-reviews" class="mt-2 text-3xl font-semibold text-gray-900"><?php echo $totalReviewsDisplay; ?></p>
+                            <p id="feedback-total-reviews" class="mt-2 text-3xl font-semibold text-gray-900"><?php
+session_start(); echo $totalReviewsDisplay; ?></p>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
                             <i class="fas fa-comment-dots"></i>
@@ -108,7 +116,8 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-500">Pending Response</p>
-                            <p id="feedback-pending-response" class="mt-2 text-3xl font-semibold text-gray-900"><?php echo $pendingDisplay; ?></p>
+                            <p id="feedback-pending-response" class="mt-2 text-3xl font-semibold text-gray-900"><?php
+session_start(); echo $pendingDisplay; ?></p>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-amber-500/10 text-amber-500 flex items-center justify-center">
                             <i class="fas fa-hourglass-half"></i>
@@ -119,7 +128,8 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-500">Response Rate</p>
-                            <p id="feedback-response-rate" class="mt-2 text-3xl font-semibold text-gray-900"><?php echo $responseRateDisplay; ?></p>
+                            <p id="feedback-response-rate" class="mt-2 text-3xl font-semibold text-gray-900"><?php
+session_start(); echo $responseRateDisplay; ?></p>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-green-500/10 text-green-500 flex items-center justify-center">
                             <i class="fas fa-chart-line"></i>
@@ -133,7 +143,8 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-500">Satisfaction Rate</p>
-                            <p id="feedback-satisfaction-rate" class="mt-2 text-2xl font-semibold text-gray-900"><?php echo $satisfactionDisplay; ?></p>
+                            <p id="feedback-satisfaction-rate" class="mt-2 text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $satisfactionDisplay; ?></p>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-purple-500/10 text-purple-500 flex items-center justify-center">
                             <i class="fas fa-smile-beam"></i>
@@ -144,7 +155,8 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-500">Open Complaints</p>
-                            <p id="feedback-complaints" class="mt-2 text-2xl font-semibold text-gray-900"><?php echo $complaintsDisplay; ?></p>
+                            <p id="feedback-complaints" class="mt-2 text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $complaintsDisplay; ?></p>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-red-500/10 text-red-500 flex items-center justify-center">
                             <i class="fas fa-exclamation-triangle"></i>
@@ -155,7 +167,8 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                     <div class="flex items-start justify-between">
                         <div>
                             <p class="text-sm font-medium text-gray-500">Resolved Items</p>
-                            <p id="feedback-resolved" class="mt-2 text-2xl font-semibold text-gray-900"><?php echo $resolvedDisplay; ?></p>
+                            <p id="feedback-resolved" class="mt-2 text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $resolvedDisplay; ?></p>
                         </div>
                         <div class="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
                             <i class="fas fa-check-circle"></i>
@@ -171,23 +184,31 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                         <span class="text-xs uppercase tracking-wide text-gray-400">Last 90 Days</span>
                     </div>
                     <div id="feedback-distribution" class="mt-6 space-y-4">
-                        <?php if (!empty($distribution)) : ?>
-                            <?php foreach ($distribution as $item) :
+                        <?php
+session_start(); if (!empty($distribution)) : ?>
+                            <?php
+session_start(); foreach ($distribution as $item) :
                                 $percentage = isset($item['percentage']) ? max(0.0, min(100.0, (float)$item['percentage'])) : 0.0;
                                 ?>
                                 <div class="flex items-center gap-3">
-                                    <div class="w-12 text-sm font-semibold text-gray-600"><?php echo (int)$item['rating']; ?>★</div>
+                                    <div class="w-12 text-sm font-semibold text-gray-600"><?php
+session_start(); echo (int)$item['rating']; ?>★</div>
                                     <div class="flex-1">
                                         <div class="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-                                            <div class="h-2 bg-blue-500 rounded-full" style="width: <?php echo $percentage; ?>%"></div>
+                                            <div class="h-2 bg-blue-500 rounded-full" style="width: <?php
+session_start(); echo $percentage; ?>%"></div>
                                         </div>
                                     </div>
-                                    <div class="w-12 text-right text-sm text-gray-500"><?php echo number_format((int)($item['count'] ?? 0)); ?></div>
+                                    <div class="w-12 text-right text-sm text-gray-500"><?php
+session_start(); echo number_format((int)($item['count'] ?? 0)); ?></div>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php else : ?>
+                            <?php
+session_start(); endforeach; ?>
+                        <?php
+session_start(); else : ?>
                             <p class="text-sm text-gray-500">No ratings recorded yet.</p>
-                        <?php endif; ?>
+                        <?php
+session_start(); endif; ?>
                     </div>
                 </div>
 
@@ -207,24 +228,33 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                                 </tr>
                             </thead>
                             <tbody id="feedback-categories-body" class="text-sm text-gray-700">
-                                <?php if (!empty($categories)) : ?>
-                                    <?php foreach ($categories as $category) :
+                                <?php
+session_start(); if (!empty($categories)) : ?>
+                                    <?php
+session_start(); foreach ($categories as $category) :
                                         $categoryLabel = ucfirst(str_replace('_', ' ', $category['category'] ?? 'other'));
                                         $share = isset($category['percentage']) ? number_format((float)$category['percentage'], 1) . '%' : '—';
                                         $avg = isset($category['average_rating']) && $category['average_rating'] !== null ? number_format((float)$category['average_rating'], 1) : '—';
                                         ?>
                                         <tr class="border-b last:border-b-0 border-gray-100">
-                                            <td class="py-2 font-medium text-gray-800"><?php echo htmlspecialchars($categoryLabel, ENT_QUOTES, 'UTF-8'); ?></td>
-                                            <td class="py-2 text-right"><?php echo number_format((int)($category['count'] ?? 0)); ?></td>
-                                            <td class="py-2 text-right"><?php echo $share; ?></td>
-                                            <td class="py-2 text-right"><?php echo $avg; ?></td>
+                                            <td class="py-2 font-medium text-gray-800"><?php
+session_start(); echo htmlspecialchars($categoryLabel, ENT_QUOTES, 'UTF-8'); ?></td>
+                                            <td class="py-2 text-right"><?php
+session_start(); echo number_format((int)($category['count'] ?? 0)); ?></td>
+                                            <td class="py-2 text-right"><?php
+session_start(); echo $share; ?></td>
+                                            <td class="py-2 text-right"><?php
+session_start(); echo $avg; ?></td>
                                         </tr>
-                                    <?php endforeach; ?>
-                                <?php else : ?>
+                                    <?php
+session_start(); endforeach; ?>
+                                <?php
+session_start(); else : ?>
                                     <tr>
                                         <td colspan="4" class="py-4 text-center text-gray-500">No category insights available yet.</td>
                                     </tr>
-                                <?php endif; ?>
+                                <?php
+session_start(); endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -237,8 +267,10 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                     <button id="feedback-view-all" type="button" class="text-sm text-blue-600 hover:text-blue-700" data-action="scroll-table">View all</button>
                 </div>
                 <div id="feedback-recent-list" class="mt-6 space-y-4">
-                    <?php if (!empty($recentFeedback)) : ?>
-                        <?php foreach ($recentFeedback as $item) :
+                    <?php
+session_start(); if (!empty($recentFeedback)) : ?>
+                        <?php
+session_start(); foreach ($recentFeedback as $item) :
                             $rating = $item['rating'] !== null ? (int)$item['rating'] : null;
                             $guestName = $item['guest_name'] ?? 'Guest';
                             $roomNumber = $item['room_number'] ? ' • Room ' . htmlspecialchars($item['room_number'], ENT_QUOTES, 'UTF-8') : '';
@@ -250,26 +282,39 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                                     <div>
                                         <div class="flex items-center gap-2 text-sm text-gray-600">
                                             <div class="flex text-yellow-400">
-                                                <?php if ($rating !== null) : ?>
-                                                    <?php for ($i = 1; $i <= 5; $i++) : ?>
-                                                        <i class="<?php echo $i <= $rating ? 'fas' : 'far'; ?> fa-star"></i>
-                                                    <?php endfor; ?>
-                                                <?php else : ?>
+                                                <?php
+session_start(); if ($rating !== null) : ?>
+                                                    <?php
+session_start(); for ($i = 1; $i <= 5; $i++) : ?>
+                                                        <i class="<?php
+session_start(); echo $i <= $rating ? 'fas' : 'far'; ?> fa-star"></i>
+                                                    <?php
+session_start(); endfor; ?>
+                                                <?php
+session_start(); else : ?>
                                                     <span class="text-xs text-gray-400">No rating</span>
-                                                <?php endif; ?>
+                                                <?php
+session_start(); endif; ?>
                                             </div>
-                                            <span class="font-medium text-gray-700"><?php echo htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8'); ?></span>
-                                            <span class="text-gray-300"><?php echo $roomNumber; ?></span>
+                                            <span class="font-medium text-gray-700"><?php
+session_start(); echo htmlspecialchars($guestName, ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <span class="text-gray-300"><?php
+session_start(); echo $roomNumber; ?></span>
                                         </div>
-                                        <p class="mt-2 text-sm text-gray-700 leading-relaxed">“<?php echo htmlspecialchars(mb_strimwidth($comments, 0, 160, '…'), ENT_QUOTES, 'UTF-8'); ?>”</p>
+                                        <p class="mt-2 text-sm text-gray-700 leading-relaxed">“<?php
+session_start(); echo htmlspecialchars(mb_strimwidth($comments, 0, 160, '…'), ENT_QUOTES, 'UTF-8'); ?>”</p>
                                     </div>
-                                    <div class="text-xs text-gray-400 whitespace-nowrap"><?php echo htmlspecialchars($createdAt, ENT_QUOTES, 'UTF-8'); ?></div>
+                                    <div class="text-xs text-gray-400 whitespace-nowrap"><?php
+session_start(); echo htmlspecialchars($createdAt, ENT_QUOTES, 'UTF-8'); ?></div>
                                 </div>
                             </article>
-                        <?php endforeach; ?>
-                    <?php else : ?>
+                        <?php
+session_start(); endforeach; ?>
+                    <?php
+session_start(); else : ?>
                         <p class="text-sm text-gray-500">We haven’t received any guest feedback yet. Encourage guests to share their experience.</p>
-                    <?php endif; ?>
+                    <?php
+session_start(); endif; ?>
                 </div>
             </div>
 
@@ -291,16 +336,22 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                             <label for="feedback-search" class="text-xs uppercase tracking-wide text-gray-500">Search</label>
                             <div class="relative mt-1">
                                 <span class="absolute inset-y-0 left-3 flex items-center text-gray-400"><i class="fas fa-search"></i></span>
-                                <input id="feedback-search" type="text" placeholder="Guest, email, room, or comment" value="<?php echo htmlspecialchars($defaultFilters['search'], ENT_QUOTES, 'UTF-8'); ?>" class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" />
+                                <input id="feedback-search" type="text" placeholder="Guest, email, room, or comment" value="<?php
+session_start(); echo htmlspecialchars($defaultFilters['search'], ENT_QUOTES, 'UTF-8'); ?>" class="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm" />
                             </div>
                         </div>
                         <div>
                             <label for="feedback-rating-filter" class="text-xs uppercase tracking-wide text-gray-500">Rating</label>
                             <select id="feedback-rating-filter" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">All Ratings</option>
-                                <?php for ($i = 5; $i >= 1; $i--) : ?>
-                                    <option value="<?php echo $i; ?>" <?php echo ($defaultFilters['rating'] === $i) ? 'selected' : ''; ?>><?php echo $i; ?> Stars</option>
-                                <?php endfor; ?>
+                                <?php
+session_start(); for ($i = 5; $i >= 1; $i--) : ?>
+                                    <option value="<?php
+session_start(); echo $i; ?>" <?php
+session_start(); echo ($defaultFilters['rating'] === $i) ? 'selected' : ''; ?>><?php
+session_start(); echo $i; ?> Stars</option>
+                                <?php
+session_start(); endfor; ?>
                             </select>
                         </div>
                         <div>
@@ -316,18 +367,26 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                             <label for="feedback-category-filter" class="text-xs uppercase tracking-wide text-gray-500">Category</label>
                             <select id="feedback-category-filter" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus-border-blue-500">
                                 <option value="">All Categories</option>
-                                <?php foreach (getGuestFeedbackAllowedCategories() as $category) : ?>
-                                    <option value="<?php echo $category; ?>"><?php echo ucfirst($category); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach (getGuestFeedbackAllowedCategories() as $category) : ?>
+                                    <option value="<?php
+session_start(); echo $category; ?>"><?php
+session_start(); echo ucfirst($category); ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                         </div>
                         <div>
                             <label for="feedback-type-filter" class="text-xs uppercase tracking-wide text-gray-500">Feedback Type</label>
                             <select id="feedback-type-filter" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                                 <option value="">All Types</option>
-                                <?php foreach (getGuestFeedbackAllowedTypes() as $type) : ?>
-                                    <option value="<?php echo $type; ?>"><?php echo ucfirst($type); ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach (getGuestFeedbackAllowedTypes() as $type) : ?>
+                                    <option value="<?php
+session_start(); echo $type; ?>"><?php
+session_start(); echo ucfirst($type); ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                         </div>
                         <div>
@@ -352,12 +411,15 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
 
                 <div class="px-6 py-4 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                     <div class="text-sm text-gray-600" id="feedback-table-count">
-                        Showing <?php echo min($initialLimit, $totalFeedback); ?> of <?php echo number_format($totalFeedback); ?> feedback entries
+                        Showing <?php
+session_start(); echo min($initialLimit, $totalFeedback); ?> of <?php
+session_start(); echo number_format($totalFeedback); ?> feedback entries
                     </div>
                     <div class="flex items-center gap-3">
                         <label for="feedback-page-size" class="text-sm text-gray-500">Rows</label>
                         <select id="feedback-page-size" class="px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                            <option value="10" <?php echo $initialLimit === 10 ? 'selected' : ''; ?>>10</option>
+                            <option value="10" <?php
+session_start(); echo $initialLimit === 10 ? 'selected' : ''; ?>>10</option>
                             <option value="25">25</option>
                             <option value="50">50</option>
                         </select>
@@ -387,8 +449,10 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                             </tr>
                         </thead>
                         <tbody id="feedback-table-body" class="bg-white divide-y divide-gray-100">
-                            <?php if (!empty($initialFeedback)) : ?>
-                                <?php foreach ($initialFeedback as $row) :
+                            <?php
+session_start(); if (!empty($initialFeedback)) : ?>
+                                <?php
+session_start(); foreach ($initialFeedback as $row) :
                                     $guest = $row['guest'] ?? [];
                                     $reservation = $row['reservation'] ?? [];
                                     $statusClass = '';
@@ -414,48 +478,72 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center gap-3">
                                                 <div class="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-500 text-white flex items-center justify-center font-semibold">
-                                                    <?php echo htmlspecialchars(strtoupper($guest['initials'] ?? 'GF'), ENT_QUOTES, 'UTF-8'); ?>
+                                                    <?php
+session_start(); echo htmlspecialchars(strtoupper($guest['initials'] ?? 'GF'), ENT_QUOTES, 'UTF-8'); ?>
                                                 </div>
                                                 <div>
-                                                    <p class="text-sm font-semibold text-gray-900"><?php echo htmlspecialchars($guest['name'] ?? 'Guest', ENT_QUOTES, 'UTF-8'); ?></p>
-                                                    <?php if (!empty($guest['email'])) : ?>
-                                                        <p class="text-xs text-gray-500"><?php echo htmlspecialchars($guest['email'], ENT_QUOTES, 'UTF-8'); ?></p>
-                                                    <?php endif; ?>
+                                                    <p class="text-sm font-semibold text-gray-900"><?php
+session_start(); echo htmlspecialchars($guest['name'] ?? 'Guest', ENT_QUOTES, 'UTF-8'); ?></p>
+                                                    <?php
+session_start(); if (!empty($guest['email'])) : ?>
+                                                        <p class="text-xs text-gray-500"><?php
+session_start(); echo htmlspecialchars($guest['email'], ENT_QUOTES, 'UTF-8'); ?></p>
+                                                    <?php
+session_start(); endif; ?>
                                                 </div>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
                                             <div class="flex items-center text-yellow-400 text-sm">
-                                                <?php if ($rating !== null) : ?>
-                                                    <?php for ($i = 1; $i <= 5; $i++) : ?>
-                                                        <i class="<?php echo $i <= $rating ? 'fas' : 'far'; ?> fa-star"></i>
-                                                    <?php endfor; ?>
-                                                    <span class="ml-2 text-gray-500"><?php echo number_format((float)$rating, 1); ?></span>
-                                                <?php else : ?>
+                                                <?php
+session_start(); if ($rating !== null) : ?>
+                                                    <?php
+session_start(); for ($i = 1; $i <= 5; $i++) : ?>
+                                                        <i class="<?php
+session_start(); echo $i <= $rating ? 'fas' : 'far'; ?> fa-star"></i>
+                                                    <?php
+session_start(); endfor; ?>
+                                                    <span class="ml-2 text-gray-500"><?php
+session_start(); echo number_format((float)$rating, 1); ?></span>
+                                                <?php
+session_start(); else : ?>
                                                     <span class="text-gray-400">No rating</span>
-                                                <?php endif; ?>
+                                                <?php
+session_start(); endif; ?>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700"><?php echo htmlspecialchars($categoryLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-700"><?php
+session_start(); echo htmlspecialchars($categoryLabel, ENT_QUOTES, 'UTF-8'); ?></span>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><?php echo htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700"><?php
+session_start(); echo htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td class="px-6 py-4 text-sm text-gray-700">
-                                            <?php echo htmlspecialchars($commentPreview, ENT_QUOTES, 'UTF-8'); ?>
-                                            <?php if (!empty($reservation['room_number'])) : ?>
-                                                <span class="block text-xs text-gray-400 mt-1">Room <?php echo htmlspecialchars($reservation['room_number'], ENT_QUOTES, 'UTF-8'); ?></span>
-                                            <?php endif; ?>
+                                            <?php
+session_start(); echo htmlspecialchars($commentPreview, ENT_QUOTES, 'UTF-8'); ?>
+                                            <?php
+session_start(); if (!empty($reservation['room_number'])) : ?>
+                                                <span class="block text-xs text-gray-400 mt-1">Room <?php
+session_start(); echo htmlspecialchars($reservation['room_number'], ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <?php
+session_start(); endif; ?>
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php echo $statusClass; ?>"><?php echo htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8'); ?></span>
+                                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php
+session_start(); echo $statusClass; ?>"><?php
+session_start(); echo htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8'); ?></span>
                                         </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php echo htmlspecialchars($createdAt, ENT_QUOTES, 'UTF-8'); ?></td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><?php
+session_start(); echo htmlspecialchars($createdAt, ENT_QUOTES, 'UTF-8'); ?></td>
                                         <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                            <button type="button" class="text-blue-600 hover:text-blue-800 feedback-view" data-feedback-id="<?php echo (int)$row['id']; ?>">View</button>
+                                            <button type="button" class="text-blue-600 hover:text-blue-800 feedback-view" data-feedback-id="<?php
+session_start(); echo (int)$row['id']; ?>">View</button>
                                         </td>
                                     </tr>
-                                <?php endforeach; ?>
-                            <?php else : ?>
+                                <?php
+session_start(); endforeach; ?>
+                            <?php
+session_start(); else : ?>
                                 <tr>
                                     <td colspan="8" class="px-6 py-10 text-center text-gray-500">
                                         <div class="flex flex-col items-center gap-3">
@@ -465,13 +553,15 @@ $resolvedDisplay = number_format((int)($summary['resolved'] ?? 0));
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endif; ?>
+                            <?php
+session_start(); endif; ?>
                         </tbody>
                     </table>
                 </div>
             </div>
         </main>
 
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+session_start(); include '../../includes/footer.php'; ?>
     </body>
 </html>

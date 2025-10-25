@@ -1,11 +1,15 @@
 <?php
+require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
 /**
  * Staff Management Dashboard
  * Hotel PMS Training System for Students
  */
 
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
-require_once dirname(__DIR__, 2) . '/config/database.php';
+require_once __DIR__ . '/../../config/database.php';
 require_once dirname(__DIR__, 3) . '/includes/functions.php';
 require_once dirname(__DIR__, 2) . '/includes/booking-paths.php';
 
@@ -212,9 +216,13 @@ include '../../includes/sidebar-unified.php';
                             <select name="role" id="staff_role" required 
                                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Select Role</option>
-                                <?php foreach ($available_roles as $role_key => $role_name): ?>
-                                    <option value="<?php echo $role_key; ?>"><?php echo $role_name; ?></option>
-                                <?php endforeach; ?>
+                                <?php
+session_start(); foreach ($available_roles as $role_key => $role_name): ?>
+                                    <option value="<?php
+session_start(); echo $role_key; ?>"><?php
+session_start(); echo $role_name; ?></option>
+                                <?php
+session_start(); endforeach; ?>
                             </select>
                         </div>
                         

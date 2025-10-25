@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 2) . '/../vps_session_fix.php';
 require_once dirname(__DIR__, 2) . '/../includes/database.php';
 require_once '../../includes/functions.php';
@@ -116,7 +120,11 @@ include '../../includes/sidebar-unified.php';
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600">Average Rating</p>
-                                <p class="text-2xl font-bold text-gray-900"><?php echo number_format($feedback_stats['avg_rating'], 1); ?></p>
+                                <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($feedback_stats['avg_rating'], 1); ?></p>
                             </div>
                         </div>
                     </div>
@@ -127,7 +135,11 @@ include '../../includes/sidebar-unified.php';
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600">Total Reviews</p>
-                                <p class="text-2xl font-bold text-gray-900"><?php echo $feedback_stats['total_reviews']; ?></p>
+                                <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $feedback_stats['total_reviews']; ?></p>
                             </div>
                         </div>
                     </div>
@@ -138,7 +150,11 @@ include '../../includes/sidebar-unified.php';
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600">Pending Response</p>
-                                <p class="text-2xl font-bold text-gray-900"><?php echo $feedback_stats['pending_response']; ?></p>
+                                <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $feedback_stats['pending_response']; ?></p>
                             </div>
                         </div>
                     </div>
@@ -149,7 +165,11 @@ include '../../includes/sidebar-unified.php';
                             </div>
                             <div class="ml-4">
                                 <p class="text-sm font-medium text-gray-600">Satisfaction Rate</p>
-                                <p class="text-2xl font-bold text-gray-900"><?php echo number_format($feedback_stats['satisfaction_rate'], 1); ?>%</p>
+                                <p class="text-2xl font-bold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($feedback_stats['satisfaction_rate'], 1); ?>%</p>
                             </div>
                         </div>
                     </div>
@@ -164,17 +184,37 @@ include '../../includes/sidebar-unified.php';
                     <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Rating Distribution</h3>
                         <div class="space-y-3">
-                            <?php foreach ($rating_distribution as $rating): ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); foreach ($rating_distribution as $rating): ?>
                                 <div class="flex items-center justify-between">
                                     <div class="flex items-center">
-                                        <span class="text-sm font-medium text-gray-600"><?php echo $rating['rating']; ?> Stars</span>
+                                        <span class="text-sm font-medium text-gray-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $rating['rating']; ?> Stars</span>
                                         <div class="ml-3 flex-1 bg-gray-200 rounded-full h-2">
-                                            <div class="bg-yellow-400 h-2 rounded-full" style="width: <?php echo $rating['percentage']; ?>%"></div>
+                                            <div class="bg-yellow-400 h-2 rounded-full" style="width: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $rating['percentage']; ?>%"></div>
                                         </div>
                                     </div>
-                                    <span class="text-sm text-gray-500"><?php echo $rating['count']; ?></span>
+                                    <span class="text-sm text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $rating['count']; ?></span>
                                 </div>
-                            <?php endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endforeach; ?>
                         </div>
                     </div>
 
@@ -182,12 +222,28 @@ include '../../includes/sidebar-unified.php';
                     <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                         <h3 class="text-lg font-semibold text-gray-800 mb-4">Feedback Categories</h3>
                         <div class="space-y-3">
-                            <?php foreach ($feedback_categories as $category): ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); foreach ($feedback_categories as $category): ?>
                                 <div class="flex items-center justify-between">
-                                    <span class="text-sm font-medium text-gray-600"><?php echo htmlspecialchars($category['category']); ?></span>
-                                    <span class="text-sm text-gray-500"><?php echo $category['count']; ?></span>
+                                    <span class="text-sm font-medium text-gray-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($category['category']); ?></span>
+                                    <span class="text-sm text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $category['count']; ?></span>
                                 </div>
-                            <?php endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endforeach; ?>
                         </div>
                     </div>
 
@@ -265,7 +321,11 @@ include '../../includes/sidebar-unified.php';
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                <?php if (empty($feedback_list)): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); if (empty($feedback_list)): ?>
                                     <tr>
                                         <td colspan="7" class="px-6 py-4 text-center text-gray-500">
                                             <i class="fas fa-comments text-2xl mb-2"></i>
@@ -273,40 +333,96 @@ include '../../includes/sidebar-unified.php';
                                             <p class="text-sm">Guest feedback will appear here when submitted</p>
                                         </td>
                                     </tr>
-                                <?php else: ?>
-                                    <?php foreach ($feedback_list as $feedback): ?>
-                                        <tr class="hover:bg-gray-50 feedback-row" data-rating="<?php echo $feedback['rating']; ?>" data-status="<?php echo $feedback['status']; ?>">
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); else: ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); foreach ($feedback_list as $feedback): ?>
+                                        <tr class="hover:bg-gray-50 feedback-row" data-rating="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $feedback['rating']; ?>" data-status="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $feedback['status']; ?>">
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center">
                                                     <div class="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                                                        <span class="text-white font-medium"><?php echo strtoupper(substr($feedback['first_name'], 0, 1) . substr($feedback['last_name'], 0, 1)); ?></span>
+                                                        <span class="text-white font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo strtoupper(substr($feedback['first_name'], 0, 1) . substr($feedback['last_name'], 0, 1)); ?></span>
                                                     </div>
                                                     <div class="ml-4">
-                                                        <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($feedback['first_name'] . ' ' . $feedback['last_name']); ?></div>
-                                                        <div class="text-sm text-gray-500"><?php echo htmlspecialchars($feedback['email']); ?></div>
+                                                        <div class="text-sm font-medium text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($feedback['first_name'] . ' ' . $feedback['last_name']); ?></div>
+                                                        <div class="text-sm text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($feedback['email']); ?></div>
                                                     </div>
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <div class="flex items-center">
-                                                    <?php for ($i = 1; $i <= 5; $i++): ?>
-                                                        <i class="fas fa-star <?php echo $i <= $feedback['rating'] ? 'text-yellow-400' : 'text-gray-300'; ?> text-sm"></i>
-                                                    <?php endfor; ?>
-                                                    <span class="ml-2 text-sm text-gray-500">(<?php echo $feedback['rating']; ?>)</span>
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); for ($i = 1; $i <= 5; $i++): ?>
+                                                        <i class="fas fa-star <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $i <= $feedback['rating'] ? 'text-yellow-400' : 'text-gray-300'; ?> text-sm"></i>
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endfor; ?>
+                                                    <span class="ml-2 text-sm text-gray-500">(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $feedback['rating']; ?>)</span>
                                                 </div>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                                                    <?php echo htmlspecialchars($feedback['category']); ?>
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars($feedback['category']); ?>
                                                 </span>
                                             </td>
                                             <td class="px-6 py-4">
                                                 <span class="text-sm text-gray-900">
-                                                    <?php echo htmlspecialchars(substr($feedback['comments'], 0, 100) . (strlen($feedback['comments']) > 100 ? '...' : '')); ?>
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo htmlspecialchars(substr($feedback['comments'], 0, 100) . (strlen($feedback['comments']) > 100 ? '...' : '')); ?>
                                                 </span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap">
                                                 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
                                                 $status_class = '';
                                                 $status_text = '';
                                                 switch ($feedback['status']) {
@@ -324,29 +440,61 @@ include '../../includes/sidebar-unified.php';
                                                         break;
                                                 }
                                                 ?>
-                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php echo $status_class; ?>">
-                                                    <?php echo $status_text; ?>
+                                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $status_class; ?>">
+                                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $status_text; ?>
                                                 </span>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                <?php echo date('M j, Y', strtotime($feedback['created_at'])); ?>
+                                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo date('M j, Y', strtotime($feedback['created_at'])); ?>
                                             </td>
                                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                                 <div class="flex space-x-2">
-                                                    <button class="text-blue-600 hover:text-blue-900" onclick="viewFeedback(<?php echo $feedback['id']; ?>)">
+                                                    <button class="text-blue-600 hover:text-blue-900" onclick="viewFeedback(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $feedback['id']; ?>)">
                                                         <i class="fas fa-eye"></i>
                                                     </button>
-                                                    <button class="text-green-600 hover:text-green-900" onclick="replyFeedback(<?php echo $feedback['id']; ?>)">
+                                                    <button class="text-green-600 hover:text-green-900" onclick="replyFeedback(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $feedback['id']; ?>)">
                                                         <i class="fas fa-reply"></i>
                                                     </button>
-                                                    <button class="text-red-600 hover:text-red-900" onclick="flagFeedback(<?php echo $feedback['id']; ?>)">
+                                                    <button class="text-red-600 hover:text-red-900" onclick="flagFeedback(<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo $feedback['id']; ?>)">
                                                         <i class="fas fa-flag"></i>
                                                     </button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -354,7 +502,11 @@ include '../../includes/sidebar-unified.php';
                     <div class="px-6 py-4 border-t border-gray-200">
                         <div class="flex items-center justify-between">
                             <div class="text-sm text-gray-700">
-                                Showing <span class="font-medium"><?php echo count($feedback_list); ?></span> feedback entries
+                                Showing <span class="font-medium"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo count($feedback_list); ?></span> feedback entries
                             </div>
                         </div>
                     </div>

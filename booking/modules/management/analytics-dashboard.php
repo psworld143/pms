@@ -1,5 +1,8 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/booking-paths.php';
@@ -63,7 +66,10 @@ include '../../includes/sidebar-unified.php';
                 </div>
                 <div class="flex items-center space-x-2 text-sm text-gray-500">
                     <i class="fas fa-clock"></i>
-                    <span>Last updated: <?php echo date('M j, Y g:i A'); ?></span>
+                    <span>Last updated: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo date('M j, Y g:i A'); ?></span>
                 </div>
             </div>
 
@@ -74,7 +80,10 @@ include '../../includes/sidebar-unified.php';
                         <span class="text-xs px-2 py-1 rounded-full bg-indigo-50 text-indigo-600">Live</span>
                     </div>
                     <div class="flex items-baseline">
-                        <span class="text-3xl font-semibold text-gray-900"><?php echo number_format($stats['occupancy_rate'], 1); ?>%</span>
+                        <span class="text-3xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($stats['occupancy_rate'], 1); ?>%</span>
                     </div>
                     <p class="text-xs text-gray-500 mt-2">Target: 75% average</p>
                 </div>
@@ -85,7 +94,10 @@ include '../../includes/sidebar-unified.php';
                         <span class="text-xs px-2 py-1 rounded-full bg-green-50 text-green-600">PHP</span>
                     </div>
                     <div class="flex items-baseline">
-                        <span class="text-3xl font-semibold text-gray-900">₱<?php echo number_format($stats['today_revenue'], 2); ?></span>
+                        <span class="text-3xl font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($stats['today_revenue'], 2); ?></span>
                     </div>
                     <p class="text-xs text-gray-500 mt-2">Includes room and service charges.</p>
                 </div>
@@ -96,7 +108,10 @@ include '../../includes/sidebar-unified.php';
                         <span class="text-xs px-2 py-1 rounded-full bg-blue-50 text-blue-600">Inventory</span>
                     </div>
                     <div class="flex items-baseline">
-                        <span class="text-3xl font-semibold text-gray-900"><?php echo number_format($stats['total_rooms']); ?></span>
+                        <span class="text-3xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($stats['total_rooms']); ?></span>
                     </div>
                     <p class="text-xs text-gray-500 mt-2">Configured in room management.</p>
                 </div>
@@ -107,7 +122,10 @@ include '../../includes/sidebar-unified.php';
                         <span class="text-xs px-2 py-1 rounded-full bg-purple-50 text-purple-600">Operations</span>
                     </div>
                     <div class="flex items-baseline">
-                        <span class="text-3xl font-semibold text-gray-900"><?php echo number_format($stats['occupied_rooms']); ?></span>
+                        <span class="text-3xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($stats['occupied_rooms']); ?></span>
                     </div>
                     <p class="text-xs text-gray-500 mt-2">Live count of occupied rooms.</p>
                 </div>
@@ -169,21 +187,51 @@ include '../../includes/sidebar-unified.php';
                                 </tr>
                             </thead>
                             <tbody id="revenueBreakdownBody">
-                                <?php if (empty($breakdown)): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($breakdown)): ?>
                                     <tr class="border-b">
                                         <td colspan="5" class="py-4 text-center text-gray-400">No revenue segments available.</td>
                                     </tr>
-                                <?php else: ?>
-                                    <?php foreach ($breakdown as $segment): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($breakdown as $segment): ?>
                                         <tr class="border-b last:border-b-0">
-                                            <td class="py-2 font-medium text-gray-800"><?php echo htmlspecialchars($segment['segment']); ?></td>
-                                            <td class="py-2 text-gray-600"><?php echo number_format($segment['occupancy_pct'], 1); ?>%</td>
-                                            <td class="py-2 text-gray-600">₱<?php echo number_format($segment['adr'], 2); ?></td>
-                                            <td class="py-2 text-gray-600">₱<?php echo number_format($segment['revpar'], 2); ?></td>
-                                            <td class="py-2 text-gray-600"><?php echo number_format($segment['contribution_pct'], 1); ?>%</td>
+                                            <td class="py-2 font-medium text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($segment['segment']); ?></td>
+                                            <td class="py-2 text-gray-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($segment['occupancy_pct'], 1); ?>%</td>
+                                            <td class="py-2 text-gray-600">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($segment['adr'], 2); ?></td>
+                                            <td class="py-2 text-gray-600">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($segment['revpar'], 2); ?></td>
+                                            <td class="py-2 text-gray-600"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($segment['contribution_pct'], 1); ?>%</td>
                                         </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                             </tbody>
                         </table>
                     </div>
@@ -198,44 +246,89 @@ include '../../includes/sidebar-unified.php';
                         <div>
                             <div class="flex justify-between items-center text-sm text-gray-600 mb-1">
                                 <span>Positive Feedback</span>
-                                <span id="dashboardSentimentPositive"><?php echo number_format($sentiment['positive_pct'], 1); ?>%</span>
+                                <span id="dashboardSentimentPositive"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($sentiment['positive_pct'], 1); ?>%</span>
                             </div>
                             <div class="w-full h-2 rounded-full bg-gray-100">
-                                <div id="dashboardSentimentPositiveBar" class="h-2 rounded-full bg-green-500" style="width: <?php echo max(0, min(100, $sentiment['positive_pct'])); ?>%"></div>
+                                <div id="dashboardSentimentPositiveBar" class="h-2 rounded-full bg-green-500" style="width: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo max(0, min(100, $sentiment['positive_pct'])); ?>%"></div>
                             </div>
                         </div>
                         <div>
                             <div class="flex justify-between items-center text-sm text-gray-600 mb-1">
                                 <span>Response Time</span>
-                                <span id="dashboardSentimentResponse"><?php echo $sentiment['average_response_hours'] !== null ? number_format($sentiment['average_response_hours'], 1) . ' hrs' : '—'; ?></span>
+                                <span id="dashboardSentimentResponse"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $sentiment['average_response_hours'] !== null ? number_format($sentiment['average_response_hours'], 1) . ' hrs' : '—'; ?></span>
                             </div>
                             <div class="w-full h-2 rounded-full bg-gray-100">
-                                <div id="dashboardSentimentResponseBar" class="h-2 rounded-full bg-blue-500" style="width: <?php echo $sentiment['average_response_hours'] !== null ? max(0, min(100, ($sentiment['average_response_hours'] / 12) * 100)) : 0; ?>%"></div>
+                                <div id="dashboardSentimentResponseBar" class="h-2 rounded-full bg-blue-500" style="width: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $sentiment['average_response_hours'] !== null ? max(0, min(100, ($sentiment['average_response_hours'] / 12) * 100)) : 0; ?>%"></div>
                             </div>
                         </div>
                         <div>
                             <div class="flex justify-between items-center text-sm text-gray-600 mb-1">
                                 <span>Resolved Escalations</span>
-                                <span id="dashboardSentimentResolved"><?php echo number_format($sentiment['resolved_pct'], 1); ?>%</span>
+                                <span id="dashboardSentimentResolved"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($sentiment['resolved_pct'], 1); ?>%</span>
                             </div>
                             <div class="w-full h-2 rounded-full bg-gray-100">
-                                <div id="dashboardSentimentResolvedBar" class="h-2 rounded-full bg-purple-500" style="width: <?php echo max(0, min(100, $sentiment['resolved_pct'])); ?>%"></div>
+                                <div id="dashboardSentimentResolvedBar" class="h-2 rounded-full bg-purple-500" style="width: <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo max(0, min(100, $sentiment['resolved_pct'])); ?>%"></div>
                             </div>
                         </div>
                         <div class="grid grid-cols-2 gap-3 text-xs text-gray-500">
-                            <div>Sample size: <span id="dashboardSentimentSample"><?php echo number_format($sentiment['sample_size']); ?></span></div>
-                            <div>Avg rating: <span id="dashboardSentimentRating"><?php echo $sentiment['average_rating'] !== null ? number_format($sentiment['average_rating'], 1) . '/5' : '—'; ?></span></div>
+                            <div>Sample size: <span id="dashboardSentimentSample"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo number_format($sentiment['sample_size']); ?></span></div>
+                            <div>Avg rating: <span id="dashboardSentimentRating"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $sentiment['average_rating'] !== null ? number_format($sentiment['average_rating'], 1) . '/5' : '—'; ?></span></div>
                         </div>
                         <div class="bg-gray-50 rounded-lg p-4">
                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Top Improvement Drivers</h4>
                             <ul id="dashboardSentimentDrivers" class="text-xs text-gray-600 space-y-1">
-                                <?php if (empty($sentiment['top_drivers'])): ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($sentiment['top_drivers'])): ?>
                                     <li class="text-gray-400">No key drivers identified.</li>
-                                <?php else: ?>
-                                    <?php foreach ($sentiment['top_drivers'] as $driver): ?>
-                                        <li>• <?php echo htmlspecialchars($driver['category']); ?> (<?php echo (int)$driver['count']; ?>)</li>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($sentiment['top_drivers'] as $driver): ?>
+                                        <li>• <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($driver['category']); ?> (<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo (int)$driver['count']; ?>)</li>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                             </ul>
                         </div>
                     </div>
@@ -249,22 +342,55 @@ include '../../includes/sidebar-unified.php';
                         <a href="audit-log.php" class="text-sm text-primary hover:underline">View Audit Log</a>
                     </div>
                     <div class="space-y-4 max-h-72 overflow-y-auto">
-                        <?php if (empty($recentActivities)): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($recentActivities)): ?>
                             <p class="text-sm text-gray-500">No recent actions recorded.</p>
-                        <?php else: ?>
-                            <?php foreach ($recentActivities as $activity): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($recentActivities as $activity): ?>
                                 <div class="border rounded-lg px-4 py-3">
                                     <div class="flex justify-between text-sm">
-                                        <span class="font-medium text-gray-800"><?php echo htmlspecialchars($activity['user_name']); ?></span>
-                                        <span class="text-gray-500"><?php echo date('M j, Y g:i A', strtotime($activity['created_at'])); ?></span>
+                                        <span class="font-medium text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($activity['user_name']); ?></span>
+                                        <span class="text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo date('M j, Y g:i A', strtotime($activity['created_at'])); ?></span>
                                     </div>
-                                    <p class="text-sm text-gray-600 mt-1">Action: <span class="font-medium text-gray-800"><?php echo htmlspecialchars($activity['action']); ?></span></p>
-                                    <?php if (!empty($activity['details'])): ?>
-                                        <p class="text-xs text-gray-500 mt-1"><?php echo htmlspecialchars($activity['details']); ?></p>
-                                    <?php endif; ?>
+                                    <p class="text-sm text-gray-600 mt-1">Action: <span class="font-medium text-gray-800"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($activity['action']); ?></span></p>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (!empty($activity['details'])): ?>
+                                        <p class="text-xs text-gray-500 mt-1"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($activity['details']); ?></p>
+                                    <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                     </div>
                 </div>
 
@@ -275,15 +401,33 @@ include '../../includes/sidebar-unified.php';
                     </div>
                     <div class="space-y-4">
                         <div id="automationSummary">
-                            <?php foreach ($automationCards as $card): ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($automationCards as $card): ?>
                                 <div class="flex items-center justify-between">
                                     <div>
-                                        <p class="text-sm font-medium text-gray-700"><?php echo htmlspecialchars($card['title']); ?></p>
-                                        <p class="text-xs text-gray-500"><?php echo htmlspecialchars($card['description']); ?></p>
+                                        <p class="text-sm font-medium text-gray-700"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($card['title']); ?></p>
+                                        <p class="text-xs text-gray-500"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($card['description']); ?></p>
                                     </div>
-                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 automation-status" data-status="<?php echo strtolower($card['status']); ?>"><?php echo htmlspecialchars($card['status']); ?></span>
+                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700 automation-status" data-status="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo strtolower($card['status']); ?>"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($card['status']); ?></span>
                                 </div>
-                            <?php endforeach; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
                         </div>
                     </div>
                 </div>
@@ -291,4 +435,7 @@ include '../../includes/sidebar-unified.php';
 
         </main>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>

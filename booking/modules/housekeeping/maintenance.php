@@ -1,10 +1,16 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 /**
  * Maintenance Management
  * Hotel PMS Training System for Students
  */
 
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
@@ -16,20 +22,20 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['manager'
 
 // Get maintenance statistics
 try {
-    // Active maintenance requests
-    $stmt = $pdo->query("SELECT COUNT(*) as active FROM maintenance_requests WHERE status = 'pending' OR status = 'in_progress'");
+    // Active maintenance requests (reported, assigned, in_progress)
+    $stmt = $pdo->query("SELECT COUNT(*) as active FROM maintenance_requests WHERE status IN ('reported', 'assigned', 'in_progress')");
     $activeRequests = $stmt->fetch()['active'];
     
     // Completed today
     $stmt = $pdo->query("SELECT COUNT(*) as completed_today FROM maintenance_requests WHERE status = 'completed' AND DATE(updated_at) = CURDATE()");
     $completedToday = $stmt->fetch()['completed_today'];
     
-    // Pending approval
-    $stmt = $pdo->query("SELECT COUNT(*) as pending FROM maintenance_requests WHERE status = 'pending'");
+    // Pending approval (reported status)
+    $stmt = $pdo->query("SELECT COUNT(*) as pending FROM maintenance_requests WHERE status = 'reported'");
     $pendingApproval = $stmt->fetch()['pending'];
     
-    // Total cost
-    $stmt = $pdo->query("SELECT SUM(estimated_cost) as total_cost FROM maintenance_requests WHERE status = 'completed'");
+    // Total cost (sum of estimated costs for all requests)
+    $stmt = $pdo->query("SELECT SUM(COALESCE(estimated_cost, 0)) as total_cost FROM maintenance_requests");
     $totalCost = $stmt->fetch()['total_cost'] ?? 0;
     
     // Get all maintenance requests
@@ -82,7 +88,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Active Requests</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $activeRequests; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $activeRequests; ?></p>
                         </div>
                     </div>
                 </div>
@@ -96,7 +103,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Completed Today</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $completedToday; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $completedToday; ?></p>
                         </div>
                     </div>
                 </div>
@@ -110,7 +118,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Pending Approval</p>
-                            <p class="text-2xl font-semibold text-gray-900"><?php echo $pendingApproval; ?></p>
+                            <p class="text-2xl font-semibold text-gray-900"><?php
+session_start(); echo $pendingApproval; ?></p>
                         </div>
                     </div>
                 </div>
@@ -124,7 +133,8 @@ include '../../includes/sidebar-unified.php';
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Total Cost</p>
-                            <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($totalCost, 2); ?></p>
+                            <p class="text-2xl font-semibold text-gray-900">₱<?php
+session_start(); echo number_format($totalCost, 2); ?></p>
                         </div>
                     </div>
                 </div>
@@ -148,8 +158,10 @@ include '../../includes/sidebar-unified.php';
                             </tr>
                         </thead>
                         <tbody class="bg-white divide-y divide-gray-200">
-                            <?php if (!empty($maintenanceRequests)): ?>
-                                <?php foreach ($maintenanceRequests as $request): 
+                            <?php
+session_start(); if (!empty($maintenanceRequests)): ?>
+                                <?php
+session_start(); foreach ($maintenanceRequests as $request): 
                                     $priorityClass = '';
                                     $priorityText = '';
                                     switch($request['priority']) {
@@ -161,10 +173,14 @@ include '../../includes/sidebar-unified.php';
                                             $priorityClass = 'bg-orange-100 text-orange-800';
                                             $priorityText = 'High';
                                             break;
-                                        case 'normal':
+                                        case 'medium':
+                                            $priorityClass = 'bg-yellow-100 text-yellow-800';
+                                            $priorityText = 'Medium';
+                                            break;
+                                        case 'low':
                                         default:
                                             $priorityClass = 'bg-blue-100 text-blue-800';
-                                            $priorityText = 'Normal';
+                                            $priorityText = 'Low';
                                             break;
                                     }
                                     
@@ -175,42 +191,63 @@ include '../../includes/sidebar-unified.php';
                                             $statusClass = 'bg-green-100 text-green-800';
                                             $statusText = 'Completed';
                                             break;
+                                        case 'verified':
+                                            $statusClass = 'bg-blue-100 text-blue-800';
+                                            $statusText = 'Verified';
+                                            break;
                                         case 'in_progress':
                                             $statusClass = 'bg-yellow-100 text-yellow-800';
                                             $statusText = 'In Progress';
                                             break;
-                                        case 'pending':
+                                        case 'assigned':
+                                            $statusClass = 'bg-purple-100 text-purple-800';
+                                            $statusText = 'Assigned';
+                                            break;
+                                        case 'reported':
                                         default:
                                             $statusClass = 'bg-gray-100 text-gray-800';
-                                            $statusText = 'Pending';
+                                            $statusText = 'Reported';
                                             break;
                                     }
                                 ?>
                                 <tr>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="text-sm font-medium text-gray-900"><?php echo htmlspecialchars($request['issue_type']); ?></div>
-                                        <div class="text-sm text-gray-500"><?php echo htmlspecialchars(substr($request['description'], 0, 50)) . (strlen($request['description']) > 50 ? '...' : ''); ?></div>
+                                        <div class="text-sm font-medium text-gray-900"><?php
+session_start(); echo htmlspecialchars($request['issue_type']); ?></div>
+                                        <div class="text-sm text-gray-500"><?php
+session_start(); echo htmlspecialchars(substr($request['description'], 0, 50)) . (strlen($request['description']) > 50 ? '...' : ''); ?></div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($request['room_number'] ?? 'N/A'); ?></td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars($request['reported_by_name'] ?? 'Unknown'); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+session_start(); echo htmlspecialchars($request['room_number'] ?? 'N/A'); ?></td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php
+session_start(); echo htmlspecialchars($request['reported_by_name'] ?? 'Unknown'); ?></td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $priorityClass; ?>">
-                                            <?php echo $priorityText; ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+session_start(); echo $priorityClass; ?>">
+                                            <?php
+session_start(); echo $priorityText; ?>
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $statusClass; ?>">
-                                            <?php echo $statusText; ?>
+                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php
+session_start(); echo $statusClass; ?>">
+                                            <?php
+session_start(); echo $statusText; ?>
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                        <button onclick="viewMaintenanceRequest(<?php echo $request['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">View</button>
-                                        <button onclick="updateMaintenanceStatus(<?php echo $request['id']; ?>, 'in_progress')" class="text-yellow-600 hover:text-yellow-900 mr-3">Start</button>
-                                        <button onclick="updateMaintenanceStatus(<?php echo $request['id']; ?>, 'completed')" class="text-green-600 hover:text-green-900">Complete</button>
+                                        <button onclick="viewMaintenanceRequest(<?php
+session_start(); echo $request['id']; ?>)" class="text-blue-600 hover:text-blue-900 mr-3">View</button>
+                                        <button onclick="updateMaintenanceStatus(<?php
+session_start(); echo $request['id']; ?>, 'in_progress')" class="text-yellow-600 hover:text-yellow-900 mr-3">Start</button>
+                                        <button onclick="updateMaintenanceStatus(<?php
+session_start(); echo $request['id']; ?>, 'completed')" class="text-green-600 hover:text-green-900">Complete</button>
                                     </td>
                                 </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
+                                <?php
+session_start(); endforeach; ?>
+                            <?php
+session_start(); else: ?>
                                 <tr>
                                     <td colspan="6" class="px-6 py-12 text-center text-gray-500">
                                         <div class="flex flex-col items-center">
@@ -220,7 +257,8 @@ include '../../includes/sidebar-unified.php';
                                         </div>
                                     </td>
                                 </tr>
-                            <?php endif; ?>
+                            <?php
+session_start(); endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -243,6 +281,7 @@ include '../../includes/sidebar-unified.php';
                             <select name="room_id" id="room_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                                 <option value="">Select Room</option>
                                 <?php
+session_start();
                                 try {
                                     $stmt = $pdo->query("SELECT id, room_number FROM rooms ORDER BY room_number ASC");
                                     $rooms = $stmt->fetchAll();
@@ -297,7 +336,9 @@ include '../../includes/sidebar-unified.php';
         </div>
 
         <!-- Scripts -->
-        <script src="../../assets/js/housekeeping-maintenance.js"></script>
-        <script src="../../assets/js/main.js"></script>
+        <script src="../../assets/js/main.js?v=<?php
+session_start(); echo time(); ?>"></script>
+        <script src="../../assets/js/housekeeping-maintenance.js?v=<?php
+session_start(); echo time(); ?>"></script>
     </body>
 </html>

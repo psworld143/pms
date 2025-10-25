@@ -1,10 +1,16 @@
 <?php
+session_start();
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 /**
  * Business Analytics Dashboard
  * Hotel PMS Training System for Students
  */
 
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+session_start();
 require_once __DIR__ . '/../../config/database.php';
 require_once __DIR__ . '/../../includes/functions.php';
 require_once __DIR__ . '/../../includes/booking-paths.php';
@@ -299,4 +305,5 @@ include '../../includes/sidebar-unified.php';
     </div>
 </main>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+session_start(); include '../../includes/footer.php'; ?>

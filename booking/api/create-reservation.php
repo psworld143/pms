@@ -1,4 +1,9 @@
 <?php
+// Error handling
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+
+
 session_start();
 require_once "../config/database.php";
 require_once '../includes/functions.php';
@@ -28,14 +33,20 @@ try {
     
     // Validate required fields
     $required_fields = [
-        'first_name', 'last_name', 'phone', 'id_type', 'id_number',
-        'check_in_date', 'check_out_date', 'adults', 'room_type', 'booking_source'
+        'guest_id', 'check_in_date', 'check_out_date', 'adults', 'room_type', 'booking_source'
     ];
     
     foreach ($required_fields as $field) {
         if (empty($input[$field])) {
             throw new Exception("Missing required field: {$field}");
         }
+    }
+    
+    // Validate guest exists
+    $guest_id = $input['guest_id'];
+    $guest = getGuestDetails($guest_id);
+    if (!$guest) {
+        throw new Exception('Selected guest not found');
     }
     
     // Validate dates

@@ -1,4 +1,8 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once dirname(__DIR__, 3) . DIRECTORY_SEPARATOR . 'vps_session_fix.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPARATOR . 'functions.php';
@@ -44,7 +48,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Active Service Requests</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($service_stats['active_requests']); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($service_stats['active_requests']); ?></p>
                     </div>
                 </div>
             </div>
@@ -58,7 +66,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Today's Service Revenue</p>
-                        <p class="text-2xl font-semibold text-gray-900">₱<?php echo number_format($service_stats['today_revenue'], 2); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900">₱<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($service_stats['today_revenue'], 2); ?></p>
                     </div>
                 </div>
             </div>
@@ -72,7 +84,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Pending Services</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($service_stats['pending_services']); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($service_stats['pending_services']); ?></p>
                     </div>
                 </div>
             </div>
@@ -86,7 +102,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                     </div>
                     <div class="ml-4">
                         <p class="text-sm font-medium text-gray-500">Completed Today</p>
-                        <p class="text-2xl font-semibold text-gray-900"><?php echo number_format($service_stats['completed_today']); ?></p>
+                        <p class="text-2xl font-semibold text-gray-900"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo number_format($service_stats['completed_today']); ?></p>
                     </div>
                 </div>
             </div>
@@ -383,7 +403,11 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Date</label>
                         <input type="date" name="minibar_date" id="minibar_date" 
-                               value="<?php echo date('Y-m-d'); ?>"
+                               value="<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); echo date('Y-m-d'); ?>"
                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary">
                     </div>
                 </div>
@@ -553,4 +577,8 @@ include dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'includes' . DIRECTORY_SEPAR
 
         </main>
 
-<?php include '../../includes/footer.php'; ?>
+<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start(); include '../../includes/footer.php'; ?>

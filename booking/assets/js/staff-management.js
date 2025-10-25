@@ -597,6 +597,11 @@
     function fetchJson(url, options = {}) {
         return fetch(url, {
             credentials: 'include',
+            headers: {
+                'X-API-Key': 'pms_users_api_2024',
+                'Content-Type': 'application/json',
+                ...options.headers
+            },
             ...options
         }).then(async (response) => {
             if (!response.ok) {

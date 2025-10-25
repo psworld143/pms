@@ -1,7 +1,8 @@
 <?php
 session_start();
-require_once '../../config/database.php';;
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../login.php');
@@ -9,550 +10,566 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$user_name = $_SESSION['user_name'];
+$user_name = $_SESSION['user_name'] ?? 'User';
 
 // Get filter parameters
-$type_filter = isset($_GET['type']) ? $_GET['type'] : '';
-$difficulty_filter = isset($_GET['difficulty']) ? $_GET['difficulty'] : '';
+$type = $_GET['type'] ?? null;
+$difficulty = $_GET['difficulty'] ?? null;
 
-// Fetch customer service scenarios from database
+// Get customer service scenarios based on filters
+$scenarios = getCustomerServiceScenarios($type);
+
+// Get user progress for each scenario
+$user_progress = [];
 try {
-    // Get customer service scenarios with filters
-    $where_conditions = ["1=1"];
-    $params = [];
-    
-    if (!empty($type_filter)) {
-        $where_conditions[] = "type = ?";
-        $params[] = $type_filter;
-    }
-    
-    if (!empty($difficulty_filter)) {
-        $where_conditions[] = "difficulty = ?";
-        $params[] = $difficulty_filter;
-    }
-    
-    $where_clause = implode(" AND ", $where_conditions);
-    
     $stmt = $pdo->prepare("
-        SELECT 
-            css.*,
-            COALESCE(AVG(ta.score), 0) as avg_score,
-            COUNT(ta.id) as attempt_count
-        FROM customer_service_scenarios css
-        LEFT JOIN training_attempts ta ON css.id = ta.scenario_id AND ta.scenario_type = 'customer_service'
-        WHERE {$where_clause}
-        GROUP BY css.id
-        ORDER BY css.difficulty, css.title
-    ");
-    $stmt->execute($params);
-    $scenarios = $stmt->fetchAll();
-
-    // Get user's completed customer service scenarios
-    $stmt = $pdo->prepare("
-        SELECT scenario_id, score, status, created_at
+        SELECT scenario_id, MAX(score) as best_score, COUNT(*) as attempts
         FROM training_attempts 
         WHERE user_id = ? AND scenario_type = 'customer_service'
-        ORDER BY created_at DESC
+        GROUP BY scenario_id
     ");
     $stmt->execute([$user_id]);
-    $user_attempts = $stmt->fetchAll();
+    $progress_data = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
     
-    // Create a map of user attempts for quick lookup
-    $user_attempts_map = [];
-    foreach ($user_attempts as $attempt) {
-        $user_attempts_map[$attempt['scenario_id']] = $attempt;
+    foreach ($progress_data as $scenario_id => $data) {
+        $user_progress[$scenario_id] = $data;
     }
-
-    // Get statistics
-    $stmt = $pdo->prepare("
-        SELECT 
-            COUNT(*) as total_scenarios,
-            COUNT(CASE WHEN type = 'complaints' THEN 1 END) as complaints_count,
-            COUNT(CASE WHEN type = 'requests' THEN 1 END) as requests_count,
-            COUNT(CASE WHEN type = 'emergencies' THEN 1 END) as emergencies_count,
-            COUNT(CASE WHEN difficulty = 'beginner' THEN 1 END) as beginner_count,
-            COUNT(CASE WHEN difficulty = 'intermediate' THEN 1 END) as intermediate_count,
-            COUNT(CASE WHEN difficulty = 'advanced' THEN 1 END) as advanced_count
-        FROM customer_service_scenarios
-    ");
-    $stmt->execute();
-    $stats = $stmt->fetch();
-
-    // Get user's customer service statistics
-    $stmt = $pdo->prepare("
-        SELECT 
-            COUNT(*) as completed_scenarios,
-            AVG(score) as avg_score,
-            SUM(duration_minutes) as total_time,
-            COUNT(CASE WHEN score >= 80 THEN 1 END) as high_performance_count
-        FROM training_attempts 
-        WHERE user_id = ? AND scenario_type = 'customer_service' AND status = 'completed'
-    ");
-    $stmt->execute([$user_id]);
-    $user_stats = $stmt->fetch();
-
-    // Get performance by scenario type
-    $stmt = $pdo->prepare("
-        SELECT 
-            css.type,
-            COUNT(ta.id) as attempts,
-            AVG(ta.score) as avg_score
-        FROM customer_service_scenarios css
-        LEFT JOIN training_attempts ta ON css.id = ta.scenario_id AND ta.scenario_type = 'customer_service' AND ta.user_id = ?
-        GROUP BY css.type
-    ");
-    $stmt->execute([$user_id]);
-    $performance_by_type = $stmt->fetchAll();
-
-} catch (PDOException $e) {
-    error_log("Error fetching customer service scenarios: " . $e->getMessage());
-    $scenarios = [];
-    $user_attempts = [];
-    $user_attempts_map = [];
-    $stats = [
-        'total_scenarios' => 0,
-        'complaints_count' => 0,
-        'requests_count' => 0,
-        'emergencies_count' => 0,
-        'beginner_count' => 0,
-        'intermediate_count' => 0,
-        'advanced_count' => 0
-    ];
-    $user_stats = [
-        'completed_scenarios' => 0,
-        'avg_score' => 0,
-        'total_time' => 0,
-        'high_performance_count' => 0
-    ];
-    $performance_by_type = [];
+} catch (Exception $e) {
+    // Handle error silently
 }
 
-// Set page title for unified header
 $page_title = 'Customer Service Training';
-
-// Include unified navigation (automatically selects based on user role)
 include '../../includes/header-unified.php';
 include '../../includes/sidebar-unified.php';
 ?>
 
-        <!-- Main Content -->
-        <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
-            
-
-            <!-- Page Header -->
-            <div class="mb-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-800">Customer Service Scenarios</h2>
-                        <p class="text-gray-600 mt-1">Master the art of handling guest complaints, requests, and emergencies</p>
-                    </div>
-                    <div class="flex space-x-3">
-                        <button class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-headset mr-2"></i>Practice Mode
-                        </button>
-                        <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                            <i class="fas fa-certificate mr-2"></i>Get Certified
-                        </button>
-                    </div>
+<!-- Main Content -->
+<main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Customer Service Training</h1>
+                <p class="text-gray-600 mt-1">Master the art of exceptional customer service with interactive scenarios</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Welcome back,</p>
+                    <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($user_name); ?></p>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-headset text-white text-xl"></i>
                 </div>
             </div>
-
-            <!-- User Performance Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-green-100 rounded-lg">
-                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Completed</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $user_stats['completed_scenarios']; ?></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-blue-100 rounded-lg">
-                            <i class="fas fa-star text-blue-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Average Score</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo number_format($user_stats['avg_score'] ?? 0, 1); ?>%</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-purple-100 rounded-lg">
-                            <i class="fas fa-trophy text-purple-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">High Performance</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $user_stats['high_performance_count']; ?></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-yellow-100 rounded-lg">
-                            <i class="fas fa-clock text-yellow-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Training Time</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo round($user_stats['total_time'] / 60, 1); ?>h</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Performance Overview -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <!-- Performance by Type -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Performance by Type</h3>
-                    <div class="space-y-4">
-                        <?php foreach ($performance_by_type as $performance): ?>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 rounded-full mr-3 
-                                        <?php 
-                                        switch($performance['type']) {
-                                            case 'complaints': echo 'bg-red-500'; break;
-                                            case 'requests': echo 'bg-blue-500'; break;
-                                            case 'emergencies': echo 'bg-yellow-500'; break;
-                                            default: echo 'bg-gray-500';
-                                        }
-                                        ?>"></div>
-                                    <span class="text-sm font-medium text-gray-600"><?php echo ucfirst($performance['type']); ?></span>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-semibold text-gray-900"><?php echo number_format($performance['avg_score'] ?? 0, 1); ?>%</p>
-                                    <p class="text-xs text-gray-500"><?php echo $performance['attempts']; ?> attempts</p>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-
-                <!-- Quick Tips -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Customer Service Tips</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-start space-x-3">
-                            <i class="fas fa-lightbulb text-yellow-500 mt-1"></i>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Listen Actively</p>
-                                <p class="text-xs text-gray-600">Pay full attention to guest concerns</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <i class="fas fa-heart text-red-500 mt-1"></i>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Show Empathy</p>
-                                <p class="text-xs text-gray-600">Acknowledge their feelings</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <i class="fas fa-bolt text-blue-500 mt-1"></i>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Act Quickly</p>
-                                <p class="text-xs text-gray-600">Respond promptly to urgent issues</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <i class="fas fa-check text-green-500 mt-1"></i>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Follow Up</p>
-                                <p class="text-xs text-gray-600">Ensure resolution is satisfactory</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Activity -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
-                    <div class="space-y-3">
-                        <?php 
-                        $recent_attempts = array_slice($user_attempts, 0, 3);
-                        if (empty($recent_attempts)): ?>
-                            <p class="text-sm text-gray-500">No recent activity</p>
-                        <?php else: ?>
-                            <?php foreach ($recent_attempts as $attempt): ?>
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-800">Scenario completed</p>
-                                        <p class="text-xs text-gray-500"><?php echo date('M j, Y', strtotime($attempt['created_at'])); ?></p>
-                                    </div>
-                                    <span class="text-sm font-semibold text-green-600"><?php echo number_format($attempt['score'] ?? 0, 1); ?>%</span>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                <div class="flex flex-wrap items-center gap-4">
-                    <div class="flex-1 min-w-64">
-                        <input type="text" id="search-scenarios" placeholder="Search customer service scenarios..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-                    <select id="type-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">All Types</option>
-                        <option value="complaints" <?php echo $type_filter === 'complaints' ? 'selected' : ''; ?>>Complaints</option>
-                        <option value="requests" <?php echo $type_filter === 'requests' ? 'selected' : ''; ?>>Requests</option>
-                        <option value="emergencies" <?php echo $type_filter === 'emergencies' ? 'selected' : ''; ?>>Emergencies</option>
-                    </select>
-                    <select id="difficulty-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <option value="">All Difficulties</option>
-                        <option value="beginner" <?php echo $difficulty_filter === 'beginner' ? 'selected' : ''; ?>>Beginner</option>
-                        <option value="intermediate" <?php echo $difficulty_filter === 'intermediate' ? 'selected' : ''; ?>>Intermediate</option>
-                        <option value="advanced" <?php echo $difficulty_filter === 'advanced' ? 'selected' : ''; ?>>Advanced</option>
-                    </select>
-                    <button id="clear-filters" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-                        <i class="fas fa-times mr-2"></i>Clear
-                    </button>
-                </div>
-            </div>
-
-            <!-- Scenarios Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <?php if (empty($scenarios)): ?>
-                    <div class="col-span-full text-center py-12">
-                        <i class="fas fa-headset text-4xl text-gray-400 mb-4"></i>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No scenarios found</h3>
-                        <p class="text-gray-500">Try adjusting your filters or check back later for new scenarios.</p>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($scenarios as $scenario): ?>
-                        <?php 
-                        $user_attempt = isset($user_attempts_map[$scenario['id']]) ? $user_attempts_map[$scenario['id']] : null;
-                        $is_completed = $user_attempt && $user_attempt['status'] === 'completed';
-                        $best_score = $user_attempt ? $user_attempt['score'] : 0;
-                        
-                        // Difficulty colors
-                        $difficulty_colors = [
-                            'beginner' => 'bg-green-100 text-green-800',
-                            'intermediate' => 'bg-yellow-100 text-yellow-800',
-                            'advanced' => 'bg-red-100 text-red-800'
-                        ];
-                        
-                        // Type colors and icons
-                        $type_colors = [
-                            'complaints' => 'bg-red-100 text-red-800',
-                            'requests' => 'bg-blue-100 text-blue-800',
-                            'emergencies' => 'bg-yellow-100 text-yellow-800'
-                        ];
-                        
-                        $type_icons = [
-                            'complaints' => 'fas fa-exclamation-triangle',
-                            'requests' => 'fas fa-hand-paper',
-                            'emergencies' => 'fas fa-exclamation-circle'
-                        ];
-                        ?>
-                        
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-300 scenario-card flex flex-col" 
-                             data-type="<?php echo $scenario['type']; ?>" 
-                             data-difficulty="<?php echo $scenario['difficulty']; ?>"
-                             data-title="<?php echo strtolower($scenario['title']); ?>">
-                            
-                            <!-- Scenario Header -->
-                            <div class="p-6 border-b border-gray-200">
-                                <div class="flex items-start justify-between mb-4">
-                                    <div class="flex items-center">
-                                        <i class="<?php echo $type_icons[$scenario['type']]; ?> text-blue-600 text-xl mr-3"></i>
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-gray-900"><?php echo htmlspecialchars($scenario['title']); ?></h3>
-                                            <p class="text-sm text-gray-500"><?php echo ucfirst($scenario['type']); ?></p>
-                                        </div>
-                                    </div>
-                                    <?php if ($is_completed): ?>
-                                        <div class="flex items-center">
-                                            <i class="fas fa-check-circle text-green-500 text-xl"></i>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                                
-                                <p class="text-gray-600 text-sm mb-4"><?php echo htmlspecialchars(substr($scenario['description'], 0, 100) . (strlen($scenario['description']) > 100 ? '...' : '')); ?></p>
-                                
-                                <div class="flex items-center justify-between">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php echo $difficulty_colors[$scenario['difficulty']]; ?>">
-                                        <?php echo ucfirst($scenario['difficulty']); ?>
-                                    </span>
-                                    <div class="flex items-center text-sm text-gray-500">
-                                        <i class="fas fa-clock mr-1"></i>
-                                        <?php echo $scenario['estimated_time']; ?> min
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Scenario Content Preview -->
-                            <div class="p-6 flex-grow">
-                                <div class="mb-4">
-                                    <h4 class="text-sm font-medium text-gray-800 mb-2">Situation:</h4>
-                                    <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars(substr($scenario['situation'], 0, 80) . (strlen($scenario['situation']) > 80 ? '...' : '')); ?></p>
-                                    
-                                    <h4 class="text-sm font-medium text-gray-800 mb-2">Guest Request:</h4>
-                                    <p class="text-sm text-gray-600"><?php echo htmlspecialchars(substr($scenario['guest_request'], 0, 80) . (strlen($scenario['guest_request']) > 80 ? '...' : '')); ?></p>
-                                </div>
-                                
-                                <div class="grid grid-cols-2 gap-4 mb-4">
-                                    <div class="text-center">
-                                        <p class="text-sm text-gray-500">Points</p>
-                                        <p class="text-lg font-semibold text-gray-900"><?php echo $scenario['points']; ?></p>
-                                    </div>
-                                    <div class="text-center">
-                                        <p class="text-sm text-gray-500">Avg Score</p>
-                                        <p class="text-lg font-semibold text-gray-900"><?php echo number_format($scenario['avg_score'] ?? 0, 1); ?>%</p>
-                                    </div>
-                                </div>
-                                
-                                <?php if ($is_completed): ?>
-                                    <div class="mb-4 p-3 bg-green-50 rounded-lg">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-sm font-medium text-green-800">Your Score</span>
-                                            <span class="text-lg font-bold text-green-600"><?php echo number_format($best_score, 1); ?>%</span>
-                                        </div>
-                                    </div>
-                                <?php else: ?>
-                                    <!-- Empty space to maintain consistent height -->
-                                    <div class="mb-4 p-3 bg-transparent rounded-lg">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-sm font-medium text-transparent">Your Score</span>
-                                            <span class="text-lg font-bold text-transparent">0%</span>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <!-- Action Buttons - Always at bottom -->
-                            <div class="p-6 pt-0">
-                                <div class="flex space-x-2">
-                                    <?php if ($is_completed): ?>
-                                        <button onclick="retakeScenario(<?php echo $scenario['id']; ?>)" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                            <i class="fas fa-redo mr-2"></i>Retake
-                                        </button>
-                                        <button onclick="viewResults(<?php echo $scenario['id']; ?>)" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
-                                            <i class="fas fa-chart-bar mr-2"></i>Results
-                                        </button>
-                                    <?php else: ?>
-                                        <button onclick="startScenario(<?php echo $scenario['id']; ?>)" class="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm">
-                                            <i class="fas fa-play mr-2"></i>Start
-                                        </button>
-                                        <button onclick="previewScenario(<?php echo $scenario['id']; ?>)" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
-                                            <i class="fas fa-eye mr-2"></i>Preview
-                                        </button>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </main>
+        </div>
     </div>
 
-    <?php include '../../includes/footer.php'; ?>
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Completed</p>
+                    <p class="text-2xl font-bold text-gray-900"><?php echo count($user_progress); ?></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-star text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Avg Score</p>
+                    <p class="text-2xl font-bold text-gray-900">
+                        <?php 
+                        $avg_score = count($user_progress) > 0 ? 
+                            round(array_sum(array_column($user_progress, 'best_score')) / count($user_progress)) : 0;
+                        echo $avg_score;
+                        ?>%
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-trophy text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Certificates</p>
+                    <p class="text-2xl font-bold text-gray-900">
+                        <?php 
+                        $certificates = 0;
+                        foreach ($user_progress as $progress) {
+                            if ($progress['best_score'] >= 70) $certificates++;
+                        }
+                        echo $certificates;
+                        ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Time Spent</p>
+                    <p class="text-2xl font-bold text-gray-900">
+                        <?php 
+                        $total_time = count($user_progress) * 10; // 10 minutes per scenario
+                        echo round($total_time / 60, 1);
+                        ?>h
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <script>
-        // Wait for document to be ready
-        $(document).ready(function() {
-            console.log('Document ready, initializing customer service filters...');
-            
-            // Search functionality
-            $('#search-scenarios').on('input', function() {
-                console.log('Search input detected');
-                const searchTerm = $(this).val().toLowerCase();
-                $('.scenario-card').each(function() {
-                    const title = $(this).data('title');
-                    const description = $(this).find('p').text().toLowerCase();
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Filter Scenarios</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Type Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Scenario Type</label>
+                <select id="type-filter" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <option value="">All Types</option>
+                    <option value="complaints" <?php echo $type === 'complaints' ? 'selected' : ''; ?>>Complaints</option>
+                    <option value="requests" <?php echo $type === 'requests' ? 'selected' : ''; ?>>Special Requests</option>
+                    <option value="emergencies" <?php echo $type === 'emergencies' ? 'selected' : ''; ?>>Emergencies</option>
+                </select>
+            </div>
+
+            <!-- Difficulty Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                <select id="difficulty-filter" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+                    <option value="">All Levels</option>
+                    <option value="beginner" <?php echo $difficulty === 'beginner' ? 'selected' : ''; ?>>Beginner</option>
+                    <option value="intermediate" <?php echo $difficulty === 'intermediate' ? 'selected' : ''; ?>>Intermediate</option>
+                    <option value="advanced" <?php echo $difficulty === 'advanced' ? 'selected' : ''; ?>>Advanced</option>
+                </select>
+            </div>
+
+            <!-- Search -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input type="text" id="search-input" placeholder="Search scenarios..." 
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-green-500 focus:border-green-500">
+            </div>
+        </div>
+    </div>
+
+    <!-- Scenarios Grid -->
+    <div id="scenarios-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <?php if (empty($scenarios)): ?>
+            <div class="col-span-full text-center py-12">
+                <i class="fas fa-headset text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No scenarios found</h3>
+                <p class="text-gray-500">Try adjusting your filters or check back later for new content.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($scenarios as $scenario): ?>
+                <div class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-all duration-300 scenario-card" 
+                     data-type="<?php echo htmlspecialchars($scenario['type']); ?>"
+                     data-difficulty="<?php echo htmlspecialchars($scenario['difficulty']); ?>"
+                     data-title="<?php echo htmlspecialchars(strtolower($scenario['title'])); ?>">
                     
-                    if (title.includes(searchTerm) || description.includes(searchTerm)) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
+                    <!-- Scenario Header -->
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2"><?php echo htmlspecialchars($scenario['title']); ?></h3>
+                                <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars($scenario['description']); ?></p>
+                            </div>
+                            <div class="flex flex-col items-end space-y-2">
+                                <!-- Type Badge -->
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    <?php 
+                                    switch($scenario['type']) {
+                                        case 'complaints': echo 'bg-red-100 text-red-800'; break;
+                                        case 'requests': echo 'bg-blue-100 text-blue-800'; break;
+                                        case 'emergencies': echo 'bg-orange-100 text-orange-800'; break;
+                                        default: echo 'bg-gray-100 text-gray-800';
+                                    }
+                                    ?>">
+                                    <?php echo ucfirst($scenario['type']); ?>
+                                </span>
+                                
+                                <!-- Difficulty Badge -->
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    <?php 
+                                    switch($scenario['difficulty']) {
+                                        case 'beginner': echo 'bg-green-100 text-green-800'; break;
+                                        case 'intermediate': echo 'bg-yellow-100 text-yellow-800'; break;
+                                        case 'advanced': echo 'bg-red-100 text-red-800'; break;
+                                        default: echo 'bg-gray-100 text-gray-800';
+                                    }
+                                    ?>">
+                                    <?php echo ucfirst($scenario['difficulty']); ?>
+                                </span>
+                            </div>
+                        </div>
 
-            // Type filter
-            $('#type-filter').on('change', function() {
-                console.log('Type filter changed:', $(this).val());
-                const selectedType = $(this).val();
-                $('.scenario-card').each(function() {
-                    const type = $(this).data('type');
-                    
-                    if (selectedType === '' || type === selectedType) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
+                        <!-- Scenario Stats -->
+                        <div class="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                                <p class="text-2xl font-bold text-green-600"><?php echo $scenario['points']; ?></p>
+                                <p class="text-xs text-gray-500">Points</p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-blue-600"><?php echo $scenario['estimated_time']; ?>m</p>
+                                <p class="text-xs text-gray-500">Duration</p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-purple-600"><?php echo $scenario['attempt_count'] ?? 0; ?></p>
+                                <p class="text-xs text-gray-500">Attempts</p>
+                            </div>
+                        </div>
+                    </div>
 
-            // Difficulty filter
-            $('#difficulty-filter').on('change', function() {
-                console.log('Difficulty filter changed:', $(this).val());
-                const selectedDifficulty = $(this).val();
-                $('.scenario-card').each(function() {
-                    const difficulty = $(this).data('difficulty');
-                    
-                    if (selectedDifficulty === '' || difficulty === selectedDifficulty) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
+                    <!-- User Progress -->
+                    <div class="p-6">
+                        <?php if (isset($user_progress[$scenario['id']])): ?>
+                            <div class="mb-4">
+                                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                    <span>Your Progress</span>
+                                    <span><?php echo $user_progress[$scenario['id']]['best_score']; ?>% Best Score</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-green-500 to-emerald-500 h-2 rounded-full" 
+                                         style="width: <?php echo min(100, $user_progress[$scenario['id']]['best_score']); ?>%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1"><?php echo $user_progress[$scenario['id']]['attempts']; ?> attempt(s)</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="mb-4">
+                                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                    <span>Your Progress</span>
+                                    <span>Not Started</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-gray-300 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Ready to start</p>
+                            </div>
+                        <?php endif; ?>
 
-            // Clear filters
-            $('#clear-filters').on('click', function() {
-                console.log('Clear filters clicked');
-                $('#search-scenarios').val('');
-                $('#type-filter').val('');
-                $('#difficulty-filter').val('');
-                $('.scenario-card').show();
-            });
-            
-            console.log('Customer service filters initialized successfully');
-        });
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-3">
+                            <button onclick="startCustomerService(<?php echo $scenario['id']; ?>)" 
+                                    class="flex-1 bg-gradient-to-r from-green-600 to-emerald-600 text-white px-4 py-2 rounded-md hover:from-green-700 hover:to-emerald-700 transition-all duration-300 font-medium">
+                                <i class="fas fa-play mr-2"></i>
+                                <?php echo isset($user_progress[$scenario['id']]) ? 'Retake' : 'Start'; ?>
+                            </button>
+                            <button onclick="previewCustomerService(<?php echo $scenario['id']; ?>)" 
+                                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</main>
 
-        // Scenario action functions
-        function startScenario(scenarioId) {
-            // Redirect to scenario start page
-            window.location.href = `customer-service-start.php?id=${scenarioId}`;
+<!-- Customer Service Preview Modal -->
+<div id="cs-preview-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-gray-900" id="cs-preview-title">Scenario Preview</h3>
+            <button onclick="closeCSPreviewModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div id="cs-preview-content">
+            <!-- Preview content will be loaded here -->
+        </div>
+        
+        <div class="flex justify-end space-x-4 mt-6">
+            <button onclick="closeCSPreviewModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                Close
+            </button>
+            <button onclick="startCustomerServiceFromPreview()" class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 transition-all duration-300">
+                Start Scenario
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Customer Service Training Modal -->
+<div id="customer-service-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-gray-900" id="cs-title">Customer Service Scenario</h3>
+            <div class="flex items-center space-x-4">
+                <div class="text-sm text-gray-600">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span id="cs-timer">10:00</span>
+                </div>
+                <button onclick="closeCustomerServiceModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div id="customer-service-content">
+            <!-- Scenario content will be loaded here -->
+        </div>
+        
+        <div class="flex justify-between items-center mt-6 pt-6 border-t border-gray-200">
+            <button onclick="skipCustomerService()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                <i class="fas fa-forward mr-2"></i>Skip
+            </button>
+            <button onclick="submitCustomerService()" class="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-md hover:from-green-700 hover:to-emerald-700 transition-all duration-300">
+                <i class="fas fa-check mr-2"></i>Submit Response
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentCustomerServiceScenario = null;
+let csTimer = null;
+let csTimeLeft = 0;
+
+// Filter functionality
+document.getElementById('type-filter').addEventListener('change', filterScenarios);
+document.getElementById('difficulty-filter').addEventListener('change', filterScenarios);
+document.getElementById('search-input').addEventListener('input', searchScenarios);
+
+function filterScenarios() {
+    const type = document.getElementById('type-filter').value;
+    const difficulty = document.getElementById('difficulty-filter').value;
+    
+    // Update URL parameters
+    const url = new URL(window.location);
+    if (type) url.searchParams.set('type', type);
+    else url.searchParams.delete('type');
+    if (difficulty) url.searchParams.set('difficulty', difficulty);
+    else url.searchParams.delete('difficulty');
+    
+    window.history.pushState({}, '', url);
+    window.location.reload();
+}
+
+function searchScenarios() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const cards = document.querySelectorAll('.scenario-card');
+    
+    cards.forEach(card => {
+        const title = card.dataset.title;
+        const description = card.querySelector('p').textContent.toLowerCase();
+        
+        if (title.includes(searchTerm) || description.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
         }
+    });
+}
 
-        function retakeScenario(scenarioId) {
-            if (confirm('Are you sure you want to retake this scenario? Your previous score will be saved.')) {
-                window.location.href = `customer-service-start.php?id=${scenarioId}&retake=1`;
+function startCustomerService(scenarioId) {
+    currentCustomerServiceScenario = scenarioId;
+    
+    fetch(`../../api/training/get-customer-service-details.php?id=${scenarioId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                openCustomerServiceModal(data.item);
+            } else {
+                alert('Error loading scenario: ' + (data.message || 'Unknown error'));
             }
-        }
+        })
+        .catch(error => {
+            console.error('Error loading scenario:', error);
+            alert('Error loading scenario');
+        });
+}
 
-        function previewScenario(scenarioId) {
-            // Open preview modal or redirect to preview page
-            window.location.href = `customer-service-preview.php?id=${scenarioId}`;
-        }
+function previewCustomerService(scenarioId) {
+    fetch(`../../api/training/get-customer-service-details.php?id=${scenarioId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                openCSPreviewModal(data.item);
+            } else {
+                alert('Error loading scenario preview');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scenario preview:', error);
+            alert('Error loading scenario preview');
+        });
+}
 
-        function viewResults(scenarioId) {
-            // Redirect to results page
-            window.location.href = `customer-service-results.php?id=${scenarioId}`;
-        }
-
-        // Update current date and time
-        function updateDateTime() {
-            const now = new Date();
-            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+function openCSPreviewModal(scenario) {
+    document.getElementById('cs-preview-title').textContent = scenario.title;
+    document.getElementById('cs-preview-content').innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 class="font-medium text-green-900 mb-2">Description</h4>
+                <p class="text-green-800">${scenario.description}</p>
+            </div>
             
-            $('#current-date').text(now.toLocaleDateString('en-US', dateOptions));
-            $('#current-time').text(now.toLocaleTimeString('en-US', timeOptions));
-        }
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Type</h4>
+                    <p class="text-gray-700">${scenario.type}</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Difficulty</h4>
+                    <p class="text-gray-700">${scenario.difficulty}</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Duration</h4>
+                    <p class="text-gray-700">${scenario.estimated_time} minutes</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Points</h4>
+                    <p class="text-gray-700">${scenario.points}</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('cs-preview-modal').classList.remove('hidden');
+}
 
-        // Update time every second
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-    </script>
-</body>
-</html>
+function closeCSPreviewModal() {
+    document.getElementById('cs-preview-modal').classList.add('hidden');
+}
+
+function startCustomerServiceFromPreview() {
+    closeCSPreviewModal();
+    startCustomerService(currentCustomerServiceScenario);
+}
+
+function openCustomerServiceModal(scenario) {
+    if (!scenario) {
+        console.error('Customer service scenario is undefined');
+        alert('Error: Scenario data is missing');
+        return;
+    }
+    
+    window.currentCustomerServiceScenario = scenario.id;
+    document.getElementById('cs-title').textContent = scenario.title || 'Customer Service Practice';
+    document.getElementById('cs-difficulty').textContent = scenario.difficulty || 'beginner';
+    document.getElementById('cs-points').textContent = scenario.points || 0;
+    
+    document.getElementById('customer-service-content').innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <h4 class="font-medium text-green-900 mb-2">Scenario Description</h4>
+                <p class="text-green-800">${scenario.description || 'No description available'}</p>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 class="font-medium text-yellow-900 mb-2">Instructions</h4>
+                <p class="text-yellow-800">Practice handling customer service situations professionally. Use the tips below to guide your response.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <label class="block">
+                    <span class="text-gray-700 font-medium">Your Response:</span>
+                    <textarea id="customer-service-response" rows="4" 
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-green-500 focus:border-green-500"
+                              placeholder="Type your response here..."></textarea>
+                </label>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="font-medium text-blue-900 mb-2">Tips for Success:</h4>
+                    <ul class="text-blue-800 text-sm space-y-1">
+                        <li>• Listen actively to the customer's concerns</li>
+                        <li>• Show empathy and understanding</li>
+                        <li>• Offer practical solutions</li>
+                        <li>• Follow up to ensure satisfaction</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('customer-service-modal').classList.remove('hidden');
+    startCSTimer();
+}
+
+function startCSTimer() {
+    csTimeLeft = 10 * 60; // 10 minutes in seconds
+    csTimer = setInterval(() => {
+        csTimeLeft--;
+        const minutes = Math.floor(csTimeLeft / 60);
+        const seconds = csTimeLeft % 60;
+        document.getElementById('cs-timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (csTimeLeft <= 0) {
+            stopCSTimer();
+            alert('Time is up!');
+        }
+    }, 1000);
+}
+
+function stopCSTimer() {
+    if (csTimer) {
+        clearInterval(csTimer);
+        csTimer = null;
+    }
+}
+
+function skipCustomerService() {
+    alert('Scenario skipped');
+    closeCustomerServiceModal();
+}
+
+function submitCustomerService() {
+    const response = document.getElementById('customer-service-response').value;
+    
+    if (!response.trim()) {
+        alert('Please provide a response');
+        return;
+    }
+    
+    fetch('../../api/training/submit-customer-service.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            scenario_id: currentCustomerServiceScenario,
+            response: response
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Response submitted! Score: ${data.score}%`);
+            closeCustomerServiceModal();
+            location.reload(); // Refresh to show updated progress
+        } else {
+            alert('Error submitting response: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting response:', error);
+        alert('Error submitting response');
+    });
+}
+
+function closeCustomerServiceModal() {
+    stopCSTimer();
+    document.getElementById('customer-service-modal').classList.add('hidden');
+}
+</script>
+
+<?php include '../../includes/footer.php'; ?>

@@ -1,10 +1,13 @@
 <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 /**
  * Update Guest API
  * Hotel PMS - Guest Management Module
  */
 
-require_once dirname(__DIR__, 2) . '/vps_session_fix.php';
+session_start();
 require_once dirname(__DIR__, 2) . '/includes/database.php';
 
 // Check if user is logged in
@@ -23,15 +26,21 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 try {
     // Get JSON input
-    $input = json_decode(file_get_contents('php://input'), true);
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
+    
+    // Debug logging
+    error_log("Update guest - Raw input: " . $rawInput);
+    error_log("Update guest - Decoded input: " . print_r($input, true));
     
     if (!$input) {
+        error_log("Update guest - JSON decode failed: " . json_last_error_msg());
         http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Invalid JSON input']);
+        echo json_encode(['success' => false, 'message' => 'Invalid JSON input', 'debug' => ['raw_input' => $rawInput, 'json_error' => json_last_error_msg()]]);
         exit();
     }
     
-    $guestId = $input['id'] ?? null;
+    $guestId = $input['guest_id'] ?? $input['id'] ?? null;
     
     if (!$guestId) {
         http_response_code(400);
@@ -40,7 +49,7 @@ try {
     }
     
     // Validate required fields
-    $requiredFields = ['first_name', 'last_name', 'email', 'phone'];
+    $requiredFields = ['first_name', 'last_name', 'phone', 'id_type', 'id_number'];
     foreach ($requiredFields as $field) {
         if (empty($input[$field])) {
             http_response_code(400);
@@ -49,15 +58,17 @@ try {
         }
     }
     
-    // Check if email already exists for another guest
-    $emailCheckSql = "SELECT id FROM guests WHERE email = ? AND id != ?";
-    $emailCheckStmt = $pdo->prepare($emailCheckSql);
-    $emailCheckStmt->execute([$input['email'], $guestId]);
-    
-    if ($emailCheckStmt->fetch()) {
-        http_response_code(400);
-        echo json_encode(['success' => false, 'message' => 'Email already exists for another guest']);
-        exit();
+    // Check if email already exists for another guest (only if email is provided)
+    if (!empty($input['email'])) {
+        $emailCheckSql = "SELECT id FROM guests WHERE email = ? AND id != ?";
+        $emailCheckStmt = $pdo->prepare($emailCheckSql);
+        $emailCheckStmt->execute([$input['email'], $guestId]);
+        
+        if ($emailCheckStmt->fetch()) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Email already exists for another guest']);
+            exit();
+        }
     }
     
     // Update guest
@@ -67,17 +78,14 @@ try {
             last_name = ?,
             email = ?,
             phone = ?,
-            is_vip = ?,
+            id_type = ?,
             id_number = ?,
+            is_vip = ?,
             address = ?,
-            city = ?,
-            state = ?,
-            country = ?,
-            postal_code = ?,
             date_of_birth = ?,
             nationality = ?,
             preferences = ?,
-            notes = ?,
+            service_notes = ?,
             updated_at = NOW()
         WHERE id = ?
     ";
@@ -86,19 +94,16 @@ try {
     $updateStmt->execute([
         $input['first_name'],
         $input['last_name'],
-        $input['email'],
+        $input['email'] ?? null,
         $input['phone'],
+        $input['id_type'],
+        $input['id_number'],
         isset($input['is_vip']) ? (int)$input['is_vip'] : 0,
-        $input['id_number'] ?? null,
         $input['address'] ?? null,
-        $input['city'] ?? null,
-        $input['state'] ?? null,
-        $input['country'] ?? null,
-        $input['postal_code'] ?? null,
         $input['date_of_birth'] ?? null,
         $input['nationality'] ?? null,
         $input['preferences'] ?? null,
-        $input['notes'] ?? null,
+        $input['service_notes'] ?? null,
         $guestId
     ]);
     

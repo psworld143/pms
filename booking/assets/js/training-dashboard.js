@@ -68,16 +68,6 @@ function renderScenarioQuestions(data) {
     </div>`;
 }
 
-async function submitScenario(id) {
-  const answers = {};
-  document.querySelectorAll('#scenario-content [name^="q_"]').forEach(inp => { if (inp.checked) answers[inp.name.replace('q_','')] = inp.value; });
-  try {
-    const res = await fetch('../../api/training/submit-scenario.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scenario_id:id, answers })});
-    const data = await res.json();
-    alert(data.success ? `Submitted. Score: ${data.score}` : (data.message || 'Failed'));
-  } catch(e) { alert('Network error'); }
-}
-
 async function loadCustomerService() {
   const type = document.getElementById('service-type-filter').value;
   const container = document.getElementById('customer-service-container');
@@ -119,15 +109,6 @@ async function openCustomerService(id) {
   } catch(e) { content.innerHTML = '<div class="p-6 text-red-600">Failed to load.</div>'; }
 }
 
-async function submitCustomerService(id) {
-  const response = document.getElementById('cs-response').value;
-  try {
-    const res = await fetch('../../api/training/submit-customer-service.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scenario_id:id, response })});
-    const data = await res.json();
-    alert(data.success ? `Submitted. Feedback: ${data.feedback || 'Recorded.'}` : (data.message || 'Failed'));
-  } catch(e) { alert('Network error'); }
-}
-
 async function loadProblems() {
   const sev = document.getElementById('problem-severity-filter').value;
   const container = document.getElementById('problems-container');
@@ -167,15 +148,6 @@ async function openProblem(id) {
         <button class="px-4 py-2 bg-primary text-white rounded" onclick="submitProblem(${id})">Submit Solution</button>
       </div>`;
   } catch(e) { content.innerHTML = '<div class="p-6 text-red-600">Failed to load.</div>'; }
-}
-
-async function submitProblem(id) {
-  const response = document.getElementById('problem-response').value;
-  try {
-    const res = await fetch('../../api/training/submit-problem.php', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ scenario_id:id, response })});
-    const data = await res.json();
-    alert(data.success ? `Submitted. Score: ${data.score}` : (data.message || 'Failed'));
-  } catch(e) { alert('Network error'); }
 }
 
 async function loadProgress() {
@@ -222,14 +194,15 @@ function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<
 document.addEventListener('change', (e)=>{
   if (e.target && e.target.id==='scenario-difficulty-filter' || e.target.id==='scenario-category-filter') loadScenarios();
   if (e.target && e.target.id==='service-type-filter') loadCustomerService();
-  if (e.target && e.target.id==='problem-severity-filter') loadProblemScenarios();
+  if (e.target && e.target.id==='problem-severity-filter') loadProblems();
 });
 // Training Dashboard JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     initializeTrainingDashboard();
+    // Load initial data
     loadScenarios();
     loadCustomerService();
-    loadProblemScenarios();
+    loadProblems();
     loadProgress();
 });
 
@@ -308,7 +281,7 @@ function initializeTrainingDashboard() {
         serviceTypeFilter.addEventListener('change', loadCustomerService);
     }
     if (problemSeverityFilter) {
-        problemSeverityFilter.addEventListener('change', loadProblemScenarios);
+        problemSeverityFilter.addEventListener('change', loadProblems);
     }
 }
 
@@ -340,7 +313,7 @@ function switchTrainingTab(tabName) {
     switch(tabName) {
         case 'scenarios': loadScenarios(); break;
         case 'customer-service': loadCustomerService(); break;
-        case 'problems': loadProblemScenarios(); break;
+        case 'problems': loadProblems(); break;
         case 'progress': loadProgress(); break;
     }
 }
@@ -459,7 +432,7 @@ function loadCustomerService() {
         });
 }
 
-function loadProblemScenarios() {
+function loadProblems() {
     const container = document.getElementById('problems-container');
     const severityFilterElement = document.getElementById('problem-severity-filter');
     
@@ -494,7 +467,7 @@ function loadProblemScenarios() {
         })
         .then(data => {
             if (data.success) {
-                displayProblemScenarios(data.scenarios);
+                displayProblems(data.scenarios);
             } else {
                 throw new Error(data.message || 'Failed to load problem scenarios');
             }
@@ -506,7 +479,7 @@ function loadProblemScenarios() {
                     <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
                     <h3 class="text-lg font-medium text-gray-900 mb-2">Error Loading Problem Scenarios</h3>
                     <p class="text-gray-500 mb-4">Unable to load problem scenarios. Please try again later.</p>
-                    <button onclick="loadProblemScenarios()" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
+                    <button onclick="loadProblems()" class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors">
                         <i class="fas fa-refresh mr-2"></i>Retry
                     </button>
                 </div>
@@ -657,7 +630,7 @@ function displayCustomerService(scenarios) {
     container.innerHTML = gridHtml;
 }
 
-function displayProblemScenarios(scenarios) {
+function displayProblems(scenarios) {
     const container = document.getElementById('problems-container');
     
     if (!scenarios || scenarios.length === 0) {
@@ -775,7 +748,7 @@ function displayProgress(progress) {
 
 // Scenario functions
 function startScenario(scenarioId) {
-    fetch(`../../api/get-scenario-details.php?id=${scenarioId}`, {
+    fetch(`../../api/training/get-scenario-details.php?id=${scenarioId}`, {
         credentials: 'same-origin'
     })
         .then(response => response.json())
@@ -793,34 +766,39 @@ function startScenario(scenarioId) {
 }
 
 function openScenarioModal(scenario) {
+    window.currentScenarioId = scenario.id;
     document.getElementById('scenario-title').textContent = scenario.title;
     document.getElementById('scenario-content').innerHTML = `
         <div class="space-y-6">
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 class="font-medium text-blue-900 mb-2">Scenario Description</h4>
-                <p class="text-blue-800">${scenario.description}</p>
+                <p class="text-blue-800">${scenario.description || 'No description available'}</p>
             </div>
             
             <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
                 <h4 class="font-medium text-gray-900 mb-2">Instructions</h4>
-                <p class="text-gray-700">${scenario.instructions}</p>
+                <p class="text-gray-700">${scenario.instructions || 'Complete the scenario by answering the questions below. Choose the best response for each situation.'}</p>
             </div>
             
             <div class="space-y-4">
-                ${scenario.questions.map((question, index) => `
+                ${scenario.questions && scenario.questions.length > 0 ? scenario.questions.map((question, index) => `
                     <div class="border border-gray-200 rounded-lg p-4">
                         <h5 class="font-medium text-gray-900 mb-2">Question ${index + 1}</h5>
                         <p class="text-gray-700 mb-3">${question.question}</p>
                         <div class="space-y-2">
-                            ${question.options.map(option => `
+                            ${question.options && question.options.length > 0 ? question.options.map(option => `
                                 <label class="flex items-center">
                                     <input type="radio" name="q${index}" value="${option.value}" class="mr-2">
                                     <span class="text-gray-700">${option.text}</span>
                                 </label>
-                            `).join('')}
+                            `).join('') : '<p class="text-gray-500 italic">No options available</p>'}
                         </div>
                     </div>
-                `).join('')}
+                `).join('') : `
+                    <div class="border border-gray-200 rounded-lg p-4 text-center">
+                        <p class="text-gray-500 italic">No questions available for this scenario. This is a practice scenario where you can learn from the description above.</p>
+                    </div>
+                `}
             </div>
         </div>
     `;
@@ -865,6 +843,9 @@ function pauseScenario() {
 }
 
 function submitScenario() {
+    // Get the current scenario ID from the modal or use a default
+    const scenarioId = window.currentScenarioId || 1;
+    
     // Collect answers
     const answers = {};
     const questions = document.querySelectorAll('[name^="q"]');
@@ -876,11 +857,14 @@ function submitScenario() {
     });
     
     // Submit answers
-    fetch('../../api/submit-scenario.php', {
+    fetch('../../api/training/submit-scenario.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify(answers)
+        body: JSON.stringify({
+            scenario_id: scenarioId,
+            answers: answers
+        })
     })
     .then(response => response.json())
     .then(data => {
@@ -901,13 +885,13 @@ function submitScenario() {
 
 // Customer service functions
 function startCustomerService(scenarioId) {
-    fetch(`../../api/get-customer-service-details.php?id=${scenarioId}`, {
+    fetch(`../../api/training/get-customer-service-details.php?id=${scenarioId}`, {
         credentials: 'same-origin'
     })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                openCustomerServiceModal(data.scenario);
+                openCustomerServiceModal(data.item);
             } else {
                 Utils.showNotification(data.message || 'Error loading customer service scenario', 'error');
             }
@@ -919,21 +903,27 @@ function startCustomerService(scenarioId) {
 }
 
 function openCustomerServiceModal(scenario) {
+    if (!scenario) {
+        console.error('Customer service scenario is undefined');
+        Utils.showNotification('Error: Scenario data is missing', 'error');
+        return;
+    }
+    
     window.currentCustomerServiceScenario = scenario.id;
-    document.getElementById('cs-title').textContent = scenario.title;
-    document.getElementById('cs-difficulty').textContent = getDifficultyLabel(scenario.difficulty);
-    document.getElementById('cs-points').textContent = scenario.points;
+    document.getElementById('cs-title').textContent = scenario.title || 'Customer Service Practice';
+    document.getElementById('cs-difficulty').textContent = getDifficultyLabel(scenario.difficulty || 'beginner');
+    document.getElementById('cs-points').textContent = scenario.points || 0;
     
     document.getElementById('customer-service-content').innerHTML = `
         <div class="space-y-6">
             <div class="bg-green-50 border border-green-200 rounded-lg p-4">
-                <h4 class="font-medium text-green-900 mb-2">Customer Situation</h4>
-                <p class="text-green-800">${scenario.situation}</p>
+                <h4 class="font-medium text-green-900 mb-2">Scenario Description</h4>
+                <p class="text-green-800">${scenario.description || 'No description available'}</p>
             </div>
             
             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 class="font-medium text-yellow-900 mb-2">Guest Request/Complaint</h4>
-                <p class="text-yellow-800">${scenario.guest_request}</p>
+                <h4 class="font-medium text-yellow-900 mb-2">Instructions</h4>
+                <p class="text-yellow-800">${scenario.instructions || 'Practice handling customer service situations professionally. Use the tips below to guide your response.'}</p>
             </div>
             
             <div class="space-y-4">
@@ -978,7 +968,7 @@ function submitCustomerService() {
         return;
     }
     
-    fetch('../../api/submit-customer-service.php', {
+    fetch('../../api/training/submit-customer-service.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
@@ -1006,13 +996,13 @@ function submitCustomerService() {
 
 // Problem scenario functions
 function startProblemScenario(scenarioId) {
-    fetch(`../../api/get-problem-details.php?id=${scenarioId}`, {
+    fetch(`../../api/training/get-problem-details.php?id=${scenarioId}`, {
         credentials: 'same-origin'
     })
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                openProblemModal(data.scenario);
+                openProblemModal(data.item);
             } else {
                 Utils.showNotification(data.message || 'Error loading problem scenario', 'error');
             }
@@ -1024,19 +1014,26 @@ function startProblemScenario(scenarioId) {
 }
 
 function openProblemModal(scenario) {
-    document.getElementById('problem-title').textContent = scenario.title;
-    document.getElementById('problem-severity').textContent = getSeverityLabel(scenario.severity);
+    if (!scenario) {
+        console.error('Problem scenario is undefined');
+        Utils.showNotification('Error: Scenario data is missing', 'error');
+        return;
+    }
+    
+    window.currentProblemScenario = scenario.id;
+    document.getElementById('problem-title').textContent = scenario.title || 'Problem Scenario';
+    document.getElementById('problem-severity').textContent = getSeverityLabel(scenario.severity || 'medium');
     
     document.getElementById('problem-content').innerHTML = `
         <div class="space-y-6">
             <div class="bg-red-50 border border-red-200 rounded-lg p-4">
                 <h4 class="font-medium text-red-900 mb-2">Problem Description</h4>
-                <p class="text-red-800">${scenario.description}</p>
+                <p class="text-red-800">${scenario.description || 'No description available'}</p>
             </div>
             
             <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                <h4 class="font-medium text-yellow-900 mb-2">Available Resources</h4>
-                <p class="text-yellow-800">${scenario.resources}</p>
+                <h4 class="font-medium text-yellow-900 mb-2">Instructions</h4>
+                <p class="text-yellow-800">${scenario.instructions || 'Analyze the problem and provide a comprehensive solution. Consider the impact, urgency, and available options before proposing your approach.'}</p>
             </div>
             
             <div class="space-y-4">
@@ -1099,24 +1096,28 @@ function requestHint() {
 
 function submitProblem() {
     const solution = document.getElementById('problem-solution').value;
+    const scenarioId = window.currentProblemScenario || 1;
     
     if (!solution.trim()) {
         Utils.showNotification('Please provide a solution', 'warning');
         return;
     }
     
-    fetch('../../api/submit-problem.php', {
+    fetch('../../api/training/submit-problem.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ solution: solution })
+        body: JSON.stringify({ 
+            scenario_id: scenarioId,
+            solution: solution 
+        })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
             Utils.showNotification(`Solution submitted! Score: ${data.score}%`, 'success');
             closeProblemModal();
-            loadProblemScenarios();
+            loadProblems();
             loadProgress();
         } else {
             Utils.showNotification(data.message || 'Error submitting solution', 'error');

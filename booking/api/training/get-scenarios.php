@@ -37,7 +37,7 @@ try {
             COALESCE(AVG(ta.score), 0) as avg_score,
             COUNT(ta.id) as attempt_count
         FROM training_scenarios ts
-        LEFT JOIN training_attempts ta ON ts.id = ta.scenario_id AND ta.scenario_type = 'scenario'
+        LEFT JOIN training_attempts ta ON ts.id = ta.scenario_id AND ta.scenario_type = 'training'
         WHERE {$where_clause}
         GROUP BY ts.id
         ORDER BY ts.difficulty, ts.title

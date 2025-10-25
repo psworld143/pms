@@ -31,16 +31,16 @@ try {
         SELECT 
             ta.*,
             CASE 
-                WHEN ta.scenario_type = 'scenario' THEN ts.title
+                WHEN ta.scenario_type = 'training' THEN ts.title
                 WHEN ta.scenario_type = 'customer_service' THEN css.title
-                WHEN ta.scenario_type = 'problem_solving' THEN ps.title
+                WHEN ta.scenario_type = 'problem' THEN ps.title
                 ELSE 'Unknown Scenario'
             END as scenario_title,
             ta.scenario_type
         FROM training_attempts ta
-        LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'scenario'
+        LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'training'
         LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.id AND ta.scenario_type = 'customer_service'
-        LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem_solving'
+        LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem'
         WHERE ta.user_id = ? AND ta.status = 'completed'
         ORDER BY ta.completed_at DESC
         LIMIT 10
@@ -53,16 +53,16 @@ try {
         SELECT 
             tc.*,
             CASE 
-                WHEN tc.scenario_type = 'scenario' THEN ts.title
+                WHEN tc.scenario_type = 'training' THEN ts.title
                 WHEN tc.scenario_type = 'customer_service' THEN css.title
-                WHEN tc.scenario_type = 'problem_solving' THEN ps.title
+                WHEN tc.scenario_type = 'problem' THEN ps.title
                 ELSE 'Unknown Scenario'
             END as scenario_title
         FROM training_certificates tc
         LEFT JOIN training_attempts ta ON tc.attempt_id = ta.id
-        LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'scenario'
+        LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'training'
         LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.id AND ta.scenario_type = 'customer_service'
-        LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem_solving'
+        LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem'
         WHERE tc.user_id = ?
         ORDER BY tc.issued_date DESC
         LIMIT 5

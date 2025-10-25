@@ -167,19 +167,19 @@ function getAnalyticsKpis(int $windowDays = 30): array
         ");
         $avgOccupancyData = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        // Guest Satisfaction (from feedback)
+        // Guest Satisfaction (from guest_feedback)
         $stmt = $pdo->query("
             SELECT 
                 AVG(rating) as avg_rating,
                 COUNT(*) as total_feedback
-            FROM feedback 
+            FROM guest_feedback 
             WHERE created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
         ");
         $satisfactionData = $stmt->fetch(PDO::FETCH_ASSOC);
         
         // Average Room Rate (ADR)
         $stmt = $pdo->query("
-            SELECT AVG(total_amount / GREATEST(DATEDIFF(check_out_date, check_in_date), 1)) as adr
+            SELECT AVG(b.total_amount / GREATEST(DATEDIFF(r.check_out_date, r.check_in_date), 1)) as adr
             FROM reservations r
             JOIN bills b ON r.id = b.reservation_id
             WHERE b.status = 'paid'
@@ -358,8 +358,8 @@ function getGuestSentimentMetrics(int $days = 90): array
                 COUNT(*) AS total,
                 SUM(CASE WHEN feedback_type = 'complaint' THEN 1 ELSE 0 END) AS complaints,
                 SUM(CASE WHEN feedback_type = 'compliment' OR rating >= 4 THEN 1 ELSE 0 END) AS positive,
-                SUM(CASE WHEN is_resolved = 1 THEN 1 ELSE 0 END) AS resolved,
-                AVG(CASE WHEN is_resolved = 1 THEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) END) AS avg_response_minutes,
+                SUM(CASE WHEN status = 'resolved' THEN 1 ELSE 0 END) AS resolved,
+                AVG(CASE WHEN status = 'resolved' THEN TIMESTAMPDIFF(MINUTE, created_at, updated_at) END) AS avg_response_minutes,
                 AVG(rating) AS avg_rating
             FROM guest_feedback
             WHERE created_at >= :startDate
@@ -1159,14 +1159,15 @@ function getDiscountMetrics() {
     ];
 
     try {
-        $row = $pdo->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(discount_amount),0) AS total FROM discounts")->fetch();
+        // Get metrics from discount_templates table
+        $row = $pdo->query("SELECT COUNT(*) AS cnt, COALESCE(SUM(discount_value),0) AS total FROM discount_templates")->fetch();
         $metrics['total_discounts'] = (int)$row['cnt'];
         $metrics['total_amount'] = (float)$row['total'];
         if ($metrics['total_discounts'] > 0) {
             $metrics['average_amount'] = $metrics['total_amount'] / $metrics['total_discounts'];
         }
 
-        $stmt = $pdo->query("SELECT discount_type, COUNT(*) AS cnt FROM discounts GROUP BY discount_type");
+        $stmt = $pdo->query("SELECT discount_type, COUNT(*) AS cnt FROM discount_templates GROUP BY discount_type");
         while ($row = $stmt->fetch()) {
             $metrics['type_counts'][$row['discount_type']] = (int)$row['cnt'];
         }
@@ -1354,6 +1355,125 @@ function formatCurrency($amount) {
  */
 function formatDate($date, $format = 'Y-m-d H:i:s') {
     return date($format, strtotime($date));
+}
+
+function getBillStatusClass($status) {
+    switch(strtolower($status)) {
+        case 'paid':
+            return 'bg-green-100 text-green-800';
+        case 'pending':
+            return 'bg-yellow-100 text-yellow-800';
+        case 'overdue':
+            return 'bg-red-100 text-red-800';
+        case 'draft':
+            return 'bg-gray-100 text-gray-800';
+        default:
+            return 'bg-gray-100 text-gray-800';
+    }
+}
+
+function createDiscount(array $data) {
+    global $pdo;
+
+    $required_fields = ['discount_name', 'discount_type', 'discount_value'];
+    foreach ($required_fields as $field) {
+        if (empty($data[$field])) {
+            return [
+                'success' => false,
+                'message' => 'Missing required field: ' . $field
+            ];
+        }
+    }
+
+    $discount_name = trim($data['discount_name']);
+    $discount_type = $data['discount_type'];
+    $discount_value = (float)$data['discount_value'];
+    $description = $data['description'] ?? '';
+    $minimum_stay = isset($data['minimum_stay']) ? (int)$data['minimum_stay'] : null;
+    $valid_from = $data['valid_from'] ?? date('Y-m-d');
+    $valid_until = $data['valid_until'] ?? date('Y-m-d', strtotime('+1 month'));
+    $is_active = isset($data['is_active']) ? 1 : 0;
+    $created_by = $_SESSION['user_id'] ?? null;
+
+    // Validate discount value
+    if ($discount_value <= 0) {
+        return [
+            'success' => false,
+            'message' => 'Discount value must be greater than 0'
+        ];
+    }
+
+    // Validate percentage discount
+    if ($discount_type === 'percentage' && $discount_value > 100) {
+        return [
+            'success' => false,
+            'message' => 'Percentage discount cannot exceed 100%'
+        ];
+    }
+
+    try {
+        $pdo->beginTransaction();
+
+        // Get room selection data
+        $room_id = isset($data['room_id']) && !empty($data['room_id']) ? (int)$data['room_id'] : null;
+        $room_type = isset($data['room_type']) && !empty($data['room_type']) ? $data['room_type'] : null;
+        $apply_to_all_rooms = isset($data['apply_to_all_rooms']) ? (int)$data['apply_to_all_rooms'] : 1;
+        $guest_categories = isset($data['guest_categories']) ? json_encode($data['guest_categories']) : null;
+
+        // Insert discount template with room information
+        $stmt = $pdo->prepare("INSERT INTO discount_templates (
+                discount_name, discount_type, discount_value, description,
+                minimum_stay, valid_from, valid_until, is_active, created_by,
+                room_id, room_type, apply_to_all_rooms, guest_categories
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)");
+        
+        $result = $stmt->execute([
+            $discount_name,
+            $discount_type,
+            $discount_value,
+            $description,
+            $minimum_stay,
+            $valid_from,
+            $valid_until,
+            $is_active,
+            $created_by,
+            $room_id,
+            $room_type,
+            $apply_to_all_rooms,
+            $guest_categories
+        ]);
+
+        if ($result) {
+            $discount_id = (int)$pdo->lastInsertId();
+
+            // Log activity
+            $activity_description = "Created discount template: {$discount_name} ({$discount_type})";
+            $stmt = $pdo->prepare("INSERT INTO activity_logs (user_id, action, details, created_at) VALUES (?, 'create_discount', ?, NOW())");
+            $stmt->execute([$created_by, $activity_description]);
+
+            $pdo->commit();
+
+            return [
+                'success' => true,
+                'message' => 'Discount template created successfully',
+                'discount_id' => $discount_id
+            ];
+        } else {
+            $pdo->rollBack();
+            return [
+                'success' => false,
+                'message' => 'Failed to execute insert statement'
+            ];
+        }
+
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log("createDiscount error: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Database error: ' . $e->getMessage()
+        ];
+    }
 }
 
 /**
@@ -1598,8 +1718,8 @@ function createReservation($data) {
     try {
         $pdo->beginTransaction();
         
-        // Create or find guest
-        $guest_id = createOrFindGuest($data);
+        // Use existing guest ID
+        $guest_id = $data['guest_id'];
         
         // Find available room
         $room_id = findAvailableRoom($data['room_type'], $data['check_in_date'], $data['check_out_date']);
@@ -1864,14 +1984,20 @@ function getCheckedInGuests($limit = 50) {
         $stmt = $pdo->prepare("
             SELECT 
                 r.*,
-                CONCAT(g.first_name, ' ', g.last_name) as guest_name,
-                g.email,
-                g.phone,
-                g.is_vip,
-                rm.room_number,
-                rm.room_type,
-                rm.rate,
-                DATEDIFF(r.check_out_date, CURDATE()) as days_remaining
+                COALESCE(CONCAT(g.first_name, ' ', g.last_name), 'Unknown Guest') as guest_name,
+                COALESCE(g.email, '') as email,
+                COALESCE(g.phone, '') as phone,
+                COALESCE(g.is_vip, 0) as is_vip,
+                COALESCE(rm.room_number, 'N/A') as room_number,
+                COALESCE(rm.room_type, 'Unknown') as room_type,
+                COALESCE(rm.rate, 0) as rate,
+                DATEDIFF(r.check_out_date, CURDATE()) as days_remaining,
+                CASE 
+                    WHEN DATEDIFF(r.check_out_date, CURDATE()) < 0 THEN 'overdue'
+                    WHEN DATEDIFF(r.check_out_date, CURDATE()) = 0 THEN 'due_today'
+                    WHEN g.is_vip = 1 THEN 'vip'
+                    ELSE 'normal'
+                END as checkout_status
             FROM reservations r
             LEFT JOIN guests g ON r.guest_id = g.id
             LEFT JOIN rooms rm ON r.room_id = rm.id
@@ -2276,6 +2402,8 @@ function getAllReservations($filters = []) {
         
         $stmt = $pdo->prepare("
             SELECT r.*, g.first_name, g.last_name, g.email, g.phone, g.is_vip,
+                   CONCAT(g.first_name, ' ', g.last_name) as guest_name,
+                   CONCAT('RES-', LPAD(r.id, 6, '0')) as reservation_number,
                    rm.room_number, rm.room_type
             FROM reservations r
             JOIN guests g ON r.guest_id = g.id
@@ -3215,12 +3343,16 @@ function getBills($status_filter = '', $date_filter = '', $limit = null) {
             SELECT b.*, 
                    CONCAT(g.first_name, ' ', g.last_name) as guest_name,
                    r.room_number,
-                   COALESCE(d.discount_amount, 0) as discount_amount
+                   COALESCE(d.discount_amount, 0) as discount_amount,
+                   p.payment_method,
+                   p.payment_date,
+                   p.amount as payment_amount
             FROM bills b
             JOIN reservations res ON b.reservation_id = res.id
             JOIN guests g ON res.guest_id = g.id
             JOIN rooms r ON res.room_id = r.id
             LEFT JOIN discounts d ON b.id = d.bill_id
+            LEFT JOIN payments p ON b.id = p.bill_id
             WHERE {$where_clause}
             ORDER BY b.bill_date DESC
         ";
@@ -3265,15 +3397,15 @@ function getPayments($method_filter = '', $date_filter = '', $limit = null) {
         
         $query = "
             SELECT p.*, 
-                   CONCAT(g.first_name, ' ', g.last_name) as guest_name,
-                   r.room_number,
+                   COALESCE(CONCAT(g.first_name, ' ', g.last_name), 'Unknown Guest') as guest_name,
+                   COALESCE(r.room_number, 'N/A') as room_number,
                    b.bill_number,
                    b.status as bill_status
             FROM payments p
             JOIN bills b ON p.bill_id = b.id
-            JOIN reservations res ON b.reservation_id = res.id
-            JOIN guests g ON res.guest_id = g.id
-            JOIN rooms r ON res.room_id = r.id
+            LEFT JOIN reservations res ON b.reservation_id = res.id
+            LEFT JOIN guests g ON res.guest_id = g.id
+            LEFT JOIN rooms r ON res.room_id = r.id
             WHERE {$where_clause}
             ORDER BY p.payment_date DESC
         ";
@@ -3305,24 +3437,32 @@ function getDiscounts($type_filter = '', $limit = null) {
         $params = [];
         
         if (!empty($type_filter)) {
-            $where_conditions[] = "d.discount_type = ?";
+            $where_conditions[] = "dt.discount_type = ?";
             $params[] = $type_filter;
         }
         
         $where_clause = implode(" AND ", $where_conditions);
         
         $query = "
-            SELECT d.*, 
-                   CONCAT(g.first_name, ' ', g.last_name) as guest_name,
-                   r.room_number,
-                   b.bill_number
-            FROM discounts d
-            JOIN bills b ON d.bill_id = b.id
-            JOIN reservations res ON b.reservation_id = res.id
-            JOIN guests g ON res.guest_id = g.id
-            JOIN rooms r ON res.room_id = r.id
+            SELECT dt.*, 
+                   CASE 
+                       WHEN dt.apply_to_all_rooms = 1 THEN 'All Rooms'
+                       WHEN dt.room_id IS NOT NULL THEN CONCAT('Room ', COALESCE(r.room_number, 'N/A'))
+                       WHEN dt.room_type IS NOT NULL THEN CONCAT('All ', dt.room_type, ' Rooms')
+                       ELSE 'All Rooms'
+                   END as guest_name,
+                   CASE 
+                       WHEN dt.apply_to_all_rooms = 1 THEN 'All Rooms'
+                       WHEN dt.room_id IS NOT NULL THEN COALESCE(r.room_number, 'N/A')
+                       WHEN dt.room_type IS NOT NULL THEN CONCAT('All ', dt.room_type)
+                       ELSE 'All Rooms'
+                   END as room_number,
+                   'Template' as bill_number,
+                   1 as is_template
+            FROM discount_templates dt
+            LEFT JOIN rooms r ON dt.room_id = r.id
             WHERE {$where_clause}
-            ORDER BY d.created_at DESC
+            ORDER BY dt.created_at DESC
         ";
         
         if ($limit !== null) {
@@ -3394,7 +3534,7 @@ function getLoyalty($tier_filter = '') {
     global $pdo;
     
     try {
-        $where_conditions = ["1=1"];
+        $where_conditions = ["g.loyalty_tier IS NOT NULL AND g.loyalty_tier != ''"];
         $params = [];
         
         if (!empty($tier_filter)) {
@@ -3409,29 +3549,20 @@ function getLoyalty($tier_filter = '') {
                    CONCAT(g.first_name, ' ', g.last_name) as guest_name,
                    g.email,
                    g.loyalty_tier as tier,
-                   COALESCE(lp.total_points, 0) as points,
-                   COALESCE(sp.total_spent, 0) as total_spent,
-                   COALESCE(la.last_activity, g.created_at) as last_activity
+                   COALESCE(lp.points, 0) as points,
+                   COALESCE(lp.stays_count, 0) as total_spent,
+                   COALESCE(lp.last_activity, g.created_at) as last_activity
             FROM guests g
             LEFT JOIN (
-                SELECT guest_id, SUM(CASE WHEN action = 'earn' THEN points ELSE -points END) as total_points
+                SELECT guest_id, 
+                       SUM(CASE WHEN action = 'earn' THEN points ELSE -points END) AS points,
+                       COUNT(CASE WHEN action = 'earn' AND reason = 'Stay bonus' THEN 1 END) AS stays_count,
+                       MAX(created_at) AS last_activity
                 FROM loyalty_points 
                 GROUP BY guest_id
-            ) lp ON g.id = lp.guest_id
-            LEFT JOIN (
-                SELECT res.guest_id, SUM(b.total_amount) as total_spent
-                FROM bills b
-                JOIN reservations res ON b.reservation_id = res.id
-                WHERE b.status = 'paid'
-                GROUP BY res.guest_id
-            ) sp ON g.id = sp.guest_id
-            LEFT JOIN (
-                SELECT guest_id, MAX(created_at) as last_activity
-                FROM loyalty_points
-                GROUP BY guest_id
-            ) la ON g.id = la.guest_id
+            ) lp ON lp.guest_id = g.id
             WHERE {$where_clause}
-            ORDER BY lp.total_points DESC
+            ORDER BY lp.points DESC
         ";
         
         $stmt = $pdo->prepare($query);
@@ -3442,6 +3573,128 @@ function getLoyalty($tier_filter = '') {
     } catch (PDOException $e) {
         error_log("Error getting loyalty data: " . $e->getMessage());
         return [];
+    }
+}
+
+/**
+ * Add guest to loyalty program
+ */
+function addLoyaltyMember($guest_id, $tier = 'bronze') {
+    global $pdo;
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Update guest loyalty tier
+        $stmt = $pdo->prepare("UPDATE guests SET loyalty_tier = ?, loyalty_join_date = NOW() WHERE id = ?");
+        $stmt->execute([$tier, $guest_id]);
+        
+        // Create loyalty points record
+        $stmt = $pdo->prepare("INSERT INTO loyalty_points (guest_id, action, points, reason, description, processed_by) VALUES (?, 'earn', 0, 'Initial enrollment', 'Joined loyalty program', ?)");
+        $stmt->execute([$guest_id, $_SESSION['user_id']]);
+        
+        $pdo->commit();
+        
+        return [
+            'success' => true,
+            'message' => 'Guest added to loyalty program successfully'
+        ];
+        
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("Error adding loyalty member: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Database error occurred'
+        ];
+    }
+}
+
+/**
+ * Redeem loyalty points for reward
+ */
+function redeemLoyaltyPoints($guest_id, $reward_id, $points_used) {
+    global $pdo;
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Check if guest has enough points
+        $stmt = $pdo->prepare("SELECT SUM(CASE WHEN action = 'earn' THEN points ELSE -points END) AS points FROM loyalty_points WHERE guest_id = ?");
+        $stmt->execute([$guest_id]);
+        $current_points = $stmt->fetch()['points'] ?? 0;
+        
+        if ($current_points < $points_used) {
+            throw new Exception('Insufficient points');
+        }
+        
+        // Create redemption record
+        $stmt = $pdo->prepare("INSERT INTO loyalty_redemptions (guest_id, reward_id, points_used, status) VALUES (?, ?, ?, 'pending')");
+        $stmt->execute([$guest_id, $reward_id, $points_used]);
+        
+        // Update loyalty points
+        $stmt = $pdo->prepare("INSERT INTO loyalty_points (guest_id, action, points, reason, description, processed_by) VALUES (?, 'redeem', ?, 'Reward redemption', 'Points redeemed for reward', ?)");
+        $stmt->execute([$guest_id, $points_used, $_SESSION['user_id']]);
+        
+        $pdo->commit();
+        
+        return [
+            'success' => true,
+            'message' => 'Points redeemed successfully'
+        ];
+        
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        error_log("Error redeeming loyalty points: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => $e->getMessage()
+        ];
+    }
+}
+
+/**
+ * Get loyalty rewards
+ */
+function getLoyaltyRewards() {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->query("SELECT * FROM loyalty_rewards WHERE is_active = 1 ORDER BY points_required ASC");
+        return $stmt->fetchAll();
+    } catch (PDOException $e) {
+        error_log("Error getting loyalty rewards: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Award points to guest
+ */
+function awardLoyaltyPoints($guest_id, $points, $description = '', $reservation_id = null) {
+    global $pdo;
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Update loyalty points
+        $stmt = $pdo->prepare("INSERT INTO loyalty_points (guest_id, action, points, reason, description, processed_by) VALUES (?, 'earn', ?, ?, ?, ?)");
+        $stmt->execute([$guest_id, $points, 'Points awarded', $description, $_SESSION['user_id']]);
+        
+        $pdo->commit();
+        
+        return [
+            'success' => true,
+            'message' => 'Points awarded successfully'
+        ];
+        
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("Error awarding loyalty points: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Database error occurred'
+        ];
     }
 }
 
@@ -3473,11 +3726,17 @@ function getVipDashboardStats() {
               AND MONTH(b.created_at) = MONTH(CURDATE())");
         $monthly_revenue = (float)$revenue_stmt->fetch()['total'];
 
+        // Average rating from VIP guest feedback
+        $rating_stmt = $pdo->query("SELECT AVG(gf.rating) AS avg_rating
+            FROM guest_feedback gf
+            JOIN guests g ON gf.guest_id = g.id
+            WHERE g.is_vip = 1 AND gf.rating IS NOT NULL");
+        $average_rating = $rating_stmt->fetch()['avg_rating'];
+
         return [
             'total_vip' => $total_vip,
             'currently_staying' => $currently_staying,
-            // Average rating may not exist in schema; expose null for now
-            'average_rating' => null,
+            'average_rating' => $average_rating ? round($average_rating, 1) : null,
             'monthly_revenue' => $monthly_revenue
         ];
     } catch (PDOException $e) {
@@ -3522,9 +3781,11 @@ function getVipGuests() {
                 g.loyalty_tier,
                 COALESCE(r.status, 'not_staying') AS stay_status,
                 rm.room_number,
-                rm.room_type
+                rm.room_type,
+                r.special_requests,
+                r.id as reservation_id
             FROM guests g
-            LEFT JOIN reservations r ON r.guest_id = g.id AND r.status IN ('checked_in')
+            LEFT JOIN reservations r ON r.guest_id = g.id AND r.status IN ('checked_in', 'confirmed')
             LEFT JOIN rooms rm ON r.room_id = rm.id
             WHERE g.is_vip = 1
             ORDER BY g.first_name, g.last_name");
@@ -3543,15 +3804,15 @@ function getLoyaltyDashboardStats() {
     
     try {
         // Total members with any tier
-        $members_stmt = $pdo->query("SELECT COUNT(*) AS total FROM guests WHERE loyalty_tier IS NOT NULL");
+        $members_stmt = $pdo->query("SELECT COUNT(*) AS total FROM guests WHERE loyalty_tier IS NOT NULL AND loyalty_tier != ''");
         $total_members = (int)$members_stmt->fetch()['total'];
 
-        // Total points issued (earn)
+        // Total points issued (from loyalty_points table)
         $points_stmt = $pdo->query("SELECT COALESCE(SUM(points),0) AS total FROM loyalty_points WHERE action = 'earn'");
         $points_issued = (int)$points_stmt->fetch()['total'];
 
-        // Rewards redeemed (redeem actions count)
-        $redeemed_stmt = $pdo->query("SELECT COUNT(*) AS total FROM loyalty_points WHERE action = 'redeem'");
+        // Rewards redeemed (from loyalty_redemptions table)
+        $redeemed_stmt = $pdo->query("SELECT COUNT(*) AS total FROM loyalty_redemptions WHERE status IN ('approved', 'fulfilled')");
         $rewards_redeemed = (int)$redeemed_stmt->fetch()['total'];
 
         // Retention rate: percentage of members with 2+ stays
@@ -3559,11 +3820,11 @@ function getLoyaltyDashboardStats() {
                 (SELECT COUNT(*) FROM (
                     SELECT res.guest_id
                     FROM reservations res
-                    JOIN guests g ON g.id = res.guest_id AND g.loyalty_tier IS NOT NULL
+                    JOIN guests g ON g.id = res.guest_id AND g.loyalty_tier IS NOT NULL AND g.loyalty_tier != ''
                     GROUP BY res.guest_id
                     HAVING COUNT(res.id) >= 2
                 ) t) AS retained,
-                (SELECT COUNT(*) FROM guests WHERE loyalty_tier IS NOT NULL) AS total");
+                (SELECT COUNT(*) FROM guests WHERE loyalty_tier IS NOT NULL AND loyalty_tier != '') AS total");
         $row = $retained_stmt->fetch();
         $retention_rate = ($row['total'] > 0) ? round(($row['retained'] / $row['total']) * 100, 0) : 0;
 
@@ -3591,7 +3852,7 @@ function getLoyaltyTiersSummary() {
     global $pdo;
     
     try {
-        $stmt = $pdo->query("SELECT loyalty_tier, COUNT(*) AS members FROM guests WHERE loyalty_tier IS NOT NULL GROUP BY loyalty_tier");
+        $stmt = $pdo->query("SELECT loyalty_tier, COUNT(*) AS members FROM guests WHERE loyalty_tier IS NOT NULL AND loyalty_tier != '' GROUP BY loyalty_tier");
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log('Error getting loyalty tiers summary: ' . $e->getMessage());
@@ -3610,21 +3871,20 @@ function getTopLoyaltyMembers($limit = 3) {
                 g.id,
                 CONCAT(g.first_name, ' ', g.last_name) AS name,
                 g.loyalty_tier,
-                COALESCE(lp.total_points, 0) AS points,
-                COALESCE(st.stays, 0) AS stays
+                COALESCE(lp.points, 0) AS points,
+                COALESCE(lp.stays_count, 0) AS stays
             FROM guests g
             LEFT JOIN (
-                SELECT guest_id, SUM(CASE WHEN action = 'earn' THEN points ELSE -points END) AS total_points
-                FROM loyalty_points
+                SELECT guest_id, 
+                       SUM(CASE WHEN action = 'earn' THEN points ELSE -points END) AS points,
+                       COUNT(CASE WHEN action = 'earn' AND reason = 'Stay bonus' THEN 1 END) AS stays_count
+                FROM loyalty_points 
                 GROUP BY guest_id
             ) lp ON lp.guest_id = g.id
-            LEFT JOIN (
-                SELECT guest_id, COUNT(*) AS stays FROM reservations GROUP BY guest_id
-            ) st ON st.guest_id = g.id
-            WHERE g.loyalty_tier IS NOT NULL
-            ORDER BY points DESC
-            LIMIT ?");
-        $stmt->execute([$limit]);
+            WHERE g.loyalty_tier IS NOT NULL AND g.loyalty_tier != ''
+            ORDER BY lp.points DESC
+            LIMIT " . (int)$limit);
+        $stmt->execute();
         return $stmt->fetchAll();
     } catch (PDOException $e) {
         error_log('Error getting top loyalty members: ' . $e->getMessage());
@@ -3668,7 +3928,7 @@ function getAllGuests() {
     
     try {
         $query = "
-            SELECT id, first_name, last_name, email
+            SELECT id, first_name, last_name, email, phone, is_vip
             FROM guests
             ORDER BY first_name, last_name
         ";
@@ -4329,7 +4589,7 @@ function getGuestStatistics() {
         // Pending feedback from guest_feedback table (unresolved)
         $pending_feedback = 0;
         try {
-            $stmt = $pdo->query('SELECT COUNT(*) AS total FROM guest_feedback WHERE is_resolved = 0');
+            $stmt = $pdo->query('SELECT COUNT(*) AS total FROM guest_feedback WHERE status != "resolved"');
             $pending_feedback = (int)($stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0);
         } catch (PDOException $inner) {
             // guest_feedback table might not exist in some training datasets
@@ -4596,9 +4856,8 @@ function getGuestDetails($guest_id) {
                 gf.category,
                 gf.rating,
                 gf.comments,
-                CASE WHEN gf.is_resolved = 1 THEN 'resolved' ELSE 'pending' END AS status,
+                'pending' AS status,
                 gf.created_at,
-                gf.is_resolved,
                 r.reservation_number
             FROM guest_feedback gf
             LEFT JOIN reservations r ON gf.reservation_id = r.id
@@ -4704,6 +4963,72 @@ function get_school_abbreviation($conn) {
     return 'HMS';
 }
 
+/**
+ * Get billing details for a reservation
+ */
+function getBillingDetails($reservation_id) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT b.*, p.payment_method, p.payment_date, p.amount as payment_amount
+            FROM bills b
+            LEFT JOIN payments p ON b.id = p.bill_id
+            WHERE b.reservation_id = ?
+            ORDER BY b.created_at DESC
+        ");
+        $stmt->execute([$reservation_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error getting billing details: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get check-in details for a reservation
+ */
+function getCheckInDetails($reservation_id) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT ci.*, u.name as checked_in_by_name
+            FROM check_ins ci
+            LEFT JOIN users u ON ci.checked_in_by = u.id
+            WHERE ci.reservation_id = ?
+            ORDER BY ci.check_in_time DESC
+        ");
+        $stmt->execute([$reservation_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error getting check-in details: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get additional services for a reservation
+ */
+function getAdditionalServicesForReservation($reservation_id) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT rs.*, s.name as service_name, s.price as service_price
+            FROM reservation_services rs
+            LEFT JOIN services s ON rs.service_id = s.id
+            WHERE rs.reservation_id = ?
+            ORDER BY rs.created_at DESC
+        ");
+        $stmt->execute([$reservation_id]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        error_log("Error getting additional services: " . $e->getMessage());
+        return [];
+    }
+}
+
 
 
 /**
@@ -4746,5 +5071,430 @@ function generateTrainingCertificate($user_id, $attempt_id, $scenario_type) {
     } catch (PDOException $e) {
         error_log("Error generating training certificate: " . $e->getMessage());
         return false;
+    }
+}
+
+/**
+ * Create a new service request
+ */
+function createServiceRequest($data) {
+    global $pdo;
+    
+    try {
+        // Map request_type to valid issue_type ENUM values
+        $issue_type_mapping = [
+            'maintenance' => 'other',
+            'housekeeping' => 'other', 
+            'concierge' => 'other',
+            'technical' => 'electrical'
+        ];
+        
+        $issue_type = $issue_type_mapping[$data['request_type']] ?? 'other';
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO maintenance_requests (
+                room_id, 
+                issue_type, 
+                priority, 
+                description, 
+                status, 
+                reported_by, 
+                created_at
+            ) VALUES (?, ?, ?, ?, 'reported', ?, NOW())
+        ");
+        
+        $stmt->execute([
+            $data['room_id'],
+            $issue_type,
+            $data['priority'],
+            $data['description'],
+            $_SESSION['user_id']
+        ]);
+        
+        $request_id = $pdo->lastInsertId();
+        
+        // Log the activity
+        logActivity($_SESSION['user_id'], 'service_request_created', "Created service request #{$request_id} for room {$data['room_id']}");
+        
+        return [
+            'success' => true,
+            'message' => 'Service request created successfully',
+            'request_id' => $request_id
+        ];
+        
+    } catch (PDOException $e) {
+        error_log("Error creating service request: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Database error occurred'
+        ];
+    }
+}
+
+// ========================================
+// ADDITIONAL TRAINING FUNCTIONS
+// ========================================
+
+/**
+ * Get user training progress
+ */
+function getUserTrainingProgress($user_id) {
+    global $pdo;
+    
+    try {
+        // Overall statistics
+        $stmt = $pdo->prepare("
+            SELECT 
+                COUNT(*) as total_attempts,
+                COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_attempts,
+                AVG(CASE WHEN status = 'completed' THEN score END) as avg_score,
+                SUM(CASE WHEN status = 'completed' THEN duration_minutes ELSE 0 END) as total_minutes
+            FROM training_attempts 
+            WHERE user_id = ?
+        ");
+        $stmt->execute([$user_id]);
+        $stats = $stmt->fetch();
+        
+        // Recent activity
+        $stmt = $pdo->prepare("
+            SELECT 
+                ta.*,
+                CASE 
+                    WHEN ta.scenario_type = 'training' THEN ts.title
+                    WHEN ta.scenario_type = 'customer_service' THEN css.title
+                    WHEN ta.scenario_type = 'problem' THEN ps.title
+                    ELSE 'Unknown Scenario'
+                END as scenario_title,
+                ta.scenario_type
+            FROM training_attempts ta
+            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'training'
+            LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.id AND ta.scenario_type = 'customer_service'
+            LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem'
+            WHERE ta.user_id = ?
+            ORDER BY ta.created_at DESC
+            LIMIT 10
+        ");
+        $stmt->execute([$user_id]);
+        $recent_activity = $stmt->fetchAll();
+        
+        // Certificates
+        $stmt = $pdo->prepare("
+            SELECT tc.*,
+                   CASE 
+                       WHEN ta.scenario_type = 'training' THEN ts.title
+                       WHEN ta.scenario_type = 'customer_service' THEN css.title
+                       WHEN ta.scenario_type = 'problem' THEN ps.title
+                       ELSE 'Unknown Scenario'
+                   END as scenario_title
+            FROM training_certificates tc
+            LEFT JOIN training_attempts ta ON tc.attempt_id = ta.id
+            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'training'
+            LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.id AND ta.scenario_type = 'customer_service'
+            LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem'
+            WHERE tc.user_id = ?
+            ORDER BY tc.earned_at DESC
+        ");
+        $stmt->execute([$user_id]);
+        $certificates = $stmt->fetchAll();
+        
+        return [
+            'stats' => $stats,
+            'recent_activity' => $recent_activity,
+            'certificates' => $certificates
+        ];
+        
+    } catch (PDOException $e) {
+        error_log("Error getting user training progress: " . $e->getMessage());
+        return [
+            'stats' => ['total_attempts' => 0, 'completed_attempts' => 0, 'avg_score' => 0, 'total_minutes' => 0],
+            'recent_activity' => [],
+            'certificates' => []
+        ];
+    }
+}
+
+/**
+ * Get score distribution for a user
+ */
+function getScoreDistribution($user_id) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT 
+                CASE 
+                    WHEN score >= 90 THEN '90-100'
+                    WHEN score >= 80 THEN '80-89'
+                    WHEN score >= 70 THEN '70-79'
+                    ELSE '0-69'
+                END as score_range,
+                COUNT(*) as count
+            FROM training_attempts 
+            WHERE user_id = ? AND status = 'completed'
+            GROUP BY score_range
+        ");
+        $stmt->execute([$user_id]);
+        $results = $stmt->fetchAll();
+        
+        $distribution = [
+            '90-100' => 0,
+            '80-89' => 0,
+            '70-79' => 0,
+            '0-69' => 0
+        ];
+        
+        foreach ($results as $result) {
+            $distribution[$result['score_range']] = (int)$result['count'];
+        }
+        
+        return $distribution;
+        
+    } catch (PDOException $e) {
+        error_log("Error getting score distribution: " . $e->getMessage());
+        return ['90-100' => 0, '80-89' => 0, '70-79' => 0, '0-69' => 0];
+    }
+}
+
+/**
+ * Get progress over time data
+ */
+function getProgressOverTime($user_id) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT 
+                DATE(created_at) as date,
+                AVG(score) as avg_score,
+                COUNT(*) as attempts
+            FROM training_attempts 
+            WHERE user_id = ? AND status = 'completed' AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            GROUP BY DATE(created_at)
+            ORDER BY date ASC
+        ");
+        $stmt->execute([$user_id]);
+        $results = $stmt->fetchAll();
+        
+        $progress_data = [];
+        foreach ($results as $result) {
+            $progress_data[] = [
+                'date' => $result['date'],
+                'avg_score' => round($result['avg_score'], 1),
+                'attempts' => (int)$result['attempts']
+            ];
+        }
+        
+        return $progress_data;
+        
+    } catch (PDOException $e) {
+        error_log("Error getting progress over time: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Get scenario-specific progress
+ */
+function getScenarioSpecificProgress($user_id) {
+    global $pdo;
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT 
+                ta.scenario_id,
+                ta.scenario_type,
+                CASE 
+                    WHEN ta.scenario_type = 'training' THEN ts.title
+                    WHEN ta.scenario_type = 'customer_service' THEN css.title
+                    WHEN ta.scenario_type = 'problem' THEN ps.title
+                    ELSE 'Unknown Scenario'
+                END as title,
+                COUNT(*) as attempts,
+                AVG(ta.score) as avg_score,
+                MAX(ta.score) as best_score,
+                MIN(ta.score) as worst_score,
+                COUNT(CASE WHEN ta.score >= 80 THEN 1 END) as passed_attempts
+            FROM training_attempts ta
+            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'training'
+            LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.id AND ta.scenario_type = 'customer_service'
+            LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem'
+            WHERE ta.user_id = ? AND ta.status = 'completed'
+            GROUP BY ta.scenario_id, ta.scenario_type
+            ORDER BY avg_score DESC
+        ");
+        $stmt->execute([$user_id]);
+        return $stmt->fetchAll();
+        
+    } catch (PDOException $e) {
+        error_log("Error getting scenario-specific progress: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Submit training scenario answer
+ */
+function submitTrainingScenario($user_id, $scenario_id, $answers) {
+    global $pdo;
+    
+    try {
+        $pdo->beginTransaction();
+        
+        // Calculate score based on correct answers
+        $stmt = $pdo->prepare("
+            SELECT q.id, q.correct_answer 
+            FROM scenario_questions q 
+            WHERE q.scenario_id = ?
+        ");
+        $stmt->execute([$scenario_id]);
+        $questions = $stmt->fetchAll();
+        
+        $correct_answers = 0;
+        $total_questions = count($questions);
+        
+        foreach ($questions as $question) {
+            $question_key = 'q' . $question['id']; // Convert question ID to answer key format
+            if (isset($answers[$question_key]) && $answers[$question_key] == $question['correct_answer']) {
+                $correct_answers++;
+            }
+        }
+        
+        $score = $total_questions > 0 ? round(($correct_answers / $total_questions) * 100) : 0;
+        
+        // Record attempt
+        $stmt = $pdo->prepare("
+            INSERT INTO training_attempts 
+            (user_id, scenario_id, scenario_type, status, score, duration_minutes, answers, created_at) 
+            VALUES (?, ?, 'training', 'completed', ?, 15, ?, NOW())
+        ");
+        $stmt->execute([$user_id, $scenario_id, $score, json_encode($answers)]);
+        
+        // Check if certificate should be awarded
+        if ($score >= 80) {
+            $certificate_name = "Training Excellence Certificate";
+            $stmt = $pdo->prepare("
+                INSERT INTO training_certificates 
+                (user_id, certificate_name, certificate_type, score, earned_at, status) 
+                VALUES (?, ?, 'training', ?, NOW(), 'earned')
+                ON DUPLICATE KEY UPDATE score = VALUES(score), earned_at = NOW()
+            ");
+            $stmt->execute([$user_id, $certificate_name, $score]);
+        }
+        
+        $pdo->commit();
+        
+        // Get scenario details for answer review
+        $scenario_details = getScenarioDetails($scenario_id);
+        
+        return [
+            'success' => true,
+            'score' => $score,
+            'correct_answers' => $correct_answers,
+            'total_questions' => $total_questions,
+            'certificate_earned' => $score >= 80,
+            'scenario_title' => $scenario_details['title'] ?? 'Training Scenario',
+            'questions' => $scenario_details['questions'] ?? [],
+            'user_answers' => $answers
+        ];
+        
+    } catch (PDOException $e) {
+        $pdo->rollBack();
+        error_log("Error submitting training scenario: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Failed to submit scenario'
+        ];
+    }
+}
+
+/**
+ * Submit customer service response
+ */
+function submitCustomerServiceResponse($user_id, $scenario_id, $response) {
+    global $pdo;
+    
+    try {
+        // Simple scoring based on response length and keywords
+        $score = min(100, max(20, strlen($response) / 2));
+        
+        // Record attempt
+        $stmt = $pdo->prepare("
+            INSERT INTO training_attempts 
+            (user_id, scenario_id, scenario_type, status, score, duration_minutes, answers, created_at) 
+            VALUES (?, ?, 'customer_service', 'completed', ?, 10, ?, NOW())
+        ");
+        $stmt->execute([$user_id, $scenario_id, $score, json_encode(['response' => $response])]);
+        
+        // Award certificate for good responses
+        if ($score >= 70) {
+            $certificate_name = "Customer Service Excellence Certificate";
+            $stmt = $pdo->prepare("
+                INSERT INTO training_certificates 
+                (user_id, certificate_name, certificate_type, score, earned_at, status) 
+                VALUES (?, ?, 'customer_service', ?, NOW(), 'earned')
+                ON DUPLICATE KEY UPDATE score = VALUES(score), earned_at = NOW()
+            ");
+            $stmt->execute([$user_id, $certificate_name, $score]);
+        }
+        
+        return [
+            'success' => true,
+            'score' => $score,
+            'feedback' => 'Good response! Keep practicing to improve your customer service skills.',
+            'certificate_earned' => $score >= 70
+        ];
+        
+    } catch (PDOException $e) {
+        error_log("Error submitting customer service response: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Failed to submit response'
+        ];
+    }
+}
+
+/**
+ * Submit problem solution
+ */
+function submitProblemSolution($user_id, $scenario_id, $solution) {
+    global $pdo;
+    
+    try {
+        // Simple scoring based on solution length and keywords
+        $score = min(100, max(30, strlen($solution) / 3));
+        
+        // Record attempt
+        $stmt = $pdo->prepare("
+            INSERT INTO training_attempts 
+            (user_id, scenario_id, scenario_type, status, score, duration_minutes, answers, created_at) 
+            VALUES (?, ?, 'problem', 'completed', ?, 20, ?, NOW())
+        ");
+        $stmt->execute([$user_id, $scenario_id, $score, json_encode(['solution' => $solution])]);
+        
+        // Award certificate for good solutions
+        if ($score >= 75) {
+            $certificate_name = "Problem Solving Excellence Certificate";
+            $stmt = $pdo->prepare("
+                INSERT INTO training_certificates 
+                (user_id, certificate_name, certificate_type, score, earned_at, status) 
+                VALUES (?, ?, 'problem', ?, NOW(), 'earned')
+                ON DUPLICATE KEY UPDATE score = VALUES(score), earned_at = NOW()
+            ");
+            $stmt->execute([$user_id, $certificate_name, $score]);
+        }
+        
+        return [
+            'success' => true,
+            'score' => $score,
+            'feedback' => 'Excellent problem-solving approach! Your solution shows good analytical thinking.',
+            'certificate_earned' => $score >= 75
+        ];
+        
+    } catch (PDOException $e) {
+        error_log("Error submitting problem solution: " . $e->getMessage());
+        return [
+            'success' => false,
+            'message' => 'Failed to submit solution'
+        ];
     }
 }

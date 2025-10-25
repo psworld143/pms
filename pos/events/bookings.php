@@ -206,25 +206,96 @@ require_once '../includes/pos-functions.php';
                         </div>
 
                         <!-- Recent Bookings -->
-                        <div id="bookingsContainer" class="space-y-4">
-                            <!-- Loading State -->
-                            <div id="loadingState" class="text-center py-12">
-                                <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
-                                <p class="text-gray-600">Loading bookings...</p>
+                        <div class="space-y-4">
+                            <!-- Sample Booking 1 -->
+                            <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                                            <i class="fas fa-calendar-check text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-900">Johnson Wedding</h4>
+                                            <p class="text-sm text-gray-600">Sarah & Michael Johnson • Wedding Reception</p>
+                                            <p class="text-xs text-gray-500">March 15, 2024 • 6:00 PM - 11:00 PM</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-lg font-semibold text-gray-900">$8,500</div>
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                            Confirmed
+                                        </span>
+                                        <div class="mt-2 flex space-x-2">
+                                            <button onclick="viewBookingDetails('1')" class="text-blue-600 hover:text-blue-800 text-sm">
+                                                <i class="fas fa-eye mr-1"></i>View
+                                            </button>
+                                            <button onclick="editBooking('1')" class="text-orange-600 hover:text-orange-800 text-sm">
+                                                <i class="fas fa-edit mr-1"></i>Edit
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Empty State -->
-                            <div id="emptyState" class="hidden text-center py-12">
-                                <i class="fas fa-calendar-times text-6xl text-gray-300 mb-4"></i>
-                                <h3 class="text-xl font-semibold text-gray-700 mb-2">No Bookings Found</h3>
-                                <p class="text-gray-500 mb-4">There are no event bookings to display.</p>
-                                <button onclick="createNewBooking()" class="bg-primary hover:bg-secondary text-white px-6 py-2 rounded-lg transition-colors">
-                                    <i class="fas fa-plus mr-2"></i>Create First Booking
-                                </button>
+                            <!-- Sample Booking 2 -->
+                            <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                                            <i class="fas fa-clock text-yellow-600"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-900">Corporate Conference</h4>
+                                            <p class="text-sm text-gray-600">Tech Solutions Inc. • Business Conference</p>
+                                            <p class="text-xs text-gray-500">March 20, 2024 • 9:00 AM - 5:00 PM</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-lg font-semibold text-gray-900">$12,000</div>
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                            Pending
+                                        </span>
+                                        <div class="mt-2 flex space-x-2">
+                                            <button onclick="viewBookingDetails('2')" class="text-blue-600 hover:text-blue-800 text-sm">
+                                                <i class="fas fa-eye mr-1"></i>View
+                                            </button>
+                                            <button onclick="confirmBooking('2')" class="text-green-600 hover:text-green-800 text-sm">
+                                                <i class="fas fa-check mr-1"></i>Confirm
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- Bookings List (populated dynamically) -->
-                            <div id="bookingsList"></div>
+                            <!-- Sample Booking 3 -->
+                            <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center">
+                                        <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                                            <i class="fas fa-birthday-cake text-purple-600"></i>
+                                        </div>
+                                        <div>
+                                            <h4 class="font-semibold text-gray-900">Birthday Celebration</h4>
+                                            <p class="text-sm text-gray-600">Emma Rodriguez • 25th Birthday Party</p>
+                                            <p class="text-xs text-gray-500">March 25, 2024 • 7:00 PM - 12:00 AM</p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-lg font-semibold text-gray-900">$3,200</div>
+                                        <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                            Confirmed
+                                        </span>
+                                        <div class="mt-2 flex space-x-2">
+                                            <button onclick="viewBookingDetails('3')" class="text-blue-600 hover:text-blue-800 text-sm">
+                                                <i class="fas fa-eye mr-1"></i>View
+                                            </button>
+                                            <button onclick="editBooking('3')" class="text-orange-600 hover:text-orange-800 text-sm">
+                                                <i class="fas fa-edit mr-1"></i>Edit
+                                            </button>
+                    </div>
+                </div>
+            </div>
+        </div>
                         </div>
 
                         <!-- Quick Actions -->
@@ -535,170 +606,9 @@ require_once '../includes/pos-functions.php';
             }, 4000);
         }
 
-        // Load bookings on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            loadEventBookings();
-        });
-
-        // Load event bookings from API
-        function loadEventBookings(status = null) {
-            const loadingState = document.getElementById('loadingState');
-            const emptyState = document.getElementById('emptyState');
-            const bookingsList = document.getElementById('bookingsList');
-            
-            // Show loading state
-            loadingState.classList.remove('hidden');
-            emptyState.classList.add('hidden');
-            bookingsList.innerHTML = '';
-            
-            // Build API URL
-            let apiUrl = '../api/get-event-bookings.php?limit=50';
-            if (status) {
-                apiUrl += `&status=${status}`;
-            }
-            
-            // Fetch bookings from API
-            fetch(apiUrl)
-                .then(response => response.json())
-                .then(data => {
-                    loadingState.classList.add('hidden');
-                    
-                    if (data.success && data.bookings && data.bookings.length > 0) {
-                        displayBookings(data.bookings);
-                    } else {
-                        emptyState.classList.remove('hidden');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading bookings:', error);
-                    loadingState.classList.add('hidden');
-                    showNotification('Error loading bookings', 'error');
-                    emptyState.classList.remove('hidden');
-                });
-        }
-
-        // Display bookings in the UI
-        function displayBookings(bookings) {
-            const bookingsList = document.getElementById('bookingsList');
-            bookingsList.innerHTML = '';
-            
-            bookings.forEach(booking => {
-                const bookingCard = createBookingCard(booking);
-                bookingsList.innerHTML += bookingCard;
-            });
-        }
-
-        // Create booking card HTML
-        function createBookingCard(booking) {
-            // Determine icon and color based on status
-            const statusConfig = {
-                'confirmed': { icon: 'fa-calendar-check', bgColor: 'bg-green-100', iconColor: 'text-green-600', badgeBg: 'bg-green-100', badgeText: 'text-green-800' },
-                'pending': { icon: 'fa-clock', bgColor: 'bg-yellow-100', iconColor: 'text-yellow-600', badgeBg: 'bg-yellow-100', badgeText: 'text-yellow-800' },
-                'cancelled': { icon: 'fa-times-circle', bgColor: 'bg-red-100', iconColor: 'text-red-600', badgeBg: 'bg-red-100', badgeText: 'text-red-800' },
-                'completed': { icon: 'fa-check-circle', bgColor: 'bg-blue-100', iconColor: 'text-blue-600', badgeBg: 'bg-blue-100', badgeText: 'text-blue-800' },
-                'in-progress': { icon: 'fa-spinner', bgColor: 'bg-purple-100', iconColor: 'text-purple-600', badgeBg: 'bg-purple-100', badgeText: 'text-purple-800' },
-                'setup': { icon: 'fa-cog', bgColor: 'bg-indigo-100', iconColor: 'text-indigo-600', badgeBg: 'bg-indigo-100', badgeText: 'text-indigo-800' }
-            };
-            
-            const config = statusConfig[booking.status] || statusConfig['pending'];
-            
-            // Format event date and time
-            const eventDateTime = formatEventDateTime(booking);
-            
-            // Determine action buttons based on status
-            const actionButtons = getActionButtons(booking);
-            
-            return `
-                <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                    <div class="flex items-center justify-between">
-                        <div class="flex items-center flex-1">
-                            <div class="w-12 h-12 ${config.bgColor} rounded-lg flex items-center justify-center mr-4">
-                                <i class="fas ${config.icon} ${config.iconColor}"></i>
-                            </div>
-                            <div class="flex-1">
-                                <h4 class="font-semibold text-gray-900">${escapeHtml(booking.event_name)}</h4>
-                                <p class="text-sm text-gray-600">${escapeHtml(booking.guest_name)} • ${escapeHtml(booking.event_type)}</p>
-                                <p class="text-xs text-gray-500">${eventDateTime}</p>
-                                ${booking.venue !== 'TBD' ? `<p class="text-xs text-gray-500"><i class="fas fa-map-marker-alt mr-1"></i>${escapeHtml(booking.venue)}</p>` : ''}
-                                ${booking.guest_count > 0 ? `<p class="text-xs text-gray-500"><i class="fas fa-users mr-1"></i>${booking.guest_count} guests</p>` : ''}
-                            </div>
-                        </div>
-                        <div class="text-right ml-4">
-                            <div class="text-lg font-semibold text-gray-900">₱${parseFloat(booking.total_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
-                            <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full ${config.badgeBg} ${config.badgeText}">
-                                ${booking.status_label}
-                            </span>
-                            <div class="mt-2 flex space-x-2 justify-end">
-                                ${actionButtons}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Format event date and time
-        function formatEventDateTime(booking) {
-            if (!booking.event_date) {
-                return 'Date TBD';
-            }
-            
-            try {
-                const date = new Date(booking.event_date);
-                const dateStr = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-                
-                if (booking.start_time && booking.end_time) {
-                    return `${dateStr} • ${booking.start_time} - ${booking.end_time}`;
-                } else if (booking.start_time) {
-                    return `${dateStr} • ${booking.start_time}`;
-                }
-                
-                return dateStr;
-            } catch (e) {
-                return booking.event_date;
-            }
-        }
-
-        // Get action buttons based on booking status
-        function getActionButtons(booking) {
-            let buttons = `
-                <button onclick="viewBookingDetails(${booking.id})" class="text-blue-600 hover:text-blue-800 text-sm">
-                    <i class="fas fa-eye mr-1"></i>View
-                </button>
-            `;
-            
-            if (booking.status === 'pending') {
-                buttons += `
-                    <button onclick="confirmBooking(${booking.id})" class="text-green-600 hover:text-green-800 text-sm">
-                        <i class="fas fa-check mr-1"></i>Confirm
-                    </button>
-                `;
-            } else if (booking.status === 'confirmed') {
-                buttons += `
-                    <button onclick="editBooking(${booking.id})" class="text-orange-600 hover:text-orange-800 text-sm">
-                        <i class="fas fa-edit mr-1"></i>Edit
-                    </button>
-                `;
-            }
-            
-            return buttons;
-        }
-
-        // Escape HTML to prevent XSS
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.textContent = text || '';
-            return div.innerHTML;
-        }
-
-        // Filter bookings by status
-        function filterBookingsByStatus(status) {
-            loadEventBookings(status);
-        }
-
         // Legacy functions for compatibility
         function addNew() {
-            createNewBooking();
+            console.log('Adding new events entry...');
         }
 
         function searchRecords() {
@@ -707,10 +617,6 @@ require_once '../includes/pos-functions.php';
 
         function viewAnalytics() {
             console.log('Viewing events analytics...');
-        }
-        
-        function createNewBooking() {
-            showNotification('Create new booking functionality coming soon', 'info');
         }
     </script>
 

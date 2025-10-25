@@ -1,7 +1,8 @@
 <?php
 session_start();
-require_once '../../config/database.php';;
+require_once '../../config/database.php';
 require_once '../../includes/functions.php';
+
 // Check if user is logged in
 if (!isset($_SESSION['user_id'])) {
     header('Location: ../../login.php');
@@ -9,586 +10,567 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_id = $_SESSION['user_id'];
-$user_name = $_SESSION['user_name'];
+$user_name = $_SESSION['user_name'] ?? 'User';
 
 // Get filter parameters
-$severity_filter = isset($_GET['severity']) ? $_GET['severity'] : '';
-$difficulty_filter = isset($_GET['difficulty']) ? $_GET['difficulty'] : '';
+$severity = $_GET['severity'] ?? null;
+$difficulty = $_GET['difficulty'] ?? null;
 
-// Fetch problem-solving scenarios from database
+// Get problem scenarios based on filters
+$scenarios = getProblemScenarios($severity);
+
+// Get user progress for each scenario
+$user_progress = [];
 try {
-    // Get problem-solving scenarios with filters
-    $where_conditions = ["1=1"];
-    $params = [];
-    
-    if (!empty($severity_filter)) {
-        $where_conditions[] = "severity = ?";
-        $params[] = $severity_filter;
-    }
-    
-    if (!empty($difficulty_filter)) {
-        $where_conditions[] = "difficulty = ?";
-        $params[] = $difficulty_filter;
-    }
-    
-    $where_clause = implode(" AND ", $where_conditions);
-    
     $stmt = $pdo->prepare("
-        SELECT 
-            ps.*,
-            COALESCE(AVG(ta.score), 0) as avg_score,
-            COUNT(ta.id) as attempt_count
-        FROM problem_scenarios ps
-        LEFT JOIN training_attempts ta ON ps.id = ta.scenario_id AND ta.scenario_type = 'problem_solving'
-        WHERE {$where_clause}
-        GROUP BY ps.id
-        ORDER BY ps.severity, ps.difficulty, ps.title
-    ");
-    $stmt->execute($params);
-    $scenarios = $stmt->fetchAll();
-
-    // Get user's completed problem-solving scenarios
-    $stmt = $pdo->prepare("
-        SELECT scenario_id, score, status, created_at
+        SELECT scenario_id, MAX(score) as best_score, COUNT(*) as attempts
         FROM training_attempts 
-        WHERE user_id = ? AND scenario_type = 'problem_solving'
-        ORDER BY created_at DESC
+        WHERE user_id = ? AND scenario_type = 'problem'
+        GROUP BY scenario_id
     ");
     $stmt->execute([$user_id]);
-    $user_attempts = $stmt->fetchAll();
+    $progress_data = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
     
-    // Create a map of user attempts for quick lookup
-    $user_attempts_map = [];
-    foreach ($user_attempts as $attempt) {
-        $user_attempts_map[$attempt['scenario_id']] = $attempt;
+    foreach ($progress_data as $scenario_id => $data) {
+        $user_progress[$scenario_id] = $data;
     }
-
-    // Get statistics
-    $stmt = $pdo->prepare("
-        SELECT 
-            COUNT(*) as total_scenarios,
-            COUNT(CASE WHEN severity = 'low' THEN 1 END) as low_count,
-            COUNT(CASE WHEN severity = 'medium' THEN 1 END) as medium_count,
-            COUNT(CASE WHEN severity = 'high' THEN 1 END) as high_count,
-            COUNT(CASE WHEN severity = 'critical' THEN 1 END) as critical_count,
-            COUNT(CASE WHEN difficulty = 'beginner' THEN 1 END) as beginner_count,
-            COUNT(CASE WHEN difficulty = 'intermediate' THEN 1 END) as intermediate_count,
-            COUNT(CASE WHEN difficulty = 'advanced' THEN 1 END) as advanced_count
-        FROM problem_scenarios
-    ");
-    $stmt->execute();
-    $stats = $stmt->fetch();
-
-    // Get user's problem-solving statistics
-    $stmt = $pdo->prepare("
-        SELECT 
-            COUNT(*) as completed_scenarios,
-            AVG(score) as avg_score,
-            SUM(duration_minutes) as total_time,
-            COUNT(CASE WHEN score >= 85 THEN 1 END) as excellent_performance_count,
-            COUNT(CASE WHEN score >= 70 AND score < 85 THEN 1 END) as good_performance_count
-        FROM training_attempts 
-        WHERE user_id = ? AND scenario_type = 'problem_solving' AND status = 'completed'
-    ");
-    $stmt->execute([$user_id]);
-    $user_stats = $stmt->fetch();
-
-    // Get performance by severity level
-    $stmt = $pdo->prepare("
-        SELECT 
-            ps.severity,
-            COUNT(ta.id) as attempts,
-            AVG(ta.score) as avg_score
-        FROM problem_scenarios ps
-        LEFT JOIN training_attempts ta ON ps.id = ta.scenario_id AND ta.scenario_type = 'problem_solving' AND ta.user_id = ?
-        GROUP BY ps.severity
-        ORDER BY 
-            CASE ps.severity
-                WHEN 'critical' THEN 1
-                WHEN 'high' THEN 2
-                WHEN 'medium' THEN 3
-                WHEN 'low' THEN 4
-            END
-    ");
-    $stmt->execute([$user_id]);
-    $performance_by_severity = $stmt->fetchAll();
-
-} catch (PDOException $e) {
-    error_log("Error fetching problem-solving scenarios: " . $e->getMessage());
-    $scenarios = [];
-    $user_attempts = [];
-    $user_attempts_map = [];
-    $stats = [
-        'total_scenarios' => 0,
-        'low_count' => 0,
-        'medium_count' => 0,
-        'high_count' => 0,
-        'critical_count' => 0,
-        'beginner_count' => 0,
-        'intermediate_count' => 0,
-        'advanced_count' => 0
-    ];
-    $user_stats = [
-        'completed_scenarios' => 0,
-        'avg_score' => 0,
-        'total_time' => 0,
-        'excellent_performance_count' => 0,
-        'good_performance_count' => 0
-    ];
-    $performance_by_severity = [];
+} catch (Exception $e) {
+    // Handle error silently
 }
 
-// Set page title for unified header
 $page_title = 'Problem Solving Training';
-
-// Include unified navigation (automatically selects based on user role)
 include '../../includes/header-unified.php';
 include '../../includes/sidebar-unified.php';
 ?>
 
-        <!-- Main Content -->
-        <main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
-            
-
-            <!-- Page Header -->
-            <div class="mb-6">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-800">Problem Solving Scenarios</h2>
-                        <p class="text-gray-600 mt-1">Develop critical thinking skills to handle complex hotel operational challenges</p>
-                    </div>
-                    <div class="flex space-x-3">
-                        <button class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors">
-                            <i class="fas fa-puzzle-piece mr-2"></i>Challenge Mode
-                        </button>
-                        <button class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                            <i class="fas fa-trophy mr-2"></i>Leaderboard
-                        </button>
-                    </div>
+<!-- Main Content -->
+<main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300">
+    <!-- Page Header -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Problem Solving Training</h1>
+                <p class="text-gray-600 mt-1">Develop critical thinking skills with real-world hotel problem scenarios</p>
+            </div>
+            <div class="flex items-center space-x-4">
+                <div class="text-right">
+                    <p class="text-sm text-gray-500">Welcome back,</p>
+                    <p class="font-semibold text-gray-900"><?php echo htmlspecialchars($user_name); ?></p>
+                </div>
+                <div class="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center">
+                    <i class="fas fa-lightbulb text-white text-xl"></i>
                 </div>
             </div>
-
-            <!-- User Performance Stats -->
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-6">
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-green-100 rounded-lg">
-                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Completed</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $user_stats['completed_scenarios']; ?></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-blue-100 rounded-lg">
-                            <i class="fas fa-star text-blue-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Average Score</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo number_format($user_stats['avg_score'] ?? 0, 1); ?>%</p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-purple-100 rounded-lg">
-                            <i class="fas fa-crown text-purple-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Excellent</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $user_stats['excellent_performance_count']; ?></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-yellow-100 rounded-lg">
-                            <i class="fas fa-medal text-yellow-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Good</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $user_stats['good_performance_count']; ?></p>
-                        </div>
-                    </div>
-                </div>
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <div class="flex items-center">
-                        <div class="p-3 bg-red-100 rounded-lg">
-                            <i class="fas fa-clock text-red-600 text-xl"></i>
-                        </div>
-                        <div class="ml-4">
-                            <p class="text-sm font-medium text-gray-600">Training Time</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo round($user_stats['total_time'] / 60, 1); ?>h</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Performance Overview -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                <!-- Performance by Severity -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Performance by Severity</h3>
-                    <div class="space-y-4">
-                        <?php foreach ($performance_by_severity as $performance): ?>
-                            <div class="flex items-center justify-between">
-                                <div class="flex items-center">
-                                    <div class="w-3 h-3 rounded-full mr-3 
-                                        <?php 
-                                        switch($performance['severity']) {
-                                            case 'critical': echo 'bg-red-500'; break;
-                                            case 'high': echo 'bg-orange-500'; break;
-                                            case 'medium': echo 'bg-yellow-500'; break;
-                                            case 'low': echo 'bg-green-500'; break;
-                                            default: echo 'bg-gray-500';
-                                        }
-                                        ?>"></div>
-                                    <span class="text-sm font-medium text-gray-600"><?php echo ucfirst($performance['severity']); ?></span>
-                                </div>
-                                <div class="text-right">
-                                    <p class="text-sm font-semibold text-gray-900"><?php echo number_format($performance['avg_score'] ?? 0, 1); ?>%</p>
-                                    <p class="text-xs text-gray-500"><?php echo $performance['attempts']; ?> attempts</p>
-                                </div>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
-                </div>
-
-                <!-- Problem Solving Tips -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Problem Solving Tips</h3>
-                    <div class="space-y-3">
-                        <div class="flex items-start space-x-3">
-                            <i class="fas fa-search text-blue-500 mt-1"></i>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Analyze the Problem</p>
-                                <p class="text-xs text-gray-600">Identify root causes and key factors</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <i class="fas fa-lightbulb text-yellow-500 mt-1"></i>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Generate Solutions</p>
-                                <p class="text-xs text-gray-600">Consider multiple approaches</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <i class="fas fa-balance-scale text-green-500 mt-1"></i>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Evaluate Options</p>
-                                <p class="text-xs text-gray-600">Weigh pros and cons carefully</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start space-x-3">
-                            <i class="fas fa-rocket text-purple-500 mt-1"></i>
-                            <div>
-                                <p class="text-sm font-medium text-gray-800">Implement & Monitor</p>
-                                <p class="text-xs text-gray-600">Execute and track results</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Recent Activity -->
-                <div class="bg-white rounded-lg shadow-sm p-6 border border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Recent Activity</h3>
-                    <div class="space-y-3">
-                        <?php 
-                        $recent_attempts = array_slice($user_attempts, 0, 3);
-                        if (empty($recent_attempts)): ?>
-                            <p class="text-sm text-gray-500">No recent activity</p>
-                        <?php else: ?>
-                            <?php foreach ($recent_attempts as $attempt): ?>
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <p class="text-sm font-medium text-gray-800">Problem solved</p>
-                                        <p class="text-xs text-gray-500"><?php echo date('M j, Y', strtotime($attempt['created_at'])); ?></p>
-                                    </div>
-                                    <span class="text-sm font-semibold text-green-600"><?php echo number_format($attempt['score'] ?? 0, 1); ?>%</span>
-                                </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Filters -->
-            <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-                <div class="flex flex-wrap items-center gap-4">
-                    <div class="flex-1 min-w-64">
-                        <input type="text" id="search-scenarios" placeholder="Search problem-solving scenarios..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                    </div>
-                    <select id="severity-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                        <option value="">All Severities</option>
-                        <option value="low" <?php echo $severity_filter === 'low' ? 'selected' : ''; ?>>Low</option>
-                        <option value="medium" <?php echo $severity_filter === 'medium' ? 'selected' : ''; ?>>Medium</option>
-                        <option value="high" <?php echo $severity_filter === 'high' ? 'selected' : ''; ?>>High</option>
-                        <option value="critical" <?php echo $severity_filter === 'critical' ? 'selected' : ''; ?>>Critical</option>
-                    </select>
-                    <select id="difficulty-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                        <option value="">All Difficulties</option>
-                        <option value="beginner" <?php echo $difficulty_filter === 'beginner' ? 'selected' : ''; ?>>Beginner</option>
-                        <option value="intermediate" <?php echo $difficulty_filter === 'intermediate' ? 'selected' : ''; ?>>Intermediate</option>
-                        <option value="advanced" <?php echo $difficulty_filter === 'advanced' ? 'selected' : ''; ?>>Advanced</option>
-                    </select>
-                    <button id="clear-filters" class="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors">
-                        <i class="fas fa-times mr-2"></i>Clear
-                    </button>
-                </div>
-            </div>
-
-            <!-- Scenarios Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <?php if (empty($scenarios)): ?>
-                    <div class="col-span-full text-center py-12">
-                        <i class="fas fa-puzzle-piece text-4xl text-gray-400 mb-4"></i>
-                        <h3 class="text-lg font-medium text-gray-900 mb-2">No scenarios found</h3>
-                        <p class="text-gray-500">Try adjusting your filters or check back later for new scenarios.</p>
-                    </div>
-                <?php else: ?>
-                    <?php foreach ($scenarios as $scenario): ?>
-                        <?php 
-                        $user_attempt = isset($user_attempts_map[$scenario['id']]) ? $user_attempts_map[$scenario['id']] : null;
-                        $is_completed = $user_attempt && $user_attempt['status'] === 'completed';
-                        $best_score = $user_attempt ? $user_attempt['score'] : 0;
-                        
-                        // Difficulty colors
-                        $difficulty_colors = [
-                            'beginner' => 'bg-green-100 text-green-800',
-                            'intermediate' => 'bg-yellow-100 text-yellow-800',
-                            'advanced' => 'bg-red-100 text-red-800'
-                        ];
-                        
-                        // Severity colors and icons
-                        $severity_colors = [
-                            'low' => 'bg-green-100 text-green-800',
-                            'medium' => 'bg-yellow-100 text-yellow-800',
-                            'high' => 'bg-orange-100 text-orange-800',
-                            'critical' => 'bg-red-100 text-red-800'
-                        ];
-                        
-                        $severity_icons = [
-                            'low' => 'fas fa-info-circle',
-                            'medium' => 'fas fa-exclamation-triangle',
-                            'high' => 'fas fa-exclamation-circle',
-                            'critical' => 'fas fa-radiation'
-                        ];
-                        ?>
-                        
-                        <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow duration-300 scenario-card flex flex-col" 
-                             data-severity="<?php echo $scenario['severity']; ?>" 
-                             data-difficulty="<?php echo $scenario['difficulty']; ?>"
-                             data-title="<?php echo strtolower($scenario['title']); ?>">
-                            
-                            <!-- Scenario Header -->
-                            <div class="p-6 border-b border-gray-200">
-                                <div class="flex items-start justify-between mb-4">
-                                    <div class="flex items-center">
-                                        <i class="<?php echo $severity_icons[$scenario['severity']]; ?> text-orange-600 text-xl mr-3"></i>
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-gray-900"><?php echo htmlspecialchars($scenario['title']); ?></h3>
-                                            <p class="text-sm text-gray-500"><?php echo ucfirst($scenario['severity']); ?> Priority</p>
-                                        </div>
-                                    </div>
-                                    <?php if ($is_completed): ?>
-                                        <div class="flex items-center">
-                                            <i class="fas fa-check-circle text-green-500 text-xl"></i>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                                
-                                <p class="text-gray-600 text-sm mb-4"><?php echo htmlspecialchars(substr($scenario['description'], 0, 100) . (strlen($scenario['description']) > 100 ? '...' : '')); ?></p>
-                                
-                                <div class="flex items-center justify-between">
-                                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full <?php echo $difficulty_colors[$scenario['difficulty']]; ?>">
-                                        <?php echo ucfirst($scenario['difficulty']); ?>
-                                    </span>
-                                    <div class="flex items-center text-sm text-gray-500">
-                                        <i class="fas fa-clock mr-1"></i>
-                                        <?php echo $scenario['time_limit']; ?> min
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <!-- Scenario Content Preview -->
-                            <div class="p-6 flex-grow">
-                                <div class="mb-4">
-                                    <h4 class="text-sm font-medium text-gray-800 mb-2">Problem:</h4>
-                                    <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars(substr($scenario['description'], 0, 80) . (strlen($scenario['description']) > 80 ? '...' : '')); ?></p>
-                                    
-                                    <?php if ($scenario['resources']): ?>
-                                        <h4 class="text-sm font-medium text-gray-800 mb-2">Available Resources:</h4>
-                                        <p class="text-sm text-gray-600"><?php echo htmlspecialchars(substr($scenario['resources'], 0, 80) . (strlen($scenario['resources']) > 80 ? '...' : '')); ?></p>
-                                    <?php endif; ?>
-                                </div>
-                                
-                                <div class="grid grid-cols-2 gap-4 mb-4">
-                                    <div class="text-center">
-                                        <p class="text-sm text-gray-500">Points</p>
-                                        <p class="text-lg font-semibold text-gray-900"><?php echo $scenario['points']; ?></p>
-                                    </div>
-                                    <div class="text-center">
-                                        <p class="text-sm text-gray-500">Avg Score</p>
-                                        <p class="text-lg font-semibold text-gray-900"><?php echo number_format($scenario['avg_score'] ?? 0, 1); ?>%</p>
-                                    </div>
-                                </div>
-                                
-                                <!-- Severity Indicator -->
-                                <div class="mb-4 p-3 rounded-lg <?php echo $severity_colors[$scenario['severity']]; ?>">
-                                    <div class="flex items-center justify-between">
-                                        <span class="text-sm font-medium"><?php echo ucfirst($scenario['severity']); ?> Priority</span>
-                                        <i class="<?php echo $severity_icons[$scenario['severity']]; ?> text-lg"></i>
-                                    </div>
-                                </div>
-                                
-                                <?php if ($is_completed): ?>
-                                    <div class="mb-4 p-3 bg-green-50 rounded-lg">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-sm font-medium text-green-800">Your Score</span>
-                                            <span class="text-lg font-bold text-green-600"><?php echo number_format($best_score, 1); ?>%</span>
-                                        </div>
-                                    </div>
-                                <?php else: ?>
-                                    <!-- Empty space to maintain consistent height -->
-                                    <div class="mb-4 p-3 bg-transparent rounded-lg">
-                                        <div class="flex items-center justify-between">
-                                            <span class="text-sm font-medium text-transparent">Your Score</span>
-                                            <span class="text-lg font-bold text-transparent">0%</span>
-                                        </div>
-                                    </div>
-                                <?php endif; ?>
-                            </div>
-                            
-                            <!-- Action Buttons - Always at bottom -->
-                            <div class="p-6 pt-0">
-                                <div class="flex space-x-2">
-                                    <?php if ($is_completed): ?>
-                                        <button onclick="retakeScenario(<?php echo $scenario['id']; ?>)" class="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm">
-                                            <i class="fas fa-redo mr-2"></i>Retake
-                                        </button>
-                                        <button onclick="viewResults(<?php echo $scenario['id']; ?>)" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
-                                            <i class="fas fa-chart-bar mr-2"></i>Results
-                                        </button>
-                                    <?php else: ?>
-                                        <button onclick="startScenario(<?php echo $scenario['id']; ?>)" class="flex-1 bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors text-sm">
-                                            <i class="fas fa-play mr-2"></i>Start
-                                        </button>
-                                        <button onclick="previewScenario(<?php echo $scenario['id']; ?>)" class="flex-1 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors text-sm">
-                                            <i class="fas fa-eye mr-2"></i>Preview
-                                        </button>
-                                    <?php endif; ?>
-                                </div>
-                            </div>
-                        </div>
-                    <?php endforeach; ?>
-                <?php endif; ?>
-            </div>
-        </main>
+        </div>
     </div>
 
-    <?php include '../../includes/footer.php'; ?>
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-check-circle text-purple-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Completed</p>
+                    <p class="text-2xl font-bold text-gray-900"><?php echo count($user_progress); ?></p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-star text-blue-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Avg Score</p>
+                    <p class="text-2xl font-bold text-gray-900">
+                        <?php 
+                        $avg_score = count($user_progress) > 0 ? 
+                            round(array_sum(array_column($user_progress, 'best_score')) / count($user_progress)) : 0;
+                        echo $avg_score;
+                        ?>%
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-trophy text-yellow-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Certificates</p>
+                    <p class="text-2xl font-bold text-gray-900">
+                        <?php 
+                        $certificates = 0;
+                        foreach ($user_progress as $progress) {
+                            if ($progress['best_score'] >= 75) $certificates++;
+                        }
+                        echo $certificates;
+                        ?>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+            <div class="flex items-center">
+                <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                    <i class="fas fa-clock text-green-600 text-xl"></i>
+                </div>
+                <div class="ml-4">
+                    <p class="text-sm font-medium text-gray-600">Time Spent</p>
+                    <p class="text-2xl font-bold text-gray-900">
+                        <?php 
+                        $total_time = count($user_progress) * 20; // 20 minutes per scenario
+                        echo round($total_time / 60, 1);
+                        ?>h
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <script>
-        // Wait for document to be ready
-        $(document).ready(function() {
-            console.log('Document ready, initializing problem-solving filters...');
-            
-            // Search functionality
-            $('#search-scenarios').on('input', function() {
-                console.log('Search input detected');
-                const searchTerm = $(this).val().toLowerCase();
-                $('.scenario-card').each(function() {
-                    const title = $(this).data('title');
-                    const description = $(this).find('p').text().toLowerCase();
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-sm border p-6 mb-6">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Filter Scenarios</h2>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Severity Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Severity Level</label>
+                <select id="severity-filter" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                    <option value="">All Severities</option>
+                    <option value="low" <?php echo $severity === 'low' ? 'selected' : ''; ?>>Low Priority</option>
+                    <option value="medium" <?php echo $severity === 'medium' ? 'selected' : ''; ?>>Medium Priority</option>
+                    <option value="high" <?php echo $severity === 'high' ? 'selected' : ''; ?>>High Priority</option>
+                    <option value="critical" <?php echo $severity === 'critical' ? 'selected' : ''; ?>>Critical</option>
+                </select>
+            </div>
+
+            <!-- Difficulty Filter -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Difficulty</label>
+                <select id="difficulty-filter" class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                    <option value="">All Levels</option>
+                    <option value="beginner" <?php echo $difficulty === 'beginner' ? 'selected' : ''; ?>>Beginner</option>
+                    <option value="intermediate" <?php echo $difficulty === 'intermediate' ? 'selected' : ''; ?>>Intermediate</option>
+                    <option value="advanced" <?php echo $difficulty === 'advanced' ? 'selected' : ''; ?>>Advanced</option>
+                </select>
+            </div>
+
+            <!-- Search -->
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+                <input type="text" id="search-input" placeholder="Search scenarios..." 
+                       class="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+            </div>
+        </div>
+    </div>
+
+    <!-- Scenarios Grid -->
+    <div id="scenarios-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <?php if (empty($scenarios)): ?>
+            <div class="col-span-full text-center py-12">
+                <i class="fas fa-lightbulb text-gray-400 text-4xl mb-4"></i>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">No scenarios found</h3>
+                <p class="text-gray-500">Try adjusting your filters or check back later for new content.</p>
+            </div>
+        <?php else: ?>
+            <?php foreach ($scenarios as $scenario): ?>
+                <div class="bg-white rounded-lg shadow-sm border hover:shadow-md transition-all duration-300 scenario-card" 
+                     data-severity="<?php echo htmlspecialchars($scenario['severity']); ?>"
+                     data-difficulty="<?php echo htmlspecialchars($scenario['difficulty']); ?>"
+                     data-title="<?php echo htmlspecialchars(strtolower($scenario['title'])); ?>">
                     
-                    if (title.includes(searchTerm) || description.includes(searchTerm)) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
+                    <!-- Scenario Header -->
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2"><?php echo htmlspecialchars($scenario['title']); ?></h3>
+                                <p class="text-sm text-gray-600 mb-3"><?php echo htmlspecialchars($scenario['description']); ?></p>
+                            </div>
+                            <div class="flex flex-col items-end space-y-2">
+                                <!-- Severity Badge -->
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    <?php 
+                                    switch($scenario['severity']) {
+                                        case 'low': echo 'bg-green-100 text-green-800'; break;
+                                        case 'medium': echo 'bg-yellow-100 text-yellow-800'; break;
+                                        case 'high': echo 'bg-orange-100 text-orange-800'; break;
+                                        case 'critical': echo 'bg-red-100 text-red-800'; break;
+                                        default: echo 'bg-gray-100 text-gray-800';
+                                    }
+                                    ?>">
+                                    <?php echo ucfirst($scenario['severity']); ?>
+                                </span>
+                                
+                                <!-- Difficulty Badge -->
+                                <span class="px-2 py-1 text-xs font-medium rounded-full
+                                    <?php 
+                                    switch($scenario['difficulty']) {
+                                        case 'beginner': echo 'bg-green-100 text-green-800'; break;
+                                        case 'intermediate': echo 'bg-yellow-100 text-yellow-800'; break;
+                                        case 'advanced': echo 'bg-red-100 text-red-800'; break;
+                                        default: echo 'bg-gray-100 text-gray-800';
+                                    }
+                                    ?>">
+                                    <?php echo ucfirst($scenario['difficulty']); ?>
+                                </span>
+                            </div>
+                        </div>
 
-            // Severity filter
-            $('#severity-filter').on('change', function() {
-                console.log('Severity filter changed:', $(this).val());
-                const selectedSeverity = $(this).val();
-                $('.scenario-card').each(function() {
-                    const severity = $(this).data('severity');
-                    
-                    if (selectedSeverity === '' || severity === selectedSeverity) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
+                        <!-- Scenario Stats -->
+                        <div class="grid grid-cols-3 gap-4 text-center">
+                            <div>
+                                <p class="text-2xl font-bold text-purple-600"><?php echo $scenario['points']; ?></p>
+                                <p class="text-xs text-gray-500">Points</p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-blue-600"><?php echo $scenario['time_limit']; ?>m</p>
+                                <p class="text-xs text-gray-500">Time Limit</p>
+                            </div>
+                            <div>
+                                <p class="text-2xl font-bold text-green-600"><?php echo $scenario['attempt_count'] ?? 0; ?></p>
+                                <p class="text-xs text-gray-500">Attempts</p>
+                            </div>
+                        </div>
+                    </div>
 
-            // Difficulty filter
-            $('#difficulty-filter').on('change', function() {
-                console.log('Difficulty filter changed:', $(this).val());
-                const selectedDifficulty = $(this).val();
-                $('.scenario-card').each(function() {
-                    const difficulty = $(this).data('difficulty');
-                    
-                    if (selectedDifficulty === '' || difficulty === selectedDifficulty) {
-                        $(this).show();
-                    } else {
-                        $(this).hide();
-                    }
-                });
-            });
+                    <!-- User Progress -->
+                    <div class="p-6">
+                        <?php if (isset($user_progress[$scenario['id']])): ?>
+                            <div class="mb-4">
+                                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                    <span>Your Progress</span>
+                                    <span><?php echo $user_progress[$scenario['id']]['best_score']; ?>% Best Score</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full" 
+                                         style="width: <?php echo min(100, $user_progress[$scenario['id']]['best_score']); ?>%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1"><?php echo $user_progress[$scenario['id']]['attempts']; ?> attempt(s)</p>
+                            </div>
+                        <?php else: ?>
+                            <div class="mb-4">
+                                <div class="flex justify-between text-sm text-gray-600 mb-2">
+                                    <span>Your Progress</span>
+                                    <span>Not Started</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div class="bg-gray-300 h-2 rounded-full" style="width: 0%"></div>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">Ready to start</p>
+                            </div>
+                        <?php endif; ?>
 
-            // Clear filters
-            $('#clear-filters').on('click', function() {
-                console.log('Clear filters clicked');
-                $('#search-scenarios').val('');
-                $('#severity-filter').val('');
-                $('#difficulty-filter').val('');
-                $('.scenario-card').show();
-            });
-            
-            console.log('Problem-solving filters initialized successfully');
-        });
+                        <!-- Action Buttons -->
+                        <div class="flex space-x-3">
+                            <button onclick="startProblemScenario(<?php echo $scenario['id']; ?>)" 
+                                    class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-md hover:from-purple-700 hover:to-pink-700 transition-all duration-300 font-medium">
+                                <i class="fas fa-play mr-2"></i>
+                                <?php echo isset($user_progress[$scenario['id']]) ? 'Retake' : 'Start'; ?>
+                            </button>
+                            <button onclick="previewProblemScenario(<?php echo $scenario['id']; ?>)" 
+                                    class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            <?php endforeach; ?>
+        <?php endif; ?>
+    </div>
+</main>
 
-        // Scenario action functions
-        function startScenario(scenarioId) {
-            // Redirect to scenario start page
-            window.location.href = `problem-solving-start.php?id=${scenarioId}`;
+<!-- Problem Preview Modal -->
+<div id="problem-preview-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-gray-900" id="problem-preview-title">Scenario Preview</h3>
+            <button onclick="closeProblemPreviewModal()" class="text-gray-400 hover:text-gray-600">
+                <i class="fas fa-times text-xl"></i>
+            </button>
+        </div>
+        
+        <div id="problem-preview-content">
+            <!-- Preview content will be loaded here -->
+        </div>
+        
+        <div class="flex justify-end space-x-4 mt-6">
+            <button onclick="closeProblemPreviewModal()" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors">
+                Close
+            </button>
+            <button onclick="startProblemScenarioFromPreview()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:from-purple-700 hover:to-pink-700 transition-all duration-300">
+                Start Scenario
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Problem Solving Training Modal -->
+<div id="problem-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+    <div class="bg-white rounded-lg p-8 max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-semibold text-gray-900" id="problem-title">Problem Scenario</h3>
+            <div class="flex items-center space-x-4">
+                <div class="text-sm text-gray-600">
+                    <i class="fas fa-clock mr-1"></i>
+                    <span id="problem-timer">20:00</span>
+                </div>
+                <button onclick="closeProblemModal()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div id="problem-content">
+            <!-- Scenario content will be loaded here -->
+        </div>
+        
+        <div class="flex justify-between items-center mt-6 pt-6 border-t border-gray-200">
+            <button onclick="requestHint()" class="px-4 py-2 border border-yellow-300 text-yellow-700 rounded-md hover:bg-yellow-50 transition-colors">
+                <i class="fas fa-lightbulb mr-2"></i>Hint
+            </button>
+            <button onclick="submitProblem()" class="px-4 py-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-md hover:from-purple-700 hover:to-pink-700 transition-all duration-300">
+                <i class="fas fa-check mr-2"></i>Submit Solution
+            </button>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentProblemScenario = null;
+let problemTimer = null;
+let problemTimeLeft = 0;
+
+// Filter functionality
+document.getElementById('severity-filter').addEventListener('change', filterScenarios);
+document.getElementById('difficulty-filter').addEventListener('change', filterScenarios);
+document.getElementById('search-input').addEventListener('input', searchScenarios);
+
+function filterScenarios() {
+    const severity = document.getElementById('severity-filter').value;
+    const difficulty = document.getElementById('difficulty-filter').value;
+    
+    // Update URL parameters
+    const url = new URL(window.location);
+    if (severity) url.searchParams.set('severity', severity);
+    else url.searchParams.delete('severity');
+    if (difficulty) url.searchParams.set('difficulty', difficulty);
+    else url.searchParams.delete('difficulty');
+    
+    window.history.pushState({}, '', url);
+    window.location.reload();
+}
+
+function searchScenarios() {
+    const searchTerm = document.getElementById('search-input').value.toLowerCase();
+    const cards = document.querySelectorAll('.scenario-card');
+    
+    cards.forEach(card => {
+        const title = card.dataset.title;
+        const description = card.querySelector('p').textContent.toLowerCase();
+        
+        if (title.includes(searchTerm) || description.includes(searchTerm)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
         }
+    });
+}
 
-        function retakeScenario(scenarioId) {
-            if (confirm('Are you sure you want to retake this scenario? Your previous score will be saved.')) {
-                window.location.href = `problem-solving-start.php?id=${scenarioId}&retake=1`;
+function startProblemScenario(scenarioId) {
+    currentProblemScenario = scenarioId;
+    
+    fetch(`../../api/training/get-problem-details.php?id=${scenarioId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                openProblemModal(data.item);
+            } else {
+                alert('Error loading scenario: ' + (data.message || 'Unknown error'));
             }
-        }
+        })
+        .catch(error => {
+            console.error('Error loading scenario:', error);
+            alert('Error loading scenario');
+        });
+}
 
-        function previewScenario(scenarioId) {
-            // Open preview modal or redirect to preview page
-            window.location.href = `problem-solving-preview.php?id=${scenarioId}`;
-        }
+function previewProblemScenario(scenarioId) {
+    fetch(`../../api/training/get-problem-details.php?id=${scenarioId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                openProblemPreviewModal(data.item);
+            } else {
+                alert('Error loading scenario preview');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading scenario preview:', error);
+            alert('Error loading scenario preview');
+        });
+}
 
-        function viewResults(scenarioId) {
-            // Redirect to results page
-            window.location.href = `problem-solving-results.php?id=${scenarioId}`;
-        }
-
-        // Update current date and time
-        function updateDateTime() {
-            const now = new Date();
-            const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit' };
+function openProblemPreviewModal(scenario) {
+    document.getElementById('problem-preview-title').textContent = scenario.title;
+    document.getElementById('problem-preview-content').innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 class="font-medium text-red-900 mb-2">Problem Description</h4>
+                <p class="text-red-800">${scenario.description}</p>
+            </div>
             
-            $('#current-date').text(now.toLocaleDateString('en-US', dateOptions));
-            $('#current-time').text(now.toLocaleTimeString('en-US', timeOptions));
-        }
+            <div class="grid grid-cols-2 gap-4">
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Severity</h4>
+                    <p class="text-gray-700">${scenario.severity}</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Difficulty</h4>
+                    <p class="text-gray-700">${scenario.difficulty}</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Time Limit</h4>
+                    <p class="text-gray-700">${scenario.time_limit} minutes</p>
+                </div>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h4 class="font-medium text-gray-900 mb-2">Points</h4>
+                    <p class="text-gray-700">${scenario.points}</p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('problem-preview-modal').classList.remove('hidden');
+}
 
-        // Update time every second
-        setInterval(updateDateTime, 1000);
-        updateDateTime();
-    </script>
-</body>
-</html>
+function closeProblemPreviewModal() {
+    document.getElementById('problem-preview-modal').classList.add('hidden');
+}
+
+function startProblemScenarioFromPreview() {
+    closeProblemPreviewModal();
+    startProblemScenario(currentProblemScenario);
+}
+
+function openProblemModal(scenario) {
+    if (!scenario) {
+        console.error('Problem scenario is undefined');
+        alert('Error: Scenario data is missing');
+        return;
+    }
+    
+    window.currentProblemScenario = scenario.id;
+    document.getElementById('problem-title').textContent = scenario.title || 'Problem Scenario';
+    document.getElementById('problem-severity').textContent = scenario.severity || 'medium';
+    
+    document.getElementById('problem-content').innerHTML = `
+        <div class="space-y-6">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+                <h4 class="font-medium text-red-900 mb-2">Problem Description</h4>
+                <p class="text-red-800">${scenario.description || 'No description available'}</p>
+            </div>
+            
+            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                <h4 class="font-medium text-yellow-900 mb-2">Instructions</h4>
+                <p class="text-yellow-800">Analyze the problem and provide a comprehensive solution. Consider the impact, urgency, and available options before proposing your approach.</p>
+            </div>
+            
+            <div class="space-y-4">
+                <label class="block">
+                    <span class="text-gray-700 font-medium">Your Solution:</span>
+                    <textarea id="problem-solution" rows="6" 
+                              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-purple-500 focus:border-purple-500"
+                              placeholder="Describe your solution approach here..."></textarea>
+                </label>
+                
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <h4 class="font-medium text-blue-900 mb-2">Problem-Solving Framework:</h4>
+                    <ul class="text-blue-800 text-sm space-y-1">
+                        <li>• Identify the root cause of the problem</li>
+                        <li>• Consider multiple solution approaches</li>
+                        <li>• Evaluate pros and cons of each option</li>
+                        <li>• Choose the most effective solution</li>
+                        <li>• Plan implementation steps</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('problem-modal').classList.remove('hidden');
+    startProblemTimer();
+}
+
+function startProblemTimer() {
+    problemTimeLeft = 20 * 60; // 20 minutes in seconds
+    problemTimer = setInterval(() => {
+        problemTimeLeft--;
+        const minutes = Math.floor(problemTimeLeft / 60);
+        const seconds = problemTimeLeft % 60;
+        document.getElementById('problem-timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        
+        if (problemTimeLeft <= 0) {
+            stopProblemTimer();
+            alert('Time is up!');
+        }
+    }, 1000);
+}
+
+function stopProblemTimer() {
+    if (problemTimer) {
+        clearInterval(problemTimer);
+        problemTimer = null;
+    }
+}
+
+function requestHint() {
+    alert('Hint: Consider the guest\'s perspective and hotel policies');
+}
+
+function submitProblem() {
+    const solution = document.getElementById('problem-solution').value;
+    
+    if (!solution.trim()) {
+        alert('Please provide a solution');
+        return;
+    }
+    
+    fetch('../../api/training/submit-problem.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({
+            scenario_id: currentProblemScenario,
+            solution: solution
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Solution submitted! Score: ${data.score}%`);
+            closeProblemModal();
+            location.reload(); // Refresh to show updated progress
+        } else {
+            alert('Error submitting solution: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting solution:', error);
+        alert('Error submitting solution');
+    });
+}
+
+function closeProblemModal() {
+    stopProblemTimer();
+    document.getElementById('problem-modal').classList.add('hidden');
+}
+</script>
+
+<?php include '../../includes/footer.php'; ?>

@@ -1,5 +1,8 @@
 <?php
-require_once dirname(__DIR__, 3) . '/vps_session_fix.php';
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
+session_start();
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 require_once '../../includes/booking-paths.php';
@@ -80,33 +83,72 @@ include '../../includes/sidebar-unified.php';
                         <a href="../guests/feedback.php" class="text-primary">Manage Feedback</a>
                     </div>
                     <div class="divide-y">
-                        <?php if (empty($recent_feedback)): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); if (empty($recent_feedback)): ?>
                             <div class="text-gray-500 text-center py-8">No feedback found.</div>
-                        <?php else: ?>
-                            <?php foreach ($recent_feedback as $fb): ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); else: ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); foreach ($recent_feedback as $fb): ?>
                                 <div class="py-3 flex items-start justify-between">
                                     <div>
                                         <div class="font-medium text-gray-800">
-                                            <?php echo htmlspecialchars($fb['first_name'].' '.$fb['last_name']); ?>
-                                            <span class="ml-2 text-xs px-2 py-1 rounded <?php echo $fb['feedback_type']==='complaint'?'bg-red-100 text-red-700':($fb['feedback_type']==='compliment'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'); ?>">
-                                                <?php echo ucfirst($fb['feedback_type']); ?>
+                                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars($fb['first_name'].' '.$fb['last_name']); ?>
+                                            <span class="ml-2 text-xs px-2 py-1 rounded <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo $fb['feedback_type']==='complaint'?'bg-red-100 text-red-700':($fb['feedback_type']==='compliment'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-700'); ?>">
+                                                <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst($fb['feedback_type']); ?>
                                             </span>
                                         </div>
-                                        <div class="text-xs text-gray-500 mb-1"><?php echo date('M j, Y g:i A', strtotime($fb['created_at'])); ?> · <?php echo ucfirst($fb['category']); ?></div>
-                                        <div class="text-gray-700"><?php echo nl2br(htmlspecialchars($fb['comments'])); ?></div>
+                                        <div class="text-xs text-gray-500 mb-1"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo date('M j, Y g:i A', strtotime($fb['created_at'])); ?> · <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo ucfirst($fb['category']); ?></div>
+                                        <div class="text-gray-700"><?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo nl2br(htmlspecialchars($fb['comments'])); ?></div>
                                     </div>
                                     <div class="pl-3">
-                                        <button class="text-sm text-blue-600 hover:underline" onclick="prefillResponse('<?php echo htmlspecialchars(addslashes(substr($fb['comments'],0,120))); ?>')">Respond</button>
+                                        <button class="text-sm text-blue-600 hover:underline" onclick="prefillResponse('<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); echo htmlspecialchars(addslashes(substr($fb['comments'],0,120))); ?>')">Respond</button>
                                     </div>
                                 </div>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
+                            <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endforeach; ?>
+                        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); endif; ?>
                     </div>
                 </div>
             </div>
         </main>
 
-        <?php include '../../includes/footer.php'; ?>
+        <?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); include '../../includes/footer.php'; ?>
 
         <script>
         function prefillResponse(text){
@@ -141,5 +183,8 @@ include '../../includes/sidebar-unified.php';
             }
         });
         </script>
-<?php // end file ?>
+<?php
+// Error handling for production
+ini_set('display_errors', 0);
+ini_set('log_errors', 1); // end file ?>
 
