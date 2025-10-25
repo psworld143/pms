@@ -1,0 +1,52 @@
+# Database Configuration (contains sensitive credentials)
+includes/database.local.php
+*/config/database.local.php
+booking/config/database.local.php
+inventory/config/database.local.php
+pos/config/database.local.php
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Temporary files
+tmp/
+tmp_sessions/
+*.tmp
+*.log
+
+# OS Files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE Files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup
+*_backup.php
+
+# Test files (optional - comment out if you want to track them)
+test_*.php
+debug_*.php
+
+# Vendor directories (if using Composer)
+vendor/
+node_modules/
+
+# Upload directories (optional)
+uploads/*
+!uploads/.gitkeep
+
+# Logs
+logs/
+*.log
+error_log
+
