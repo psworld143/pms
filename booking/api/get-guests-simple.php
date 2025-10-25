@@ -20,7 +20,8 @@ try {
     // Test database connection
     $testQuery = $pdo->query("SELECT 1");
     if (!$testQuery) {
-        throw ; }
+        throw new Exception('Database connection test failed');
+    }
     // Check if guests table exists
     $tableCheck = $pdo->query("SHOW TABLES LIKE 'guests'");
     if ($tableCheck->rowCount() == 0) {

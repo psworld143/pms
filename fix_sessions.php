@@ -67,26 +67,26 @@ session_start();') .
 
 echo "<p><strong>Or create a session configuration file:</strong></p>";
 echo "<p>Create a file called <code>session_config.php</code> in your PMS root:</p>";
-echo "<pre style='background:#f5f5f5;padding:10px;border:1px solid #ddd;'><?php
+echo '<pre style="background:#f5f5f5;padding:10px;border:1px solid #ddd;">' . htmlspecialchars('<?php
 // Session configuration for VPS
-$sessionPath = __DIR__ . '/tmp_sessions';
+$sessionPath = __DIR__ . \'/tmp_sessions\';
 if (!is_dir($sessionPath)) {
     mkdir($sessionPath, 0755, true);
 }
-ini_set('session.save_path', $sessionPath);
+ini_set(\'session.save_path\', $sessionPath);
 
 // Set session cookie parameters
 session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => '', // Set to your domain if needed
-    'secure' => isset($_SERVER['HTTPS']),
-    'httponly' => true,
-    'samesite' => 'Lax'
+    \'lifetime\' => 0,
+    \'path\' => \'/\',
+    \'domain\' => \'\', // Set to your domain if needed
+    \'secure\' => isset($_SERVER[\'HTTPS\']),
+    \'httponly\' => true,
+    \'samesite\' => \'Lax\'
 ]);
 
 session_start();
-?></pre>";
+?>') . '</pre>';
 
 echo "<p>Then include it at the top of your login files:</p>";
 echo "<pre style='background:#f5f5f5;padding:10px;border:1px solid #ddd;'>require_once 'session_config.php';</pre>";
