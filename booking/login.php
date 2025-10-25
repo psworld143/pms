@@ -1,5 +1,8 @@
 <?php
 // VPS Session Fix - Robust session configuration
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 require_once '../vps_session_fix.php';
 
 require_once '../includes/database.php';
