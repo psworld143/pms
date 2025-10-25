@@ -188,25 +188,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </button>
                 </form>
 
-                <!-- Demo Account Info -->
-                <div class="mt-8 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 animate-slide-up" style="animation-delay: 0.4s;">
-                    <div class="flex items-start">
-                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3 mt-1">
-                            <i class="fas fa-info-circle text-blue-600 text-sm"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-blue-800 font-semibold text-sm mb-1">Demo Accounts Available</h3>
-                            <p class="text-blue-600 text-xs mb-2">For testing purposes:</p>
-                            <div class="text-blue-700 text-xs space-y-1">
-                                <p><strong>Manager:</strong> david@hotel.com / password</p>
-                                <p><strong>Front Desk:</strong> john@hotel.com / password</p>
-                                <p><strong>Housekeeping:</strong> carlos@hotel.com / password</p>
-                                <p><strong>Student:</strong> demo@student.com / demo123</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- Back to PMS -->
                 <div class="mt-6 text-center animate-slide-up" style="animation-delay: 0.6s;">
                     <a href="../index.php" class="text-gray-500 hover:text-primary transition-colors text-sm font-medium">
@@ -214,10 +195,75 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     </a>
                 </div>
             </div>
+            
+            <!-- Floating Credentials Icon -->
+            <button onclick="toggleCredentialsModal()" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-110 animate-bounce-in z-50" title="View Demo Credentials">
+                <i class="fas fa-key text-xl"></i>
+            </button>
+            
+            <!-- Credentials Modal -->
+            <div id="credentialsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-slide-up">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent flex items-center">
+                            <i class="fas fa-key mr-2 text-purple-600"></i>
+                            Demo Credentials
+                        </h3>
+                        <button onclick="toggleCredentialsModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
+                        <p class="text-purple-800 font-medium mb-3 text-sm">Use these credentials for testing:</p>
+                        <div class="space-y-2 text-sm">
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <strong class="text-purple-700">Manager:</strong>
+                                <span class="text-gray-700 ml-2">david@hotel.com / password</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <strong class="text-purple-700">Front Desk:</strong>
+                                <span class="text-gray-700 ml-2">john@hotel.com / password</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <strong class="text-purple-700">Housekeeping:</strong>
+                                <span class="text-gray-700 ml-2">carlos@hotel.com / password</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <strong class="text-purple-700">Student:</strong>
+                                <span class="text-gray-700 ml-2">demo@student.com / demo123</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-purple-100 rounded-lg">
+                            <p class="text-purple-700 text-xs font-medium"><i class="fas fa-info-circle mr-1"></i>Training portal active for all users</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
+        // Toggle credentials modal
+        function toggleCredentialsModal() {
+            const modal = document.getElementById('credentialsModal');
+            modal.classList.toggle('hidden');
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('credentialsModal');
+            if (event.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                document.getElementById('credentialsModal').classList.add('hidden');
+            }
+        });
+        
         // Auto-focus first input
         document.querySelector('input[type="email"]').focus();
         

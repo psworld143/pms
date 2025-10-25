@@ -237,20 +237,52 @@ function logPOSActivity($user_id, $action, $description) {
                         </span>
                     </button>
                 </form>
-
-                <!-- Demo Credentials -->
-                <div class="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                    <h4 class="text-sm font-medium text-blue-800 mb-2 flex items-center">
-                        <i class="fas fa-key mr-2"></i>
-                        Demo Credentials for Testing
-                    </h4>
-                    <div class="text-xs text-blue-700 space-y-1">
-                        <div><strong>PMS Users:</strong> manager1 / password (or frontdesk1, housekeeping1)</div>
-                        <div><strong>Student Demo:</strong> student1 / password123</div>
-                        <div><strong>Student Demo:</strong> student2 / password123</div>
-                        <div><strong>Student Demo:</strong> student3 / password123</div>
-                        <div><strong>Demo User:</strong> demo_user / demo123</div>
-                        <div class="text-blue-600 font-medium mt-2">System automatically detects your login type!</div>
+            </div>
+            
+            <!-- Floating Credentials Icon -->
+            <button onclick="toggleCredentialsModal()" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-indigo-500 to-indigo-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-110 animate-bounce-in z-50" title="View Demo Credentials">
+                <i class="fas fa-key text-xl"></i>
+            </button>
+            
+            <!-- Credentials Modal -->
+            <div id="credentialsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-slide-up">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-bold bg-gradient-to-r from-indigo-600 to-indigo-800 bg-clip-text text-transparent flex items-center">
+                            <i class="fas fa-key mr-2 text-indigo-600"></i>
+                            Demo Credentials
+                        </h3>
+                        <button onclick="toggleCredentialsModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+                    <div class="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-200">
+                        <p class="text-indigo-800 font-medium mb-3 text-sm">Use these credentials for testing:</p>
+                        <div class="space-y-2 text-sm">
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <strong class="text-indigo-700">Manager:</strong>
+                                <span class="text-gray-700 ml-2">manager1 / password</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <strong class="text-indigo-700">Front Desk:</strong>
+                                <span class="text-gray-700 ml-2">frontdesk1 / password</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <strong class="text-indigo-700">Housekeeping:</strong>
+                                <span class="text-gray-700 ml-2">housekeeping1 / password</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <strong class="text-indigo-700">Student:</strong>
+                                <span class="text-gray-700 ml-2">student1 / password123</span>
+                            </div>
+                            <div class="bg-white rounded-lg p-3 shadow-sm">
+                                <strong class="text-indigo-700">Demo User:</strong>
+                                <span class="text-gray-700 ml-2">demo_user / demo123</span>
+                            </div>
+                        </div>
+                        <div class="mt-4 p-3 bg-indigo-100 rounded-lg">
+                            <p class="text-indigo-700 text-xs font-medium"><i class="fas fa-info-circle mr-1"></i>System automatically detects your login type!</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -272,6 +304,27 @@ function logPOSActivity($user_id, $action, $description) {
     </div>
     
     <script>
+        // Toggle credentials modal
+        function toggleCredentialsModal() {
+            const modal = document.getElementById('credentialsModal');
+            modal.classList.toggle('hidden');
+        }
+        
+        // Close modal when clicking outside
+        document.addEventListener('click', function(event) {
+            const modal = document.getElementById('credentialsModal');
+            if (event.target === modal) {
+                modal.classList.add('hidden');
+            }
+        });
+        
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                document.getElementById('credentialsModal').classList.add('hidden');
+            }
+        });
+        
         // Add interactive features
         document.addEventListener('DOMContentLoaded', function() {
             // Form validation feedback
