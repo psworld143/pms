@@ -1,5 +1,6 @@
 <?php
 // VPS Session Fix - Robust session configuration
+//Test testet tetstststs
 require_once '../vps_session_fix.php';
 
 require_once '../includes/database.php';
