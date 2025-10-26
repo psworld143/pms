@@ -1,10 +1,8 @@
 <?php
-// VPS Session Fix - Robust session configuration
+// VPS Session Fix
 require_once '../vps_session_fix.php';
-
 require_once '../includes/database.php';
 
-// Redirect if already logged in
 if (isset($_SESSION['user_id'])) {
     header('Location: index.php');
     exit();
@@ -22,25 +20,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
         
         if ($user && password_verify($password, $user['password'])) {
-            // Check if user role is allowed (only manager and housekeeping)
             if (!in_array($user['role'], ['manager', 'housekeeping'])) {
-                $error = 'Access denied. Only Manager and Housekeeping roles can access the Inventory system.';
+                $error = 'Access denied. Only Manager and Housekeeping roles can access Inventory.';
             } else {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['name'];
                 $_SESSION['user_role'] = $user['role'];
                 
-                // Log the login activity (if activity_log table exists)
                 try {
                     $stmt = $pdo->prepare("INSERT INTO activity_log (user_id, action, description, ip_address, created_at) VALUES (?, ?, ?, ?, NOW())");
-                    $stmt->execute([
-                        $user['id'], 
-                        'login', 
-                        'User logged into Inventory system', 
-                        $_SERVER['REMOTE_ADDR'] ?? 'unknown'
-                    ]);
+                    $stmt->execute([$user['id'], 'login', 'User logged into Inventory system', $_SERVER['REMOTE_ADDR'] ?? 'unknown']);
                 } catch (PDOException $e) {
-                    // Activity log table might not exist, continue with login
                     error_log("Activity logging failed: " . $e->getMessage());
                 }
                 
@@ -62,246 +52,164 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inventory Management Login - Hotel PMS Training</title>
-    <meta name="description" content="Access the Inventory Management System - Stock Control & Procurement">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#8b5cf6',
-                        secondary: '#a855f7',
-                        accent: '#c084fc',
-                        success: '#10b981',
-                        warning: '#f59e0b',
-                        error: '#ef4444'
-                    },
-                    animation: {
-                        'fade-in': 'fadeIn 0.6s ease-in-out',
-                        'slide-up': 'slideUp 0.8s ease-out',
-                        'bounce-in': 'bounceIn 0.8s ease-out',
-                        'pulse-slow': 'pulse 3s infinite',
-                        'float': 'float 3s ease-in-out infinite'
-                    },
-                    keyframes: {
-                        fadeIn: {
-                            '0%': { opacity: '0' },
-                            '100%': { opacity: '1' }
-                        },
-                        slideUp: {
-                            '0%': { transform: 'translateY(30px)', opacity: '0' },
-                            '100%': { transform: 'translateY(0)', opacity: '1' }
-                        },
-                        bounceIn: {
-                            '0%': { transform: 'scale(0.3)', opacity: '0' },
-                            '50%': { transform: 'scale(1.05)' },
-                            '70%': { transform: 'scale(0.9)' },
-                            '100%': { transform: 'scale(1)', opacity: '1' }
-                        },
-                        float: {
-                            '0%, 100%': { transform: 'translateY(0px)' },
-                            '50%': { transform: 'translateY(-10px)' }
-                        }
-                    }
-                }
-            }
-        }
-    </script>
     <style>
-        .glass-effect {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
         }
-        .input-focus:focus {
-            outline: none;
-            border-color: #8b5cf6;
+        .bg-pattern {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.1) 0%, transparent 50%);
+            animation: pulse 15s ease-in-out infinite;
         }
-        .btn-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.3);
+        @keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        .login-container { position: relative; z-index: 1; width: 100%; max-width: 500px; animation: fadeInUp 0.6s ease-out; }
+        .login-card { background: rgba(255, 255, 255, 0.98); border-radius: 32px; padding: 50px 45px; box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3); }
+        .logo-icon {
+            width: 100px; height: 100px; margin: 0 auto 25px;
+            background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%);
+            border-radius: 24px; display: flex; align-items: center; justify-content: center;
+            font-size: 3rem; color: white; box-shadow: 0 15px 40px rgba(127, 0, 255, 0.4);
+            animation: float 6s ease-in-out infinite;
         }
-        .card-hover:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        .system-title {
+            font-size: 2.2rem; font-weight: 800; margin-bottom: 10px; text-align: center;
+            background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .system-subtitle { text-align: center; font-size: 1rem; color: #718096; font-weight: 500; margin-bottom: 15px; }
+        .status-badge {
+            display: inline-flex; align-items: center; gap: 8px; padding: 8px 20px;
+            background: rgba(16, 185, 129, 0.1); border-radius: 25px;
+            font-size: 0.85rem; color: #10b981; font-weight: 600;
+            margin: 0 auto; display: flex; justify-content: center; width: fit-content;
+        }
+        .status-dot { width: 8px; height: 8px; background: #10b981; border-radius: 50%; animation: pulse-dot 2s infinite; }
+        @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .alert { padding: 18px; border-radius: 16px; margin: 30px 0 25px; display: flex; align-items: center; gap: 12px; font-size: 0.95rem; font-weight: 500; }
+        .alert-error { background: rgba(239, 68, 68, 0.1); border: 2px solid rgba(239, 68, 68, 0.3); color: #dc2626; }
+        .form-group { margin-bottom: 25px; }
+        .form-label { display: block; font-size: 0.95rem; font-weight: 600; color: #2d3748; margin-bottom: 10px; }
+        .form-label i { color: #7f00ff; margin-right: 8px; }
+        .form-input {
+            width: 100%; padding: 16px 20px; border: 2px solid #e2e8f0; border-radius: 14px;
+            font-size: 1.05rem; font-family: 'Inter', sans-serif; background: #f7fafc; transition: all 0.3s ease;
+        }
+        .form-input:focus { outline: none; border-color: #7f00ff; background: white; box-shadow: 0 0 0 5px rgba(127, 0, 255, 0.1); }
+        .btn-primary {
+            width: 100%; padding: 18px; background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%);
+            color: white; border: none; border-radius: 14px; font-size: 1.1rem; font-weight: 700;
+            cursor: pointer; box-shadow: 0 8px 25px rgba(127, 0, 255, 0.4);
+            display: flex; align-items: center; justify-content: center; gap: 10px; transition: all 0.3s ease;
+        }
+        .btn-primary:hover { transform: translateY(-3px); box-shadow: 0 12px 35px rgba(127, 0, 255, 0.5); }
+        .footer-links { text-align: center; margin-top: 30px; padding-top: 25px; border-top: 2px solid #e2e8f0; }
+        .footer-links a {
+            color: #7f00ff; text-decoration: none; font-size: 1rem; font-weight: 600;
+            transition: all 0.3s ease; display: inline-flex; align-items: center; gap: 8px;
+        }
+        .footer-links a:hover { color: #e100ff; gap: 12px; }
+        .credentials-btn {
+            position: fixed; bottom: 35px; right: 35px; width: 65px; height: 65px;
+            background: linear-gradient(135deg, #7f00ff 0%, #e100ff 100%);
+            border: none; border-radius: 50%; color: white; font-size: 1.6rem;
+            cursor: pointer; box-shadow: 0 10px 30px rgba(127, 0, 255, 0.5);
+            z-index: 1000; animation: bounce 3s infinite; transition: all 0.3s ease;
+        }
+        @keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
+        .credentials-btn:hover { transform: scale(1.15); }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); z-index: 2000; align-items: center; justify-content: center; }
+        .modal.active { display: flex; }
+        .modal-content { background: white; border-radius: 24px; padding: 35px; max-width: 500px; width: 90%; box-shadow: 0 25px 70px rgba(0, 0, 0, 0.4); animation: slideUp 0.4s ease-out; }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 25px; }
+        .modal-title { font-size: 1.6rem; font-weight: 800; color: #2d3748; display: flex; align-items: center; gap: 12px; }
+        .modal-close { width: 40px; height: 40px; border: none; background: #f7fafc; border-radius: 10px; color: #718096; font-size: 1.3rem; cursor: pointer; transition: all 0.3s ease; }
+        .modal-close:hover { background: #e2e8f0; color: #2d3748; transform: rotate(90deg); }
+        .credential-item { background: linear-gradient(135deg, #f7fafc 0%, #edf2f7 100%); border-radius: 14px; padding: 18px; margin-bottom: 14px; border: 2px solid #e2e8f0; transition: all 0.3s ease; }
+        .credential-item:hover { border-color: #7f00ff; transform: translateX(5px); }
+        .credential-role { font-weight: 700; color: #7f00ff; margin-bottom: 8px; font-size: 1rem; }
+        .credential-value { font-family: 'Monaco', monospace; color: #2d3748; font-size: 0.95rem; background: white; padding: 8px 12px; border-radius: 8px; }
+        @media (max-width: 640px) {
+            .login-card { padding: 35px 30px; }
+            .system-title { font-size: 1.8rem; }
+            .logo-icon { width: 80px; height: 80px; font-size: 2.4rem; }
         }
     </style>
 </head>
-<body class="min-h-screen bg-white relative overflow-hidden" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-    <!-- Animated Background Elements -->
-    <div class="absolute inset-0 overflow-hidden">
-        <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-3xl animate-float"></div>
-        <div class="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-accent/10 to-primary/10 rounded-full blur-3xl animate-float" style="animation-delay: 1.5s;"></div>
-        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-r from-secondary/5 to-accent/5 rounded-full blur-3xl animate-pulse-slow"></div>
-    </div>
-
-    <div class="relative z-10 min-h-screen flex items-center justify-center p-4">
-        <div class="w-full max-w-md animate-fade-in">
-            <!-- Main Login Card -->
-            <div class="bg-white rounded-3xl shadow-2xl p-8 animate-slide-up card-hover transition-all duration-500 border border-gray-100">
-                <!-- Header Section -->
-                <div class="text-center mb-8 animate-bounce-in">
-                    <div class="relative">
-                        <div class="w-20 h-20 bg-gradient-to-r from-primary via-secondary to-accent rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse-slow">
-                            <i class="fas fa-boxes text-white text-3xl"></i>
-                        </div>
-                        <div class="absolute -top-2 -right-2 w-6 h-6 bg-success rounded-full flex items-center justify-center">
-                            <i class="fas fa-check text-white text-xs"></i>
-                        </div>
-                    </div>
-                    <h1 class="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                        Inventory Management
-                    </h1>
-                    <p class="text-gray-600 mt-2 text-sm font-medium">Stock Control & Procurement System</p>
-                    <div class="flex items-center justify-center mt-3 space-x-2">
-                        <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
-                        <span class="text-success text-xs font-medium">System Online</span>
-                    </div>
-                </div>
-                
-                <!-- Error/Success Messages -->
-                <?php if ($error): ?>
-                <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-center animate-bounce-in">
-                    <i class="fas fa-exclamation-triangle mr-3 text-red-500"></i>
-                    <span class="text-sm font-medium"><?php echo htmlspecialchars($error); ?></span>
-                </div>
-                <?php endif; ?>
-                
-                <?php if (isset($_GET['logout']) && $_GET['logout'] === 'success'): ?>
-                <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-xl mb-6 flex items-center animate-bounce-in">
-                    <i class="fas fa-check-circle mr-3 text-green-500"></i>
-                    <span class="text-sm font-medium">You have been successfully logged out.</span>
-                </div>
-                <?php endif; ?>
-                
-                <!-- Login Form -->
-                <form method="POST" class="space-y-6 animate-slide-up" style="animation-delay: 0.2s;">
-                    <div class="space-y-2">
-                        <label for="username" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                            <i class="fas fa-user mr-2 text-primary"></i>Username
-                        </label>
-                        <div class="relative">
-                            <input type="text" id="username" name="username" required 
-                                   value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>"
-                                   class="w-full px-4 py-4 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 text-gray-900 placeholder-gray-500 input-focus"
-                                   placeholder="Enter your username">
-                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                <i class="fas fa-user text-gray-400"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="space-y-2">
-                        <label for="password" class="block text-sm font-semibold text-gray-700 mb-2 flex items-center">
-                            <i class="fas fa-lock mr-2 text-primary"></i>Password
-                        </label>
-                        <div class="relative">
-                            <input type="password" id="password" name="password" required
-                                   class="w-full px-4 py-4 bg-gray-50 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-300 text-gray-900 placeholder-gray-500 input-focus"
-                                   placeholder="Enter your password">
-                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                                <i class="fas fa-lock text-gray-400"></i>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <button type="submit" class="w-full bg-white border-2 border-green-500 text-green-600 py-4 px-6 rounded-xl font-semibold hover:bg-green-50 hover:border-green-600 transition-all duration-300 shadow-lg">
-                        <span class="flex items-center justify-center">
-                            <i class="fas fa-sign-in-alt mr-2"></i>Sign In to Inventory
-                        </span>
-                    </button>
-                </form>
+<body>
+    <div class="bg-pattern"></div>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="logo-section">
+                <div class="logo-icon"><i class="fas fa-boxes"></i></div>
+                <h1 class="system-title">Inventory Management</h1>
+                <p class="system-subtitle">Stock Control & Procurement</p>
+                <div class="status-badge"><div class="status-dot"></div> System Online</div>
             </div>
-            
-            <!-- Floating Credentials Icon -->
-            <button onclick="toggleCredentialsModal()" class="fixed bottom-6 right-6 w-14 h-14 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center hover:scale-110 animate-bounce-in z-50" title="View Demo Credentials">
-                <i class="fas fa-key text-xl"></i>
-            </button>
-            
-            <!-- Credentials Modal -->
-            <div id="credentialsModal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 animate-fade-in">
-                <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-slide-up">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-xl font-bold bg-gradient-to-r from-purple-600 to-purple-800 bg-clip-text text-transparent flex items-center">
-                            <i class="fas fa-key mr-2 text-purple-600"></i>
-                            Demo Credentials
-                        </h3>
-                        <button onclick="toggleCredentialsModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
-                            <i class="fas fa-times text-2xl"></i>
-                        </button>
-                    </div>
-                    <div class="bg-gradient-to-br from-purple-50 to-indigo-50 rounded-xl p-4 border border-purple-200">
-                        <p class="text-purple-800 font-medium mb-3 text-sm">Use these credentials for testing:</p>
-                        <div class="space-y-2 text-sm">
-                            <div class="bg-white rounded-lg p-3 shadow-sm">
-                                <strong class="text-purple-700">Manager:</strong>
-                                <span class="text-gray-700 ml-2">manager1 / password</span>
-                            </div>
-                            <div class="bg-white rounded-lg p-3 shadow-sm">
-                                <strong class="text-purple-700">Housekeeping:</strong>
-                                <span class="text-gray-700 ml-2">housekeeping1 / password</span>
-                            </div>
-                        </div>
-                        <div class="mt-4 p-3 bg-purple-100 rounded-lg">
-                            <p class="text-purple-700 text-xs font-medium"><i class="fas fa-info-circle mr-1"></i>Manager and Housekeeping roles have access to inventory system</p>
-                        </div>
-                    </div>
-                </div>
+            <?php if ($error): ?>
+            <div class="alert alert-error">
+                <i class="fas fa-exclamation-circle" style="font-size: 1.3rem;"></i>
+                <span><?php echo htmlspecialchars($error); ?></span>
             </div>
-            
-            <!-- Footer -->
-            <div class="text-center mt-6 animate-fade-in" style="animation-delay: 0.6s;">
-                <p class="text-gray-500 text-sm mb-2">
-                    <i class="fas fa-shield-alt mr-1"></i>
-                    Secure login system with encrypted authentication
-                </p>
-                <a href="../" class="text-primary hover:text-primary-dark transition-colors text-sm">
-                    <i class="fas fa-arrow-left mr-1"></i>
-                    Back to PMS System
-                </a>
+            <?php endif; ?>
+            <form method="POST">
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-user"></i> Username</label>
+                    <input type="text" name="username" class="form-input" placeholder="Enter your username" required autofocus value="<?php echo isset($_POST['username']) ? htmlspecialchars($_POST['username']) : ''; ?>">
+                </div>
+                <div class="form-group">
+                    <label class="form-label"><i class="fas fa-lock"></i> Password</label>
+                    <input type="password" name="password" class="form-input" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="btn-primary">
+                    <i class="fas fa-sign-in-alt"></i> Sign In to Inventory
+                </button>
+            </form>
+            <div class="footer-links">
+                <a href="../"><i class="fas fa-arrow-left"></i> Back to PMS Dashboard</a>
             </div>
         </div>
     </div>
-    
+    <button class="credentials-btn" onclick="toggleModal()" title="View Demo Credentials"><i class="fas fa-key"></i></button>
+    <div class="modal" id="credentialsModal" onclick="closeModalOnOutside(event)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title"><i class="fas fa-key" style="color: #7f00ff;"></i> Demo Credentials</h3>
+                <button class="modal-close" onclick="toggleModal()"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="credential-item">
+                <div class="credential-role"><i class="fas fa-user-tie"></i> Manager</div>
+                <div class="credential-value">manager1 / password</div>
+            </div>
+            <div class="credential-item">
+                <div class="credential-role"><i class="fas fa-broom"></i> Housekeeping</div>
+                <div class="credential-value">housekeeping1 / password</div>
+            </div>
+            <div class="alert alert-error" style="margin-top: 20px; margin-bottom: 0;">
+                <i class="fas fa-info-circle" style="font-size: 1.3rem;"></i>
+                <span><strong>Access:</strong> Manager and Housekeeping only</span>
+            </div>
+        </div>
+    </div>
     <script>
-        // Toggle credentials modal
-        function toggleCredentialsModal() {
-            const modal = document.getElementById('credentialsModal');
-            modal.classList.toggle('hidden');
-        }
-        
-        // Close modal when clicking outside
-        document.addEventListener('click', function(event) {
-            const modal = document.getElementById('credentialsModal');
-            if (event.target === modal) {
-                modal.classList.add('hidden');
-            }
-        });
-        
-        // Close modal with Escape key
-        document.addEventListener('keydown', function(event) {
-            if (event.key === 'Escape') {
-                document.getElementById('credentialsModal').classList.add('hidden');
-            }
-        });
-        
-        // Add interactive features
-        document.addEventListener('DOMContentLoaded', function() {
-            // Form validation feedback
-            const inputs = document.querySelectorAll('input');
-            inputs.forEach(input => {
-                input.addEventListener('focus', function() {
-                    this.style.outline = 'none';
-                    this.style.borderColor = '#8b5cf6';
-                });
-                
-                input.addEventListener('blur', function() {
-                    this.style.borderColor = '#d1d5db';
-                });
-            });
-        });
+        function toggleModal() { document.getElementById('credentialsModal').classList.toggle('active'); }
+        function closeModalOnOutside(event) { if (event.target.id === 'credentialsModal') toggleModal(); }
+        document.addEventListener('keydown', function(event) { if (event.key === 'Escape') document.getElementById('credentialsModal').classList.remove('active'); });
     </script>
 </body>
 </html>
