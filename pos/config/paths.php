@@ -6,9 +6,9 @@
 
 // Detect if we're on localhost or production
 $is_localhost = (
-    $_SERVER['SERVER_NAME'] === 'localhost' || 
-    $_SERVER['SERVER_ADDR'] === '127.0.0.1' ||
-    strpos($_SERVER['SERVER_NAME'], 'localhost') !== false
+    (isset($_SERVER['SERVER_NAME']) && $_SERVER['SERVER_NAME'] === 'localhost') || 
+    (isset($_SERVER['SERVER_ADDR']) && $_SERVER['SERVER_ADDR'] === '127.0.0.1') ||
+    (isset($_SERVER['SERVER_NAME']) && strpos($_SERVER['SERVER_NAME'], 'localhost') !== false)
 );
 
 // Get the base path dynamically
