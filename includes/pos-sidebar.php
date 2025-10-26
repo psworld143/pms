@@ -3,18 +3,12 @@
 // Note: Session checks should be done in the main page, not in included components
 // This allows for more flexible inclusion
 
-// Include dynamic path configuration if it exists
-if (file_exists(__DIR__ . '/../pos/config/paths.php')) {
-    require_once __DIR__ . '/../pos/config/paths.php';
-    $base_path = POS_BASE_PATH . '/';
-} else {
-    // Fallback for legacy usage
-    $base_path = '/pms/pos/';
-}
-
 $user_role = $_SESSION['pos_user_role'] ?? $_SESSION['user_role'] ?? 'pos_user';
 $current_page = basename($_SERVER['PHP_SELF'], '.php');
 $current_url = $_SERVER['REQUEST_URI'];
+
+// Use absolute paths for navigation
+$base_path = '/pms/pos/';
 
 // Function to check if a URL is active
 function isActiveUrl($url, $current_url) {

@@ -104,7 +104,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                             <span class="hidden sm:block text-sm font-medium text-gray-700"><?php echo $user_name; ?></span>
                             <i class="fas fa-chevron-down text-xs text-gray-500"></i>
                         </button>
-                        <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden">
+                        <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden z-[9999]">
                             <div class="py-2">
                                 <a href="../../booking/profile.php" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                                     <i class="fas fa-user mr-2"></i>Profile
@@ -113,7 +113,7 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
                                     <i class="fas fa-tachometer-alt mr-2"></i>PMS Dashboard
                                 </a>
                                 <hr class="my-2">
-                                <a href="../../booking/logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                <a href="logout.php" class="block px-4 py-2 text-sm text-red-600 hover:bg-red-50">
                                     <i class="fas fa-sign-out-alt mr-2"></i>Logout
                                 </a>
                             </div>

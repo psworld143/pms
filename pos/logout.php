@@ -1,6 +1,9 @@
 <?php
-session_start();
-require_once '../includes/database.php';
+// VPS Session Fix - Robust session configuration
+require_once __DIR__ . '/../vps_session_fix.php';
+
+require_once __DIR__ . '/../includes/database.php';
+
 // Log the logout activity if user was logged in
 if (isset($_SESSION['pos_user_id'])) {
     try {

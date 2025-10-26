@@ -4372,7 +4372,7 @@ function getTrainingProgress($user_id) {
                 ta.*,
                 ts.title as scenario_title
             FROM training_attempts ta
-            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id
+            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.scenario_id
             WHERE ta.user_id = ? AND ta.status = 'completed'
             ORDER BY ta.created_at DESC
             LIMIT 10
@@ -5141,6 +5141,16 @@ function createServiceRequest($data) {
 function getUserTrainingProgress($user_id) {
     global $pdo;
     
+    error_log("getUserTrainingProgress called with user_id: $user_id");
+    
+    // Check which database we're connected to
+    try {
+        $db_check = $pdo->query("SELECT DATABASE() as db_name")->fetch();
+        error_log("getUserTrainingProgress - Connected to database: " . $db_check['db_name']);
+    } catch (Exception $e) {
+        error_log("getUserTrainingProgress - Could not check database: " . $e->getMessage());
+    }
+    
     try {
         // Overall statistics
         $stmt = $pdo->prepare("
@@ -5154,6 +5164,14 @@ function getUserTrainingProgress($user_id) {
         ");
         $stmt->execute([$user_id]);
         $stats = $stmt->fetch();
+        error_log("getUserTrainingProgress - Stats query result: " . print_r($stats, true));
+        
+        // Additional debug - check if $pdo is actually set
+        if (!isset($pdo)) {
+            error_log("getUserTrainingProgress - ERROR: PDO not set in function!");
+        } else {
+            error_log("getUserTrainingProgress - PDO is set, type: " . get_class($pdo));
+        }
         
         // Recent activity
         $stmt = $pdo->prepare("
@@ -5167,15 +5185,16 @@ function getUserTrainingProgress($user_id) {
                 END as scenario_title,
                 ta.scenario_type
             FROM training_attempts ta
-            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'training'
-            LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.id AND ta.scenario_type = 'customer_service'
-            LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem'
+            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.scenario_id AND ta.scenario_type = 'training'
+            LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.scenario_id AND ta.scenario_type = 'customer_service'
+            LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.scenario_id AND ta.scenario_type = 'problem'
             WHERE ta.user_id = ?
             ORDER BY ta.created_at DESC
             LIMIT 10
         ");
         $stmt->execute([$user_id]);
         $recent_activity = $stmt->fetchAll();
+        error_log("getUserTrainingProgress - Recent activity count: " . count($recent_activity));
         
         // Certificates
         $stmt = $pdo->prepare("
@@ -5188,9 +5207,9 @@ function getUserTrainingProgress($user_id) {
                    END as scenario_title
             FROM training_certificates tc
             LEFT JOIN training_attempts ta ON tc.attempt_id = ta.id
-            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'training'
-            LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.id AND ta.scenario_type = 'customer_service'
-            LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem'
+            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.scenario_id AND ta.scenario_type = 'training'
+            LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.scenario_id AND ta.scenario_type = 'customer_service'
+            LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.scenario_id AND ta.scenario_type = 'problem'
             WHERE tc.user_id = ?
             ORDER BY tc.earned_at DESC
         ");
@@ -5315,9 +5334,9 @@ function getScenarioSpecificProgress($user_id) {
                 MIN(ta.score) as worst_score,
                 COUNT(CASE WHEN ta.score >= 80 THEN 1 END) as passed_attempts
             FROM training_attempts ta
-            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.id AND ta.scenario_type = 'training'
-            LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.id AND ta.scenario_type = 'customer_service'
-            LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.id AND ta.scenario_type = 'problem'
+            LEFT JOIN training_scenarios ts ON ta.scenario_id = ts.scenario_id AND ta.scenario_type = 'training'
+            LEFT JOIN customer_service_scenarios css ON ta.scenario_id = css.scenario_id AND ta.scenario_type = 'customer_service'
+            LEFT JOIN problem_scenarios ps ON ta.scenario_id = ps.scenario_id AND ta.scenario_type = 'problem'
             WHERE ta.user_id = ? AND ta.status = 'completed'
             GROUP BY ta.scenario_id, ta.scenario_type
             ORDER BY avg_score DESC

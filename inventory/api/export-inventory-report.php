@@ -36,17 +36,22 @@ try {
     fclose($csv);
 
     $fileName = 'inventory_report_' . date('Ymd_His') . '.csv';
-    $publicPath = '/tmp/' . $fileName; // adjust if you have a public tmp directory mapping
-    // Move file to web-accessible tmp directory; fallback to returning absolute path
-    $webTmpDir = dirname($_SERVER['SCRIPT_NAME']) . '/../../tmp';
+    // Move file to web-accessible tmp directory (cross-platform compatible)
     $realWebTmp = realpath(__DIR__ . '/../../tmp');
-    if (!$realWebTmp) { @mkdir(__DIR__ . '/../../tmp', 0777, true); $realWebTmp = realpath(__DIR__ . '/../../tmp'); }
+    if (!$realWebTmp) { 
+        @mkdir(__DIR__ . '/../../tmp', 0777, true); 
+        $realWebTmp = realpath(__DIR__ . '/../../tmp'); 
+    }
     if ($realWebTmp) {
         $dest = $realWebTmp . DIRECTORY_SEPARATOR . $fileName;
         @rename($tmp, $dest);
+        // Use forward slashes for URL (works on all platforms)
         $downloadUrl = dirname($_SERVER['SCRIPT_NAME']) . '/../../tmp/' . $fileName;
     } else {
-        $downloadUrl = $publicPath; // may not be web accessible in some setups
+        // Fallback: use system temp directory
+        $systemTmp = sys_get_temp_dir() . DIRECTORY_SEPARATOR . $fileName;
+        @rename($tmp, $systemTmp);
+        $downloadUrl = 'file://' . $systemTmp; // may not be web accessible
     }
 
     echo json_encode(['success' => true, 'download_url' => $downloadUrl]);

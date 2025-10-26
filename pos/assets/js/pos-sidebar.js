@@ -62,36 +62,6 @@ function toggleSubmenu(menuKey) {
     }
 }
 
-// User dropdown functionality
-function toggleUserDropdown() {
-    const dropdown = document.getElementById('user-dropdown');
-    dropdown.classList.toggle('hidden');
-}
-
-// Notifications functionality
-function toggleNotifications() {
-    const dropdown = document.getElementById('notifications-dropdown');
-    dropdown.classList.toggle('hidden');
-}
-
-// Close dropdowns when clicking outside
-function setupDropdownHandlers() {
-    document.addEventListener('click', function(event) {
-        const userDropdown = document.getElementById('user-dropdown');
-        const notificationsDropdown = document.getElementById('notifications-dropdown');
-        
-        // Close user dropdown if clicking outside
-        if (!event.target.closest('#user-menu-toggle') && !event.target.closest('#user-dropdown')) {
-            if (userDropdown) userDropdown.classList.add('hidden');
-        }
-        
-        // Close notifications dropdown if clicking outside
-        if (!event.target.closest('#notifications-toggle') && !event.target.closest('#notifications-dropdown')) {
-            if (notificationsDropdown) notificationsDropdown.classList.add('hidden');
-        }
-    });
-}
-
 // Initialize sidebar functionality
 function initializePOSSidebar() {
     // Sidebar toggle event listener
@@ -100,23 +70,8 @@ function initializePOSSidebar() {
         sidebarToggle.addEventListener('click', toggleSidebar);
     }
     
-    // User menu dropdown event listener
-    const userMenuToggle = document.getElementById('user-menu-toggle');
-    if (userMenuToggle) {
-        userMenuToggle.addEventListener('click', toggleUserDropdown);
-    }
-    
-    // Notifications toggle event listener
-    const notificationsToggle = document.getElementById('notifications-toggle');
-    if (notificationsToggle) {
-        notificationsToggle.addEventListener('click', toggleNotifications);
-    }
-    
-    // Setup dropdown handlers
-    setupDropdownHandlers();
-    
-    // Initialize any other sidebar functionality
-    console.log('POS Sidebar initialized successfully');
+    // Note: Dropdowns are handled by pos-header.php inline script
+    // This keeps code simple and matches the booking system approach
 }
 
 // Auto-initialize when DOM is loaded
@@ -136,5 +91,3 @@ document.addEventListener('DOMContentLoaded', function() {
 window.toggleSidebar = toggleSidebar;
 window.closeSidebar = closeSidebar;
 window.toggleSubmenu = toggleSubmenu;
-window.toggleUserDropdown = toggleUserDropdown;
-window.toggleNotifications = toggleNotifications;

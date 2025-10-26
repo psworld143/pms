@@ -1,10 +1,12 @@
 <?php
-// Fix session issues for VPS
-$sessionPath = $_SERVER['DOCUMENT_ROOT'] . '/../tmp_sessions';
+// Fix session issues (cross-platform compatible)
+$sessionPath = $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'tmp_sessions';
 if (!is_dir($sessionPath)) {
-    mkdir($sessionPath, 0755, true);
+    @mkdir($sessionPath, 0755, true);
 }
-ini_set('session.save_path', $sessionPath);
+if (is_dir($sessionPath) && is_writable($sessionPath)) {
+    ini_set('session.save_path', $sessionPath);
+}
 session_start();
 
 require_once 'includes/database.php';

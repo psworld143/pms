@@ -4,12 +4,11 @@
  * Robust session configuration for LiteSpeed/CyberPanel
  */
 
-// Try multiple session paths until one works
+// Try multiple session paths until one works (cross-platform compatible)
 $sessionPaths = [
-    $_SERVER['DOCUMENT_ROOT'] . '/tmp_sessions',
-    '/tmp/pms_sessions',
-    $_SERVER['DOCUMENT_ROOT'] . '/../tmp_sessions',
-    sys_get_temp_dir() . '/pms_sessions'
+    $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . 'tmp_sessions',
+    sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pms_sessions',
+    $_SERVER['DOCUMENT_ROOT'] . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'tmp_sessions'
 ];
 
 $existingSessionId = null;

@@ -62,9 +62,9 @@ try {
         );
     }
     
-    // Create temporary file with .xls extension for better Excel compatibility
+    // Create temporary file with .xls extension for better Excel compatibility (cross-platform)
     $filename = 'journal_entries_' . date('Y-m-d_H-i-s') . '.xls';
-    $tmp_dir = __DIR__ . '/../tmp/';
+    $tmp_dir = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR;
     $filepath = $tmp_dir . $filename;
     
     // Ensure tmp directory exists

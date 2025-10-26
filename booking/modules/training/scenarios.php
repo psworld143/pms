@@ -1,17 +1,11 @@
 <?php
-session_start();
+// Use training session bridge to support both Booking and POS users
+require_once __DIR__ . '/training-session-bridge.php';
+
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
 
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../login.php');
-    exit();
-}
-
-$user_id = $_SESSION['user_id'];
-$user_name = $_SESSION['user_name'] ?? 'User';
-$user_role = $_SESSION['user_role'] ?? 'front_desk';
+// $user_id, $user_name, $user_role are already set by training-session-bridge.php
 
 // Get filter parameters
 $category = $_GET['category'] ?? null;

@@ -14,7 +14,9 @@ define('BOOKING_URL', 'https://pms.seait.edu.ph/booking');
 if (defined('CYBERPANEL_DEPLOYMENT') && CYBERPANEL_DEPLOYMENT) {
     ini_set('display_errors', 0); // Hide errors from users
     ini_set('log_errors', 1);
-    ini_set('error_log', '/tmp/pms_errors.log');
+    // Use sys_get_temp_dir() for cross-platform compatibility
+    $errorLogPath = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'pms_errors.log';
+    ini_set('error_log', $errorLogPath);
     
     // Session configuration for HTTPS
     ini_set('session.cookie_httponly', 1);
@@ -25,8 +27,10 @@ if (defined('CYBERPANEL_DEPLOYMENT') && CYBERPANEL_DEPLOYMENT) {
     // Timezone
     date_default_timezone_set('Asia/Manila');
     
-    // File permissions
-    umask(0022);
+    // File permissions (ignored on Windows, safe on Unix)
+    if (PHP_OS_FAMILY !== 'Windows') {
+        umask(0022);
+    }
 }
 
 // NO OUTPUT - This prevents interference with API responses

@@ -131,7 +131,7 @@ function exportTransactionReportPdf(): array {
         $pdfOutput = $dompdf->output();
 
         $filename = 'transaction_report_' . date('Y-m-d_H-i-s') . '.pdf';
-        $dir = __DIR__ . '/../tmp/';
+        $dir = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR;
         if (!is_dir($dir)) { mkdir($dir, 0755, true); }
         file_put_contents($dir . $filename, $pdfOutput);
         return ['download_url' => 'tmp/' . $filename];
@@ -148,7 +148,7 @@ function exportTransactionReportPdf(): array {
                     '"' . str_replace('"','""',$r['reason']) . '",' .
                     '"' . str_replace('"','""',$r['performed_by_user']) . '"' . "\n";
         }
-        $dir = __DIR__ . '/../tmp/';
+        $dir = __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'tmp' . DIRECTORY_SEPARATOR;
         if (!is_dir($dir)) { mkdir($dir, 0755, true); }
         $filename = 'transaction_report_' . date('Y-m-d_H-i-s') . '.csv';
         file_put_contents($dir . $filename, $csv);

@@ -4,14 +4,17 @@
  * Include this file at the top of all PHP files that use sessions
  */
 
-// Set custom session save path for VPS
-$sessionPath = __DIR__ . '/tmp_sessions';
+// Set custom session save path (cross-platform compatible)
+$sessionPath = __DIR__ . DIRECTORY_SEPARATOR . 'tmp_sessions';
 
 // Create session directory if it doesn't exist
 if (!is_dir($sessionPath)) {
     mkdir($sessionPath, 0755, true);
-    // Create .htaccess to protect session files
-    file_put_contents($sessionPath . '/.htaccess', "Order deny,allow\nDeny from all\n");
+    // Create .htaccess to protect session files (Apache only, ignored on Windows/IIS)
+    $htaccessPath = $sessionPath . DIRECTORY_SEPARATOR . '.htaccess';
+    if (!file_exists($htaccessPath)) {
+        @file_put_contents($htaccessPath, "Order deny,allow\nDeny from all\n");
+    }
 }
 
 // Set session save path

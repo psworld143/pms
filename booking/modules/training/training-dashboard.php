@@ -2,30 +2,18 @@
 // Error handling for production
 ini_set('display_errors', 0);
 ini_set('log_errors', 1);
-// Configure session cookie parameters for better compatibility
-session_set_cookie_params([
-    'lifetime' => 0,
-    'path' => '/',
-    'domain' => '',
-    'secure' => false,
-    'httponly' => false,
-    'samesite' => 'Lax'
-]);
 
-session_start();
+// Use training session bridge to support both Booking and POS users
+require_once __DIR__ . '/training-session-bridge.php';
+
 require_once '../../config/database.php';
 require_once '../../includes/functions.php';
-// Check if user is logged in
-if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../login.php');
-    exit();
-}
 
 // Get training statistics
 $training_stats = getTrainingStatistics();
 
 // Additional dynamic metrics for dashboard
-$user_id = $_SESSION['user_id'];
+// $user_id is already set by training-session-bridge.php
 
 // Current streak (consecutive days with a completed attempt ending today)
 $current_streak = 0;

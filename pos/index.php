@@ -38,7 +38,7 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="assets/css/pos-styles.css">
-    <script src="assets/js/pos-sidebar.js"></script>
+    <!-- pos-sidebar.js moved to after header include for proper function loading order -->
     <style>
         /* Demo mode indicator */
         .demo-mode-indicator {
@@ -75,6 +75,9 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
         <!-- Include POS-specific header and sidebar -->
         <?php include 'includes/pos-header.php'; ?>
         <?php include 'includes/pos-sidebar.php'; ?>
+        
+        <!-- Load sidebar JS after header to ensure proper function order -->
+        <script src="assets/js/pos-sidebar.js"></script>
 
         <!-- Main Content -->
         <main class="main-content pt-20 px-4 pb-4 lg:px-6 lg:pb-6 flex-1 transition-all duration-300">
