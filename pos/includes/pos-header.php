@@ -2,6 +2,9 @@
 // POS-specific header component that matches the exact booking system design
 // This file should only contain the header/navbar, not the complete HTML structure
 
+// Include dynamic path configuration
+require_once __DIR__ . '/../config/paths.php';
+
 // Get user information from session (should be set before including this file)
 $user_role = $_SESSION['pos_user_role'] ?? 'pos_user';
 $user_name = $_SESSION['pos_user_name'] ?? 'POS User';
@@ -9,7 +12,14 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
 
 // Calculate relative path to POS root from current script
 $script_dir = dirname($_SERVER['SCRIPT_NAME']);
-$depth = substr_count(str_replace('/pms/pos', '', $script_dir), '/');
+// Dynamically detect POS base for relative path calculation
+$pos_base_in_script = strpos($script_dir, '/pos');
+if ($pos_base_in_script !== false) {
+    $relative_script_dir = substr($script_dir, $pos_base_in_script + 4); // Remove '/pos'
+} else {
+    $relative_script_dir = $script_dir;
+}
+$depth = substr_count($relative_script_dir, '/');
 $pos_root = $depth > 0 ? str_repeat('../', $depth) : './';
 
 // Get school logo and abbreviation from database
