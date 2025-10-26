@@ -40,9 +40,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Hotel PMS</title>
+    <title>Booking System Login - Hotel PMS Training</title>
+    <meta name="description" content="Access the Hotel Booking & Reservations Management System - Professional Training Platform">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
             theme: {
@@ -106,7 +108,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     </style>
 </head>
-<body class="min-h-screen bg-white relative overflow-hidden">
+<body class="min-h-screen bg-white relative overflow-hidden" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
     <!-- Animated Background Elements -->
     <div class="absolute inset-0 overflow-hidden">
         <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-3xl animate-float"></div>
@@ -129,9 +131,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         </div>
                     </div>
                     <h1 class="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                        Booking System
+                        Booking & Reservations
                     </h1>
-                    <p class="text-gray-600 mt-2 text-sm font-medium">Hotel Reservation & Guest Management</p>
+                    <p class="text-gray-600 mt-2 text-sm font-medium">Complete Hotel Management System for Students</p>
                     <div class="flex items-center justify-center mt-3 space-x-2">
                         <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
                         <span class="text-success text-xs font-medium">System Online</span>

@@ -87,9 +87,11 @@ function logPOSActivity($user_id, $action, $description) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS System Login - Hotel Management Simulation</title>
+    <title>POS System Login - Hotel PMS Training</title>
+    <meta name="description" content="Access the Point of Sale System - Restaurant, Spa, Gift Shop & Room Service">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
         tailwind.config = {
             theme: {
@@ -153,7 +155,7 @@ function logPOSActivity($user_id, $action, $description) {
         }
     </style>
 </head>
-<body class="min-h-screen bg-white relative overflow-hidden">
+<body class="min-h-screen bg-white relative overflow-hidden" style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
     <!-- Animated Background Elements -->
     <div class="absolute inset-0 overflow-hidden">
         <div class="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-primary/10 to-secondary/10 rounded-full blur-3xl animate-float"></div>
@@ -176,9 +178,9 @@ function logPOSActivity($user_id, $action, $description) {
                         </div>
                     </div>
                     <h1 class="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-                        POS System
+                        Point of Sale (POS)
                     </h1>
-                    <p class="text-gray-600 mt-2 text-sm font-medium">Hotel Management Simulation & Learning</p>
+                    <p class="text-gray-600 mt-2 text-sm font-medium">Restaurant, Spa, Gift Shop & Room Service</p>
                     <div class="flex items-center justify-center mt-3 space-x-2">
                         <div class="w-2 h-2 bg-success rounded-full animate-pulse"></div>
                         <span class="text-success text-xs font-medium">System Online</span>
