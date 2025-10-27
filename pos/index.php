@@ -13,6 +13,31 @@ if (!isset($_SESSION['pos_user_id'])) {
 
 require_once 'includes/pos-functions.php';
 
+// Define pos_url() helper function if not already defined
+if (!function_exists('pos_url')) {
+    function pos_base() {
+        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
+        $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
+        $pos = strpos($path, '/pos/');
+        if ($pos !== false) {
+            return rtrim(substr($path, 0, $pos + strlen('/pos/')), '/') . '/';
+        }
+        $dir = str_replace('\\','/', dirname($path));
+        $guard = 0;
+        while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'pos' && $guard < 10) {
+            $dir = dirname($dir);
+            $guard++;
+        }
+        if (basename($dir) === 'pos') {
+            return rtrim($dir, '/') . '/';
+        }
+        return '/pms/pos/';
+    }
+    function pos_url($relative = '') {
+        return rtrim(pos_base(), '/') . '/' . ltrim($relative, '/');
+    }
+}
+
 // Get POS statistics
 $pos_stats = getPOSStats();
 
@@ -146,37 +171,37 @@ $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                     
                     <!-- Restaurant POS -->
-                    <a href="restaurant/" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
+                    <a href="<?php echo pos_url('restaurant/'); ?>" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
                         <i class="fas fa-utensils text-xl mr-3"></i>
                         <span class="font-medium">Restaurant POS</span>
                     </a>
 
                     <!-- Room Service POS -->
-                    <a href="room-service/" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
+                    <a href="<?php echo pos_url('room-service/'); ?>" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
                         <i class="fas fa-bed text-xl mr-3"></i>
                         <span class="font-medium">Room Service</span>
                     </a>
 
                     <!-- Spa & Wellness POS -->
-                    <a href="spa/" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
+                    <a href="<?php echo pos_url('spa/'); ?>" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
                         <i class="fas fa-spa text-xl mr-3"></i>
                         <span class="font-medium">Spa & Wellness</span>
                     </a>
 
                     <!-- Gift Shop POS -->
-                    <a href="gift-shop/" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
+                    <a href="<?php echo pos_url('gift-shop/'); ?>" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
                         <i class="fas fa-gift text-xl mr-3"></i>
                         <span class="font-medium">Gift Shop</span>
                     </a>
 
                     <!-- Event Services POS -->
-                    <a href="events/" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
+                    <a href="<?php echo pos_url('events/'); ?>" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
                         <i class="fas fa-calendar-alt text-xl mr-3"></i>
                         <span class="font-medium">Event Services</span>
                     </a>
 
                     <!-- Quick Sales POS -->
-                    <a href="quick-sales/" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
+                    <a href="<?php echo pos_url('quick-sales/'); ?>" class="flex items-center p-4 bg-gray-50 border-2 border-gray-200 rounded-lg hover:bg-primary hover:border-primary hover:text-white transition-all duration-300">
                         <i class="fas fa-bolt text-xl mr-3"></i>
                         <span class="font-medium">Quick Sales</span>
                     </a>
