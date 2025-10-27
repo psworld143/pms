@@ -1,0 +1,16 @@
+To deploy the fix to your live server (pms.seait.edu.ph), you need to call this URL in your browser:
+
+https://pms.seait.edu.ph/git-webhook.php
+
+OR manually SSH into the server and run:
+cd /home/pms.seait.edu.ph/public_html
+git fetch --all
+git reset --hard origin/main
+
+The files that need to be deployed are:
+- pos/includes/pos-sidebar.php
+- pos/includes/pos-header.php  
+- pos/index.php
+
+These files now correctly generate URLs with /pos/ prefix on live server.
+
