@@ -17,7 +17,7 @@ require_once 'includes/pos-functions.php';
 if (!function_exists('pos_url')) {
     function pos_base() {
         // Check if we're on localhost or live server
-        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+        $host = isset($_SERVER['HTTP_HOST']) ? strtolower($_SERVER['HTTP_HOST']) : '';
         $is_localhost = (strpos($host, 'localhost') !== false) || (strpos($host, '127.0.0.1') !== false);
         
         // ALWAYS return the correct base based on environment
@@ -25,6 +25,7 @@ if (!function_exists('pos_url')) {
         if ($is_localhost) {
             return '/pms/pos/';
         } else {
+            // For live server, return /pos/ base path
             return '/pos/';
         }
     }
