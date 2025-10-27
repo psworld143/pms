@@ -8,33 +8,17 @@ $current_page = basename($_SERVER['PHP_SELF'], '.php');
 // Function to generate POS URLs dynamically based on environment
 if (!function_exists('pos_url')) {
     function pos_base() {
-        $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
-        $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
-        
         // Check if we're on localhost or live server
         $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
         $is_localhost = (strpos($host, 'localhost') !== false) || (strpos($host, '127.0.0.1') !== false);
         
-        // Find /pos/ in the path
-        $pos = strpos($path, '/pos/');
-        if ($pos !== false) {
-            $base = rtrim(substr($path, 0, $pos + strlen('/pos/')), '/') . '/';
-            return $base;
+        // ALWAYS return the correct base based on environment
+        // This ensures URLs work on both localhost and live server
+        if ($is_localhost) {
+            return '/pms/pos/';
+        } else {
+            return '/pos/';
         }
-        
-        // Try to find pos directory
-        $dir = str_replace('\\','/', dirname($path));
-        $guard = 0;
-        while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'pos' && $guard < 10) {
-            $dir = dirname($dir);
-            $guard++;
-        }
-        if (basename($dir) === 'pos') {
-            return rtrim($dir, '/') . '/';
-        }
-        
-        // Default fallback based on environment
-        return $is_localhost ? '/pms/pos/' : '/pos/';
     }
     function pos_url($relative = '') {
         $base = pos_base();
