@@ -7,16 +7,33 @@ $user_role = $_SESSION['pos_user_role'] ?? 'pos_user';
 $user_name = $_SESSION['pos_user_name'] ?? 'POS User';
 $is_demo_mode = isset($_SESSION['pos_demo_mode']) && $_SESSION['pos_demo_mode'];
 
-// Calculate relative path to POS root from current script
-$script_dir = dirname($_SERVER['SCRIPT_NAME']);
-$depth = substr_count(str_replace('/pms/pos', '', $script_dir), '/');
-$pos_root = $depth > 0 ? str_repeat('../', $depth) : './';
-
-// Helper function for POS URLs (similar to booking_url)
+// Helper function for POS URLs that works on both localhost and live server
 if (!function_exists('pos_url')) {
+    function pos_base() {
+        // Check if we're on localhost or live server
+        $host = isset($_SERVER['HTTP_HOST']) ? strtolower($_SERVER['HTTP_HOST']) : '';
+        $is_localhost = (strpos($host, 'localhost') !== false) || (strpos($host, '127.0.0.1') !== false);
+        
+        // ALWAYS return the correct base based on environment
+        if ($is_localhost) {
+            // For localhost with /pms/ folder
+            return '/pms/pos/';
+        } else {
+            // For live server at pms.seait.edu.ph - NO /pms/ folder, just /pos/
+            return '/pos/';
+        }
+    }
+    
     function pos_url($path = '') {
-        global $pos_root;
-        return rtrim($pos_root, '/') . '/' . ltrim($path, '/');
+        $base = pos_base();
+        $path = ltrim($path, '/');
+        
+        // If base ends with /, just append path
+        if (substr($base, -1) === '/') {
+            return $base . $path;
+        }
+        // If base doesn't end with /, add it
+        return $base . '/' . $path;
     }
 }
 
