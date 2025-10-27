@@ -23,9 +23,10 @@ if (!function_exists('pos_url')) {
         // ALWAYS return the correct base based on environment
         // This ensures URLs work on both localhost and live server
         if ($is_localhost) {
+            // For localhost with /pms/ folder
             return '/pms/pos/';
         } else {
-            // For live server, return /pos/ base path
+            // For live server at pms.seait.edu.ph - NO /pms/ folder, just /pos/
             return '/pos/';
         }
     }
