@@ -45,7 +45,15 @@ if (!function_exists('pos_url')) {
         return $is_localhost ? '/pms/pos/' : '/pos/';
     }
     function pos_url($relative = '') {
-        return rtrim(pos_base(), '/') . '/' . ltrim($relative, '/');
+        $base = pos_base();
+        $relative = ltrim($relative, '/');
+        
+        // If base ends with /, just append relative
+        if (substr($base, -1) === '/') {
+            return $base . $relative;
+        }
+        // If base doesn't end with /, add it
+        return $base . '/' . $relative;
     }
 }
 
