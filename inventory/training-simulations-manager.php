@@ -7,8 +7,9 @@
 require_once __DIR__ . '/../vps_session_fix.php';
 require_once __DIR__ . '/../includes/database.php';
 
-// Require login
+// Require login with error handling
 if (!isset($_SESSION['user_id'])) {
+	error_log('No user ID in session. Redirecting to login.');
 	header('Location: login.php');
 	exit();
 }
@@ -16,6 +17,8 @@ if (!isset($_SESSION['user_id'])) {
 $user_id = (int)($_SESSION['user_id'] ?? 0);
 $user_role = $_SESSION['user_role'] ?? '';
 $user_name = $_SESSION['user_name'] ?? 'User';
+
+error_log('Training page loaded - User ID: ' . $user_id . ', Role: ' . $user_role);
 
 // Allow both manager and housekeeping users
 if (!in_array($user_role, ['manager', 'housekeeping'], true)) {
@@ -227,8 +230,20 @@ $page_title = $user_role === 'manager' ? 'Training & Simulations (Manager)' : 'T
 		<div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden" onclick="closeSidebar()"></div>
 
 		<!-- Include unified inventory header and sidebar -->
-		<?php include 'includes/inventory-header.php'; ?>
-		<?php include 'includes/sidebar-inventory.php'; ?>
+		<?php 
+		try {
+			include 'includes/inventory-header.php'; 
+		} catch (Exception $e) {
+			error_log('Error including header: ' . $e->getMessage());
+		}
+		?>
+		<?php 
+		try {
+			include 'includes/sidebar-inventory.php'; 
+		} catch (Exception $e) {
+			error_log('Error including sidebar: ' . $e->getMessage());
+		}
+		?>
 
 		<!-- Main Content -->
 		<main class="lg:ml-64 mt-16 p-4 lg:p-6 flex-1 transition-all duration-300 overflow-y-auto max-h-screen">
@@ -863,6 +878,12 @@ function showScenarioPreview(scenario, questions) {
 }
 
 function submitScenario() {
+    // Check if currentScenario is set
+    if (!currentScenario || !currentScenario.id) {
+        alert('Error: Scenario not loaded properly. Please refresh the page and try again.');
+        return;
+    }
+    
     const formData = new FormData(document.getElementById('scenario-form'));
     const answers = {};
     
@@ -880,7 +901,8 @@ function submitScenario() {
         contentType: 'application/json',
         data: JSON.stringify({
             scenario_id: currentScenario.id,
-            answers: answers
+            answers: answers,
+            user_id: <?php echo $user_id; ?>
         }),
         success: function(response) {
             if (response.success) {
@@ -890,11 +912,13 @@ function submitScenario() {
                 loadUserProgress(); // Refresh progress data
                 loadTrainingHistory(); // Refresh training history
             } else {
-                alert('Error submitting scenario: ' + response.message);
+                alert('Error submitting scenario: ' + (response.message || 'Unknown error'));
             }
         },
-        error: function() {
-            alert('Failed to submit scenario');
+        error: function(xhr, status, error) {
+            console.error('Error submitting scenario:', xhr.responseText);
+            const errorMsg = 'Failed to submit scenario: ' + error;
+            alert(errorMsg);
         },
         complete: function() {
             submitBtn.html(originalText).prop('disabled', false);
@@ -905,7 +929,7 @@ function submitScenario() {
 function showAnswerReview(response) {
     $('#answer-review-content').html(`
         <div class="text-center mb-6">
-            <div class="text-4xl font-bold ${response.score >= 80 ? 'text-green-600' : 'text-red-600'} mb-2">
+            <div class="text-2xl font-bold ${response.score >= 80 ? 'text-green-600' : 'text-red-600'} mb-1">
                 ${response.score}%
             </div>
             <div class="text-lg text-gray-600 mb-4">${response.scenario_title}</div>

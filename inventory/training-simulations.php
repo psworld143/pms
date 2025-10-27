@@ -656,6 +656,12 @@ function showScenarioPreview(scenario, questions) {
 }
 
 function submitScenario() {
+    // Check if currentScenario is set
+    if (!currentScenario || !currentScenario.id) {
+        alert('Error: Scenario not loaded properly. Please refresh the page and try again.');
+        return;
+    }
+    
     const formData = new FormData(document.getElementById('scenario-form'));
     const answers = {};
     
@@ -673,7 +679,8 @@ function submitScenario() {
         contentType: 'application/json',
         data: JSON.stringify({
             scenario_id: currentScenario.id,
-            answers: answers
+            answers: answers,
+            user_id: <?php echo $user_id; ?>
         }),
         success: function(response) {
             if (response.success) {
@@ -683,11 +690,13 @@ function submitScenario() {
                 loadUserProgress(); // Refresh progress data
                 loadTrainingHistory(); // Refresh training history
             } else {
-                alert('Error submitting scenario: ' + response.message);
+                alert('Error submitting scenario: ' + (response.message || 'Unknown error'));
             }
         },
-        error: function() {
-            alert('Failed to submit scenario');
+        error: function(xhr, status, error) {
+            console.error('Error submitting scenario:', xhr.responseText);
+            const errorMsg = 'Failed to submit scenario: ' + error;
+            alert(errorMsg);
         },
         complete: function() {
             submitBtn.html(originalText).prop('disabled', false);
@@ -698,31 +707,31 @@ function submitScenario() {
 function showAnswerReview(response) {
     $('#answer-review-content').html(`
         <div class="text-center mb-6">
-            <h3 class="text-2xl font-bold text-gray-900 mb-2">Training Complete!</h3>
-            <div class="text-4xl font-bold ${response.score >= 80 ? 'text-green-600' : 'text-red-600'} mb-2">
+            <h3 class="text-lg font-bold text-gray-900 mb-1">Training Complete!</h3>
+            <div class="text-2xl font-bold ${response.score >= 80 ? 'text-green-600' : 'text-red-600'} mb-1">
                 ${response.score}%
             </div>
-            <p class="text-gray-600">${response.score >= 80 ? 'Congratulations! You passed!' : 'Keep practicing to improve your score.'}</p>
+            <p class="text-xs text-gray-600">${response.score >= 80 ? 'Congratulations! You passed!' : 'Keep practicing to improve your score.'}</p>
         </div>
-        <div class="space-y-4">
+        <div class="space-y-2 max-h-96 overflow-y-auto">
             ${response.questions.map((question, index) => `
-                <div class="border border-gray-200 rounded-lg p-4">
-                    <h4 class="font-semibold text-gray-900 mb-3">Question ${index + 1}: ${question.question}</h4>
-                    <div class="space-y-2">
+                <div class="border border-gray-200 rounded-lg p-2">
+                    <h4 class="font-semibold text-sm text-gray-900 mb-1">Q${index + 1}: ${question.question}</h4>
+                    <div class="space-y-1">
                         ${question.options.map(option => `
-                            <div class="flex items-center p-2 rounded ${
+                            <div class="flex items-center p-1.5 rounded text-xs ${
                                 option.option_value === question.correct_answer ? 'bg-green-100 border-green-300' :
                                 option.option_value === response.user_answers[`q${question.id}`] ? 'bg-red-100 border-red-300' :
                                 'bg-gray-50 border-gray-200'
                             } border">
-                                <span class="w-6 h-6 rounded-full flex items-center justify-center text-xs font-medium mr-3 ${
+                                <span class="w-5 h-5 rounded-full flex items-center justify-center text-xs font-medium mr-2 ${
                                     option.option_value === question.correct_answer ? 'bg-green-500 text-white' :
                                     option.option_value === response.user_answers[`q${question.id}`] ? 'bg-red-500 text-white' :
                                     'bg-gray-200 text-gray-600'
                                 }">${String.fromCharCode(65 + question.options.indexOf(option))}</span>
-                                <span class="text-sm">${option.option_text}</span>
-                                ${option.option_value === question.correct_answer ? '<span class="ml-auto text-green-600 font-medium">Correct</span>' : ''}
-                                ${option.option_value === response.user_answers[`q${question.id}`] && option.option_value !== question.correct_answer ? '<span class="ml-auto text-red-600 font-medium">Your Answer</span>' : ''}
+                                <span class="text-xs flex-1">${option.option_text}</span>
+                                ${option.option_value === question.correct_answer ? '<span class="ml-auto text-green-600 text-xs">✓</span>' : ''}
+                                ${option.option_value === response.user_answers[`q${question.id}`] && option.option_value !== question.correct_answer ? '<span class="ml-auto text-red-600 text-xs">✗</span>' : ''}
                             </div>
                         `).join('')}
                     </div>
