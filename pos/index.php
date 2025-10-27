@@ -18,10 +18,19 @@ if (!function_exists('pos_url')) {
     function pos_base() {
         $script = isset($_SERVER['SCRIPT_NAME']) ? str_replace('\\','/', $_SERVER['SCRIPT_NAME']) : '';
         $path = $script !== '' ? $script : (isset($_SERVER['PHP_SELF']) ? str_replace('\\','/', $_SERVER['PHP_SELF']) : '/');
+        
+        // Check if we're on localhost or live server
+        $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : '';
+        $is_localhost = (strpos($host, 'localhost') !== false) || (strpos($host, '127.0.0.1') !== false);
+        
+        // Find /pos/ in the path
         $pos = strpos($path, '/pos/');
         if ($pos !== false) {
-            return rtrim(substr($path, 0, $pos + strlen('/pos/')), '/') . '/';
+            $base = rtrim(substr($path, 0, $pos + strlen('/pos/')), '/') . '/';
+            return $base;
         }
+        
+        // Try to find pos directory
         $dir = str_replace('\\','/', dirname($path));
         $guard = 0;
         while ($dir !== '/' && $dir !== '.' && basename($dir) !== 'pos' && $guard < 10) {
@@ -31,7 +40,9 @@ if (!function_exists('pos_url')) {
         if (basename($dir) === 'pos') {
             return rtrim($dir, '/') . '/';
         }
-        return '/pms/pos/';
+        
+        // Default fallback based on environment
+        return $is_localhost ? '/pms/pos/' : '/pos/';
     }
     function pos_url($relative = '') {
         return rtrim(pos_base(), '/') . '/' . ltrim($relative, '/');
