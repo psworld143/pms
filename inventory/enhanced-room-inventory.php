@@ -78,7 +78,14 @@ $is_housekeeping = ($user_role === 'housekeeping');
 						<button id="request-supplies-btn" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
 							<i class="fas fa-shopping-cart mr-2"></i>Request Supplies
 						</button>
-                <?php endif; ?>
+						<button id="open-my-requests" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium">
+							<i class="fas fa-list mr-2"></i>My Requests
+						</button>
+					<?php else: ?>
+						<button id="open-all-requests" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
+							<i class="fas fa-boxes mr-2"></i>Supply Requests
+						</button>
+					<?php endif; ?>
             </div>
         </div>
 
@@ -324,7 +331,7 @@ $is_housekeeping = ($user_role === 'housekeeping');
 			showRoomDetails(roomId);
 		});
 
-		$('#close-modal').click(function() {
+			$('#close-modal').click(function() {
 			$('#modal-content').removeClass('scale-100 opacity-100').addClass('scale-95 opacity-0');
 			setTimeout(() => { $('#room-details-modal').addClass('hidden'); }, 300);
 		});
@@ -336,8 +343,10 @@ $is_housekeeping = ($user_role === 'housekeeping');
 			}
 		});
 
-		$('#check-rooms-btn').click(function() { startRoomCheck(); });
-		$('#request-supplies-btn').click(function() { openRequestModal(); });
+			$('#check-rooms-btn').click(function() { startRoomCheck(); });
+			$('#request-supplies-btn').click(function() { openRequestModal(); });
+			$('#open-my-requests').click(function(){ openRequestsModal(null, true); });
+			$('#open-all-requests').click(function(){ openRequestsModal(null, false); });
 		$(document).on('click', '#request-replacement-btn', function(){ const rn = $(this).data('room-number'); openRequestModal(rn); });
 		$(document).on('click', '#check-room-btn', function(){ 
 			const roomId = $(this).data('room-id');
@@ -566,6 +575,10 @@ $is_housekeeping = ($user_role === 'housekeeping');
 						<button id="check-room-btn" class="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}"><i class="fas fa-clipboard-check mr-2"></i>Check Room</button>
 						<?php if ($is_housekeeping): ?>
 							<button id="request-replacement-btn" class="bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg" data-room-id="${room.id}" data-room-number="${room.room_number}"><i class="fas fa-shopping-cart mr-2"></i>Request Items</button>
+							<button onclick="openRequestsModal('${room.room_number}', true)" class="bg-gray-700 hover:bg-gray-800 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"><i class="fas fa-list mr-2"></i>My Requests for Room</button>
+						<?php endif; ?>
+						<?php if ($is_manager): ?>
+							<button onclick="openRequestsModal('${room.room_number}', false)" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg"><i class="fas fa-box-open mr-2"></i>View Supply Requests</button>
 						<?php endif; ?>
 					</div>
 				</div>
@@ -719,6 +732,72 @@ $is_housekeeping = ($user_role === 'housekeeping');
 			$('#submit-request').click(function() { submitRequest(); });
 			$('#cancel-request').click(function() { $('#request-modal').remove(); });
 			$('#request-modal').click(function(e) { if (e.target === this) { $(this).remove(); } });
+		}
+
+		window.openRequestsModal = function(roomNum, onlyMine) {
+			const userRole = '<?php echo $user_role; ?>';
+			const title = onlyMine ? 'My Supply Requests' : (roomNum ? 'Supply Requests - Room ' + roomNum : 'All Supply Requests');
+			// Ensure only one modal instance exists
+			$('#supply-requests-modal').remove();
+			const modal = `
+				<div id="supply-requests-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+					<div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden">
+						<div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+							<h3 class="text-lg font-bold text-gray-800">${title}</h3>
+							<button id="close-reqs" class="text-gray-500 hover:text-gray-700"><i class="fas fa-times"></i></button>
+						</div>
+						<div class="p-4 overflow-y-auto" style="max-height:70vh">
+							<div id="requests-list" class="space-y-3 text-sm text-gray-700">
+								<div class="flex items-center justify-center py-8 text-gray-500"><i class="fas fa-spinner fa-spin mr-2"></i>Loading...</div>
+							</div>
+						</div>
+					</div>
+				</div>`;
+			$('body').append(modal);
+			$('#close-reqs').click(function(){ $('#supply-requests-modal').remove(); });
+			$('#supply-requests-modal').click(function(e){ if(e.target === this){ $(this).remove(); }});
+			const params = {};
+			if (roomNum) params.room_number = roomNum;
+			if (onlyMine) params.requested_by = '<?php echo (int)($_SESSION['user_id'] ?? 0); ?>';
+			$.ajax({ url: 'api/get-supply-requests.php', method: 'GET', data: params, dataType: 'json', xhrFields: { withCredentials: true }, success: function(resp){
+				const list = $('#supply-requests-modal').find('#requests-list');
+				list.empty();
+				if (!resp.success) { list.html('<div class="text-red-600">Failed to load requests</div>'); return; }
+				const rows = resp.requests || [];
+				if (!rows.length) { list.html('<div class="text-gray-500">No requests found.</div>'); return; }
+				rows.forEach(function(r){
+					const canAct = (userRole === 'manager' && (r.status === 'pending'));
+					const reasonLabel = (r.reason || '').replace(/_/g,' ');
+					const card = `
+						<div class="border border-gray-200 rounded-lg p-3">
+							<div class="flex justify-between items-start">
+								<div>
+									<div class="font-semibold">Room ${r.room_number || ''}</div>
+									<div class="text-gray-600">${r.item_name || 'Item'} - Qty: ${r.quantity_requested || 0} ${r.unit || ''}</div>
+									<div class="text-gray-500">Reason: ${reasonLabel ? reasonLabel.charAt(0).toUpperCase() + reasonLabel.slice(1) : ''}</div>
+									<div class="text-gray-500">Requested by: ${r.requested_by_name || ''}</div>
+									<div class="text-gray-400">Date: ${r.created_at ? new Date(r.created_at).toLocaleString() : ''}</div>
+								</div>
+								<div class="text-xs">
+									<span class="px-2 py-1 rounded-full ${r.status==='pending'?'bg-yellow-100 text-yellow-800':(r.status==='approved'?'bg-green-100 text-green-800':(r.status==='rejected'?'bg-red-100 text-red-800':'bg-gray-100 text-gray-800'))}">${r.status ? r.status.charAt(0).toUpperCase()+r.status.slice(1) : ''}</span>
+									${canAct ? `<div class="mt-2 space-x-2 text-right">
+										<button class="approve-btn bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded" data-id="${r.id}"><i class="fas fa-check mr-1"></i>Approve</button>
+										<button class="reject-btn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded" data-id="${r.id}"><i class="fas fa-times mr-1"></i>Reject</button>
+									</div>` : ''}
+								</div>
+							</div>
+						</div>`;
+					list.append(card);
+				});
+				// bind actions
+				list.on('click', '.approve-btn', function(){ updateSupplyRequest($(this).data('id'), 'approve'); });
+				list.on('click', '.reject-btn', function(){ updateSupplyRequest($(this).data('id'), 'reject'); });
+			}, error: function(xhr){ $('#requests-list').html('<div class="text-red-600">Error: '+xhr.responseText+'</div>'); }});
+		}
+
+		function updateSupplyRequest(id, action){
+			const notes = prompt(action === 'approve' ? 'Approval notes (optional):' : 'Rejection notes (optional):', '');
+			$.ajax({ url: 'api/update-supply-request.php', method: 'POST', dataType: 'json', data: { request_id: id, action: action, notes: notes || '' }, xhrFields: { withCredentials: true }, success: function(res){ if(res.success){ openRequestsModal(null, false); } else { alert('Failed: '+res.message); } }, error: function(xhr){ alert('Error: '+xhr.responseText); }});
 		}
 		function loadRequestItems() { $.ajax({ url: 'api/list-items-simple.php', method: 'GET', dataType: 'json', success: function(response){ const select = $('#request-item'); select.empty(); select.append('<option value="">Select Item</option>'); const items = response.items || response.data || []; items.forEach(function(item){ const id = item.id || item.item_id; const name = item.label || item.item_name || item.name || ('Item #' + id); select.append(`<option value="${id}">${name}</option>`); }); }, error: function(){ $('#request-item').html('<option value="">Unable to load items</option>'); } }); }
 		function submitRequest() {

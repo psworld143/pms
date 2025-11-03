@@ -112,8 +112,8 @@ session_start(); foreach ($room_types as $type => $info): ?>
 session_start(); echo $type; ?>" data-rate="<?php
 session_start(); echo $info['rate']; ?>">
                                             <?php
-session_start(); echo $info['name']; ?> - $<?php
-session_start(); echo $info['rate']; ?>/night
+session_start(); echo $info['name']; ?> - ₱<?php
+session_start(); echo number_format((float)$info['rate'], 2); ?>/night
                                         </option>
                                         <?php
 session_start(); endforeach; ?>
@@ -238,9 +238,35 @@ session_start(); endforeach; ?>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const guestSelect = document.getElementById('guest_id');
+    const roomTypeSelect = document.getElementById('room_type');
+    const checkInEl = document.getElementById('check_in_date');
+    const checkOutEl = document.getElementById('check_out_date');
     
     // Load discounts on page load
     loadDiscounts();
+
+    // Initialize pricing and rooms when inputs change
+    if (roomTypeSelect) {
+        roomTypeSelect.addEventListener('change', function() {
+            updatePricing();
+            loadAvailableRoomsFiltered();
+        });
+    }
+    if (checkInEl) {
+        checkInEl.addEventListener('change', function() {
+            updatePricing();
+            loadAvailableRoomsFiltered();
+        });
+    }
+    if (checkOutEl) {
+        checkOutEl.addEventListener('change', function() {
+            updatePricing();
+            loadAvailableRoomsFiltered();
+        });
+    }
+    // Prime UI on load
+    updatePricing();
+    loadAvailableRoomsFiltered();
     
     // Form submission
     document.getElementById('reservation-form').addEventListener('submit', function(e) {
@@ -470,6 +496,85 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Recalculate pricing summary based on selected type and dates
+function updatePricing() {
+    const checkIn = document.getElementById('check_in_date')?.value;
+    const checkOut = document.getElementById('check_out_date')?.value;
+    const sel = document.getElementById('room_type');
+    if (!sel || !sel.value) {
+        return;
+    }
+    // Compute nights; if dates are missing or invalid, default to 1 night so pricing is visible
+    let nights = 1;
+    if (checkIn && checkOut) {
+        const diff = Math.ceil((new Date(checkOut) - new Date(checkIn)) / (1000 * 60 * 60 * 24));
+        nights = Number.isFinite(diff) && diff > 0 ? diff : 1;
+    }
+    const selectedCardRate = window.selectedRoomRate;
+    const rateFromType = sel.selectedOptions[0] ? parseFloat(sel.selectedOptions[0].getAttribute('data-rate')) || 0 : 0;
+    const rate = (typeof selectedCardRate === 'number' && !isNaN(selectedCardRate)) ? selectedCardRate : rateFromType;
+    const subtotal = rate * nights;
+    const tax = subtotal * 0.10;
+    const total = subtotal + tax;
+    document.getElementById('room-rate').textContent = '₱' + rate.toFixed(2);
+    document.getElementById('nights').textContent = nights;
+    document.getElementById('subtotal').textContent = '₱' + subtotal.toFixed(2);
+    document.getElementById('tax').textContent = '₱' + tax.toFixed(2);
+    document.getElementById('total-amount').textContent = '₱' + total.toFixed(2);
+}
+
+// Load and display available rooms filtered by selected room type
+function loadAvailableRoomsFiltered() {
+    const container = document.getElementById('available-rooms');
+    if (!container) return;
+    const selectedType = (document.getElementById('room_type')?.value || '').toLowerCase();
+    container.innerHTML = '<div class="flex items-center justify-center py-8"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>';
+    fetch('../../api/get-available-rooms.php', { credentials: 'same-origin' })
+        .then(r => r.json())
+        .then(data => {
+            const rooms = Array.isArray(data.rooms) ? data.rooms : [];
+            const filtered = selectedType ? rooms.filter(r => (r.room_type || '').toLowerCase() === selectedType) : rooms;
+            if (filtered.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-gray-500">No available rooms for the selected type</div>';
+                return;
+            }
+            const html = filtered.map(room => `
+                <div class="border border-gray-200 rounded-lg p-4 hover:border-primary transition-colors cursor-pointer room-option" data-room-id="${room.id}" data-room-number="${room.room_number}" data-room-type="${(room.room_type || '').toLowerCase()}" data-rate="${parseFloat(room.rate).toFixed(2)}">
+                    <div class="flex items-center justify-between mb-2">
+                        <h4 class="font-medium text-gray-900">Room ${room.room_number}</h4>
+                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">Available</span>
+                    </div>
+                    <div class="text-sm text-gray-600">
+                        <div>Type: ${room.room_type}</div>
+                        <div>Floor: ${room.floor ?? ''}</div>
+                        <div>Capacity: ${room.capacity ?? ''} persons</div>
+                        <div class="font-medium text-primary">₱${parseFloat(room.rate).toFixed(2)}/night</div>
+                    </div>
+                </div>
+            `).join('');
+            container.innerHTML = html;
+            document.querySelectorAll('.room-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.room-option').forEach(o => o.classList.remove('border-primary', 'bg-blue-50'));
+                    this.classList.add('border-primary', 'bg-blue-50');
+                    window.selectedRoomId = this.dataset.roomId;
+                    window.selectedRoomNumber = this.dataset.roomNumber;
+                    window.selectedRoomRate = parseFloat(this.dataset.rate) || null;
+                    const type = this.dataset.roomType;
+                    const sel = document.getElementById('room_type');
+                    if (type && sel && sel.value !== type) {
+                        sel.value = type;
+                    }
+                    updatePricing();
+                });
+            });
+        })
+        .catch(err => {
+            console.error('Error loading rooms:', err);
+            container.innerHTML = '<div class="text-center py-8 text-red-500">Error loading rooms</div>';
+        });
+}
 
 // Global functions for onclick handlers
 function validateVoucher() {

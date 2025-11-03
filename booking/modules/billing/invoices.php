@@ -36,9 +36,6 @@ include '../../includes/sidebar-unified.php';
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 lg:mb-8 gap-4">
                 <h2 class="text-2xl lg:text-3xl font-semibold text-gray-800">Invoice Management</h2>
                 <div class="flex items-center space-x-4">
-                    <button onclick="openCreateInvoiceModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
-                        <i class="fas fa-plus mr-2"></i>Create Invoice
-                    </button>
                     <button onclick="exportInvoices()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium">
                         <i class="fas fa-download mr-2"></i>Export Invoices
                     </button>
@@ -146,13 +143,7 @@ include '../../includes/sidebar-unified.php';
                 <div class="bg-white rounded-lg shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
                     <div class="space-y-3">
-                        <button onclick="openCreateInvoiceModal()" class="w-full flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors">
-                            <div class="flex items-center">
-                                <i class="fas fa-plus text-blue-600 mr-3"></i>
-                                <span class="text-blue-800 font-medium">Create New Invoice</span>
-                            </div>
-                            <i class="fas fa-arrow-right text-blue-600"></i>
-                        </button>
+                        
                         <button onclick="exportInvoices()" class="w-full flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg hover:bg-green-100 transition-colors">
                             <div class="flex items-center">
                                 <i class="fas fa-download text-green-600 mr-3"></i>
@@ -263,79 +254,7 @@ include '../../includes/sidebar-unified.php';
             </div>
         </main>
 
-        <!-- Create Invoice Modal -->
-        <div id="create-invoice-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
-            <div class="bg-white rounded-lg p-8 max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-semibold text-gray-900">Create New Invoice</h3>
-                    <button onclick="closeCreateInvoiceModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times text-xl"></i>
-                    </button>
-                </div>
-                
-                <form id="create-invoice-form" class="space-y-6">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Guest *</label>
-                            <select name="guest_id" id="invoice_guest_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">Select Guest</option>
-                                <?php
-                                $guests = getAllGuests();
-                                foreach ($guests as $guest): ?>
-                                    <option value="<?php echo $guest['id']; ?>"><?php echo htmlspecialchars($guest['first_name'] . ' ' . $guest['last_name']); ?></option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Reservation *</label>
-                            <select name="reservation_id" id="invoice_reservation_id" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="">Select Reservation</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Amount *</label>
-                            <input type="number" name="total_amount" id="invoice_amount" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter amount">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Due Date *</label>
-                            <input type="date" name="due_date" id="invoice_due_date" required class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                            <select name="status" id="invoice_status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                <option value="pending">Pending</option>
-                                <option value="paid">Paid</option>
-                                <option value="overdue">Overdue</option>
-                                <option value="draft">Draft</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
-                            <input type="text" name="description" id="invoice_description" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-                        <textarea name="notes" id="invoice_notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
-                    </div>
-                    
-                    <div class="flex justify-end space-x-4">
-                        <button type="button" onclick="closeCreateInvoiceModal()" class="px-6 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">
-                            Cancel
-                        </button>
-                        <button type="submit" class="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                            Create Invoice
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <!-- Create Invoice Modal removed by request -->
 
         <!-- View Invoice Modal -->
         <div id="view-invoice-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
@@ -374,16 +293,7 @@ include '../../includes/sidebar-unified.php';
         });
 
         // Invoice Management JavaScript
-        function openCreateInvoiceModal() {
-            document.getElementById('create-invoice-modal').classList.remove('hidden');
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeCreateInvoiceModal() {
-            document.getElementById('create-invoice-modal').classList.add('hidden');
-            document.body.style.overflow = 'auto';
-            document.getElementById('create-invoice-form').reset();
-        }
+        // Create invoice functions removed by request
 
         function openViewInvoiceModal() {
             document.getElementById('view-invoice-modal').classList.remove('hidden');
@@ -574,149 +484,7 @@ include '../../includes/sidebar-unified.php';
             }
         }
 
-        // Handle form submission
-        document.getElementById('create-invoice-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const data = Object.fromEntries(formData.entries());
-            
-            // Validate that a reservation is selected
-            if (!data.reservation_id || data.reservation_id === '') {
-                alert('Please select a reservation for this guest.');
-                return;
-            }
-            
-            // Validate that guest is selected
-            if (!data.guest_id || data.guest_id === '') {
-                alert('Please select a guest.');
-                return;
-            }
-            
-            // Validate amount
-            if (!data.total_amount || parseFloat(data.total_amount) <= 0) {
-                alert('Please enter a valid amount.');
-                return;
-            }
-            
-            // Create bill items from the single amount field
-            const amount = parseFloat(data.total_amount);
-            const description = data.description || 'Hotel Services';
-            
-            // Validate amount is a valid number
-            if (isNaN(amount) || amount <= 0) {
-                alert('Please enter a valid amount greater than 0.');
-                return;
-            }
-            
-            const billData = {
-                reservation_id: parseInt(data.reservation_id),
-                bill_date: new Date().toISOString().split('T')[0],
-                due_date: data.due_date,
-                status: data.status || 'pending',
-                notes: data.notes || null,
-                items: [{
-                    description: description,
-                    quantity: 1,
-                    unit_price: amount,
-                    total_amount: amount
-                }]
-            };
-            
-            fetch('../../api/create-bill.php', {
-                method: 'POST',
-                credentials: 'include',
-                headers: {
-                    'X-API-Key': 'pms_users_api_2024',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(billData)
-            })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.success) {
-                    alert('Invoice created successfully!');
-                    closeCreateInvoiceModal();
-                    location.reload();
-                } else {
-                    alert('Error creating invoice: ' + (data.message || 'Unknown error'));
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Error creating invoice: ' + error.message);
-            });
-        });
-
-        // Load reservations when guest is selected
-        document.getElementById('invoice_guest_id').addEventListener('change', function() {
-            const guestId = this.value;
-            const reservationSelect = document.getElementById('invoice_reservation_id');
-            
-            console.log('Guest selected:', guestId); // Debug log
-            
-            if (guestId) {
-                // Clear existing options first
-                reservationSelect.innerHTML = '<option value="">Loading reservations...</option>';
-                
-                fetch(`../../api/get-guest-reservations.php?guest_id=${guestId}`, {
-                    credentials: 'include',
-                    headers: {
-                        'X-API-Key': 'pms_users_api_2024',
-                        'Content-Type': 'application/json'
-                    }
-                })
-                .then(response => {
-                    console.log('Response status:', response.status); // Debug log
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Reservations data:', data); // Debug log
-                    reservationSelect.innerHTML = '<option value="">Select Reservation</option>';
-                    
-                    if (data.success && data.reservations && data.reservations.length > 0) {
-                        data.reservations.forEach(reservation => {
-                            const option = document.createElement('option');
-                            option.value = reservation.id;
-                            option.textContent = `Reservation #${reservation.id} - Room ${reservation.room_number} (${reservation.status})`;
-                            reservationSelect.appendChild(option);
-                        });
-                        console.log(`Loaded ${data.reservations.length} reservations for guest ${guestId}`);
-                    } else {
-                        const option = document.createElement('option');
-                        option.value = '';
-                        option.textContent = 'No reservations found for this guest';
-                        option.disabled = true;
-                        reservationSelect.appendChild(option);
-                        console.log('No reservations found for guest:', guestId);
-                        
-                        // Show a helpful message
-                        alert('This guest has no reservations. Please select a different guest or create a reservation first.');
-                    }
-                })
-                .catch(error => {
-                    console.error('Error loading reservations:', error);
-                    reservationSelect.innerHTML = '<option value="">Error loading reservations</option>';
-                });
-            } else {
-                reservationSelect.innerHTML = '<option value="">Select Reservation</option>';
-            }
-        });
-
-        // Set default due date to 7 days from now
-        document.addEventListener('DOMContentLoaded', function() {
-            const dueDateInput = document.getElementById('invoice_due_date');
-            if (dueDateInput) {
-                const futureDate = new Date();
-                futureDate.setDate(futureDate.getDate() + 7);
-                dueDateInput.value = futureDate.toISOString().split('T')[0];
-            }
-        });
+        // Create invoice handlers removed by request
         </script>
     </body>
 </html>

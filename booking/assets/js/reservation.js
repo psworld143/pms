@@ -152,7 +152,10 @@ function loadAvailableRooms() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                displayAvailableRooms(data.rooms);
+                const selectedType = (document.getElementById('room_type')?.value || '').toLowerCase();
+                const rooms = Array.isArray(data.rooms) ? data.rooms : [];
+                const filtered = selectedType ? rooms.filter(r => (r.room_type || '').toLowerCase() === selectedType) : rooms;
+                displayAvailableRooms(filtered);
             } else {
                 container.innerHTML = '<div class="text-center py-8 text-gray-500">No available rooms</div>';
             }
@@ -261,25 +264,21 @@ function updatePricing() {
     // Calculate nights
     const nights = Math.ceil((new Date(checkOutDate) - new Date(checkInDate)) / (1000 * 60 * 60 * 24));
     
-    // Get room rate
-    const roomTypes = {
-        'standard': 150.00,
-        'deluxe': 250.00,
-        'suite': 400.00,
-        'presidential': 800.00
-    };
-    
-    const roomRate = roomTypes[roomType] || 0;
+    // Get room rate from selected option's data-rate (dynamic from DB)
+    const sel = document.getElementById('room_type');
+    const roomRate = sel && sel.selectedOptions && sel.selectedOptions[0] 
+        ? parseFloat(sel.selectedOptions[0].getAttribute('data-rate')) || 0
+        : 0;
     const subtotal = roomRate * nights;
     const tax = subtotal * 0.1; // 10% tax
     const total = subtotal + tax;
     
     // Update display
-    document.getElementById('room-rate').textContent = HotelPMS.Utils.formatCurrency(roomRate);
+    document.getElementById('room-rate').textContent = HotelPMS.Utils.formatCurrency(roomRate, 'PHP');
     document.getElementById('nights').textContent = nights;
-    document.getElementById('subtotal').textContent = HotelPMS.Utils.formatCurrency(subtotal);
-    document.getElementById('tax').textContent = HotelPMS.Utils.formatCurrency(tax);
-    document.getElementById('total-amount').textContent = HotelPMS.Utils.formatCurrency(total);
+    document.getElementById('subtotal').textContent = HotelPMS.Utils.formatCurrency(subtotal, 'PHP');
+    document.getElementById('tax').textContent = HotelPMS.Utils.formatCurrency(tax, 'PHP');
+    document.getElementById('total-amount').textContent = HotelPMS.Utils.formatCurrency(total, 'PHP');
 }
 
 // Show reservation success modal

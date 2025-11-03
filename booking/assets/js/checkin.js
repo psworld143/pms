@@ -33,8 +33,9 @@ class CheckInManager {
     displayPendingCheckins(reservations) {
         const container = document.getElementById('pending-checkins');
         if (!container) return;
+        const safeReservations = Array.isArray(reservations) ? reservations : [];
 
-        if (reservations.length === 0) {
+        if (safeReservations.length === 0) {
             container.innerHTML = `
                 <div class="px-6 py-12 text-center text-gray-500">
                     <i class="fas fa-calendar-check text-4xl mb-4"></i>
@@ -56,31 +57,40 @@ class CheckInManager {
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
-                    ${reservations.map(reservation => `
+                    ${safeReservations.map(reservation => {
+                        const guestName = (reservation.guest_name && String(reservation.guest_name).trim())
+                            || [reservation.first_name, reservation.last_name].filter(Boolean).join(' ').trim()
+                            || 'Guest';
+                        const initial = ((guestName || '').toString().trim().slice(0, 1) || '?').toUpperCase();
+                        const contact = reservation.email || reservation.phone || '';
+                        const roomNumber = reservation.room_number || reservation.room || '';
+                        const reservationNumber = reservation.reservation_number || reservation.number || '';
+                        const checkIn = reservation.check_in_date || reservation.check_in || reservation.checkin_date;
+                        return `
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
                                     <div class="flex-shrink-0 h-10 w-10">
                                         <div class="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
                                             <span class="text-white font-medium">
-                                                ${reservation.guest_name.charAt(0).toUpperCase()}
+                                                ${initial}
                                             </span>
                                         </div>
                                     </div>
                                     <div class="ml-4">
-                                        <div class="text-sm font-medium text-gray-900">${reservation.guest_name}</div>
-                                        <div class="text-sm text-gray-500">${reservation.email || ''}</div>
+                                        <div class="text-sm font-medium text-gray-900">${guestName}</div>
+                                        <div class="text-sm text-gray-500">${contact}</div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${reservation.reservation_number}
+                                ${reservationNumber}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                Room ${reservation.room_number}
+                                Room ${roomNumber}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                ${this.formatDateTime(reservation.check_in_date)}
+                                ${this.formatDateTime(checkIn)}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                 <button onclick="startCheckIn(${reservation.id})" class="text-blue-600 hover:text-blue-900 mr-3">
@@ -91,7 +101,8 @@ class CheckInManager {
                                 </button>
                             </td>
                         </tr>
-                    `).join('')}
+                        `;
+                    }).join('')}
                 </tbody>
             </table>
         `;

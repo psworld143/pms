@@ -43,6 +43,15 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
+            <!-- Current Charges for Selected Reservation -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Current Charges</h3>
+                    <div class="text-sm text-gray-600">Total: <span id="current-charges-total">₱0.00</span></div>
+                </div>
+                <div id="current-charges" class="text-sm text-gray-700">Select a reservation below and click View Charges or Add Charge to load.</div>
+            </div>
+
             <!-- Service Statistics (Dynamic) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div class="bg-white rounded-lg shadow p-6">
@@ -153,6 +162,49 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
+            <!-- Additional Services (Billable) -->
+            <div class="bg-white rounded-lg shadow p-6 mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-800">Additional Services</h3>
+                    <span class="px-2 py-1 bg-purple-100 text-purple-800 text-xs font-semibold rounded-full">Billable</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div class="border rounded-lg p-4 flex flex-col">
+                        <div class="font-medium text-gray-900 mb-1">Room Cleaning</div>
+                        <div class="text-sm text-gray-500 mb-3">Standard cleaning service</div>
+                        <div class="flex items-center justify-between mt-auto">
+                            <span class="text-green-700 font-semibold">₱300.00</span>
+                            <button class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded" onclick="openAddServiceModal('Room Cleaning',300,'housekeeping')">Add</button>
+                        </div>
+                    </div>
+                    <div class="border rounded-lg p-4 flex flex-col">
+                        <div class="font-medium text-gray-900 mb-1">Extra Towels</div>
+                        <div class="text-sm text-gray-500 mb-3">Additional towel set</div>
+                        <div class="flex items-center justify-between mt-auto">
+                            <span class="text-green-700 font-semibold">₱150.00</span>
+                            <button class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded" onclick="openAddServiceModal('Extra Towels',150,'housekeeping')">Add</button>
+                        </div>
+                    </div>
+                    <div class="border rounded-lg p-4 flex flex-col">
+                        <div class="font-medium text-gray-900 mb-1">Room Service: Dinner Order</div>
+                        <div class="text-sm text-gray-500 mb-3">Fixed dinner package</div>
+                        <div class="flex items-center justify-between mt-auto">
+                            <span class="text-green-700 font-semibold">₱650.00</span>
+                            <button class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded" onclick="openAddServiceModal('Room Service: Dinner Order',650,'food_beverage')">Add</button>
+                        </div>
+                    </div>
+                    <div class="border rounded-lg p-4 flex flex-col">
+                        <div class="font-medium text-gray-900 mb-1">Room Service: Breakfast</div>
+                        <div class="text-sm text-gray-500 mb-3">Set breakfast meal</div>
+                        <div class="flex items-center justify-between mt-auto">
+                            <span class="text-green-700 font-semibold">₱400.00</span>
+                            <button class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded" onclick="openAddServiceModal('Room Service: Breakfast',400,'food_beverage')">Add</button>
+                        </div>
+                    </div>
+                    <!-- More quick services can be added here -->
+                </div>
+            </div>
+
             <!-- Service Request Details Modal -->
             <div id="service-details-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
                 <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -239,50 +291,14 @@ include '../../includes/sidebar-unified.php';
                 </div>
             </div>
 
-            <!-- Service Requests Table (Dynamic) -->
+            <!-- Checked-in Guests with Add Charges -->
             <div class="bg-white rounded-lg shadow">
-                <div class="px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-800">All Service Requests</h3>
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between">
+                    <h3 class="text-lg font-semibold text-gray-800">Checked-in Guests</h3>
+                    <span class="text-sm text-gray-500">Click Add Charge to post additional services</span>
                 </div>
-                <div class="overflow-x-auto">
-                    <?php if (!empty($requests)): ?>
-                    <table class="min-w-full divide-y divide-gray-200">
-                        <thead class="bg-gray-50">
-                            <tr>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request ID</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Service Type</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Priority</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="bg-white divide-y divide-gray-200">
-                            <?php foreach ($requests as $req): ?>
-                            <tr>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#<?php echo (int)$req['id']; ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Room <?php echo htmlspecialchars($req['room_number']); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900"><?php echo htmlspecialchars(ucfirst($req['issue_type'])); ?></td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $req['priority']==='high'?'bg-red-100 text-red-800':($req['priority']==='urgent'?'bg-red-200 text-red-900':'bg-yellow-100 text-yellow-800'); ?>"><?php echo htmlspecialchars(ucfirst($req['priority'])); ?></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <?php $cls = $req['status']==='completed'?'bg-green-100 text-green-800':($req['status']==='in_progress'?'bg-blue-100 text-blue-800':($req['status']==='pending'?'bg-yellow-100 text-yellow-800':'bg-gray-100 text-gray-800')); ?>
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full <?php echo $cls; ?>"><?php echo htmlspecialchars(getStatusLabel($req['status'])); ?></span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                    <button class="text-blue-600 hover:text-blue-900 mr-3" onclick="viewServiceRequest(<?php echo (int)$req['id']; ?>)">View</button>
-                                    <?php if ($req['status']!=='completed'): ?>
-                                    <button class="text-green-600 hover:text-green-900" onclick="completeServiceRequest(<?php echo (int)$req['id']; ?>)">Complete</button>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                    <?php else: ?>
-                        <div class="p-6 text-center text-gray-500">No service requests found.</div>
-                    <?php endif; ?>
+                <div class="overflow-x-auto" id="checkin-table">
+                    <div class="p-6 text-gray-500">Loading checked-in guests…</div>
                 </div>
             </div>
         
@@ -481,7 +497,126 @@ include '../../includes/sidebar-unified.php';
         document.addEventListener('DOMContentLoaded', function() {
             loadRooms();
             initializeServiceRequestForm();
+            loadCheckedInGuests();
         });
+
+        // Add Service Modal state
+function openAddServiceModal(name, price, category, reservationId) {
+    try {
+        const saved = localStorage.getItem('svc_price_' + name);
+        if (saved !== null && !isNaN(parseFloat(saved))) {
+            price = parseFloat(saved);
+        }
+    } catch (_) {}
+            // Build a lightweight prompt modal
+            const modal = document.createElement('div');
+            modal.id = 'add-service-modal';
+            modal.className = 'fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-white rounded-lg shadow-lg w-full max-w-md p-6">
+                    <h3 class="text-lg font-semibold text-gray-800 mb-4">Add Service Charge</h3>
+                    <form id="add-service-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Service</label>
+                            <input id="svc-name" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-md" value="${name}" />
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                                <input id="svc-price" type="number" step="0.01" min="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-md" value="${price}" />
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                                <input id="svc-qty" type="number" min="1" value="1" class="w-full px-3 py-2 border border-gray-300 rounded-md" />
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Reservation ID or Number</label>
+                            <input id="svc-reservation" placeholder="e.g., 123 or RES2025..." class="w-full px-3 py-2 border border-gray-300 rounded-md" value="${reservationId||''}" ${reservationId?'readonly':''} />
+                        </div>
+                        <div class="flex justify-end gap-3 pt-2">
+                            <button type="button" class="px-4 py-2 border border-gray-300 rounded-md" onclick="closeAddServiceModal()">Cancel</button>
+                            <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md">Add Charge</button>
+                        </div>
+                    </form>
+                </div>`;
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+
+            document.getElementById('add-service-form').addEventListener('submit', async function(e){
+                e.preventDefault();
+                const amount = parseFloat(document.getElementById('svc-price').value);
+                const quantity = parseInt(document.getElementById('svc-qty').value, 10);
+                const reservation_id = document.getElementById('svc-reservation').value.trim();
+                const svc_name = (document.getElementById('svc-name')?.value || name).trim();
+                if (!reservation_id || !isFinite(amount) || amount <= 0 || !isFinite(quantity) || quantity < 1) {
+                    showNotification('Please provide valid reservation, price, and quantity', 'error');
+                    return;
+                }
+                try { localStorage.setItem('svc_price_' + name, String(amount)); } catch (_) {}
+                try {
+                    const res = await fetch('../../api/add-service-charge.php', {
+                        method: 'POST', credentials: 'include',
+                        headers: { 'Content-Type': 'application/json', 'X-API-Key': 'pms_users_api_2024' },
+                        body: JSON.stringify({ reservation_id, service_name: svc_name, amount, quantity, category })
+                    });
+                    const json = await res.json();
+                    if (!json.success) throw new Error(json.message || 'Failed to add service');
+                    showNotification('Service charge added and invoice updated', 'success');
+                    closeAddServiceModal();
+                    // Refresh page so All Service Requests and summaries reflect
+                    setTimeout(()=> window.location.reload(), 800);
+                } catch (err) {
+                    showNotification(err.message, 'error');
+                }
+            });
+        }
+
+        function closeAddServiceModal() {
+            const modal = document.getElementById('add-service-modal');
+            if (modal) modal.remove();
+            document.body.style.overflow = 'auto';
+        }
+
+        async function loadCheckedInGuests() {
+            try {
+                const res = await fetch('../../api/get-checked-in-guests.php', { credentials: 'include' });
+                const json = await res.json();
+                const container = document.getElementById('checkin-table');
+                if (!json || !json.success) { container.innerHTML = '<div class="p-6 text-gray-500">No data.</div>'; return; }
+                const guests = json.guests || [];
+                if (guests.length === 0) { container.innerHTML = '<div class="p-6 text-gray-500">No guests are currently checked in.</div>'; return; }
+                const rows = guests.map(g => `
+                    <tr>
+                        <td class="px-6 py-3 text-sm text-gray-900">#${g.id||g.reservation_id||''}</td>
+                        <td class="px-6 py-3 text-sm text-gray-900">${g.guest_name||''}</td>
+                        <td class="px-6 py-3 text-sm text-gray-900">Room ${g.room_number||''}</td>
+                        <td class="px-6 py-3 text-sm text-gray-900">${g.check_in_date?new Date(g.check_in_date).toLocaleDateString():''}</td>
+                        <td class="px-6 py-3 text-sm text-gray-900">${g.check_out_date?new Date(g.check_out_date).toLocaleDateString():''}</td>
+                        <td class="px-6 py-3 text-sm">
+                            <button class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded mr-2" onclick="openAddServiceModal('Room Cleaning',300,'housekeeping','${g.id||g.reservation_id||''}')">Add Charge</button>
+                            <button class="px-3 py-1 bg-gray-600 hover:bg-gray-700 text-white rounded" onclick="loadCurrentCharges('${g.id||g.reservation_id||''}')">View Charges</button>
+                        </td>
+                    </tr>`).join('');
+                container.innerHTML = `
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reservation</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Guest</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Room</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-in</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Check-out</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">${rows}</tbody>
+                    </table>`;
+            } catch(e) {
+                const container = document.getElementById('checkin-table');
+                container.innerHTML = '<div class="p-6 text-gray-500">Error loading checked-in guests.</div>';
+            }
+        }
 
         function loadRooms() {
             fetch('../../api/get-rooms.php')

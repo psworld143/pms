@@ -22,10 +22,27 @@ if (!isset($_SESSION['user_id']) || !in_array($_SESSION['user_role'], ['manager'
 header('Content-Type: application/json');
 
 try {
-    $reservation_id = $_GET['id'] ?? null;
+    $raw_id = $_GET['id'] ?? null;
+    $res_number = $_GET['reservation_number'] ?? null;
     
-    if (!$reservation_id) {
+    if (!$raw_id && !$res_number) {
         throw new Exception('Reservation ID is required');
+    }
+    
+    // Resolve numeric id from either id or reservation_number
+    $reservation_id = null;
+    if ($raw_id && preg_match('/^\d+$/', (string)$raw_id)) {
+        $reservation_id = (int)$raw_id;
+    } else if ($res_number) {
+        $stmt = $pdo->prepare("SELECT id FROM reservations WHERE reservation_number = ? LIMIT 1");
+        $stmt->execute([$res_number]);
+        $row = $stmt->fetch();
+        if ($row && isset($row['id'])) {
+            $reservation_id = (int)$row['id'];
+        }
+    }
+    if (!$reservation_id) {
+        throw new Exception('Reservation not found');
     }
     
     $reservation = getReservationDetails($reservation_id);

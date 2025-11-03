@@ -29,20 +29,34 @@ if (!$reservation) {
     exit();
 }
 
+// Calculate nights early for billing computations
+$nights = $reservation['nights'] ?? ((strtotime($reservation['check_out_date']) - strtotime($reservation['check_in_date'])) / (60 * 60 * 24));
+
 // Get additional reservation data with error handling
 try {
     $guest_details = getGuestDetails($reservation['guest_id'] ?? null);
     $room_details = getRoomDetails($reservation['room_id'] ?? null);
-    $billing_details = getBillingDetails($reservation_id);
-    $check_in_details = getCheckInDetails($reservation_id);
-    $additional_services = getAdditionalServicesForReservation($reservation_id);
+$billing_details = getBillingDetails($reservation_id);
+$check_in_details = getCheckInDetails($reservation_id);
+$additional_services = getAdditionalServicesForReservation($reservation_id);
+
+    // Compute pricing consistently across systems
+    $room_rate = getRoomTypes()[$reservation['room_type'] ?? 'standard']['rate'] ?? 0;
+    $room_charges = (float)$room_rate * (float)$nights;
+    $services_total = 0.0;
+    if (is_array($additional_services)) {
+        foreach ($additional_services as $svc) {
+            $svcAmount = isset($svc['amount']) ? (float)$svc['amount'] : (float)($svc['service_price'] ?? 0);
+            $services_total += $svcAmount;
+        }
+    }
+    $tax_rate = 0.10; // 10% VAT used elsewhere in the app
+    $taxes = round(($room_charges + $services_total) * $tax_rate, 2);
+    $computed_total_amount = round($room_charges + $services_total + $taxes, 2);
 } catch (Exception $e) {
     error_log("Error loading reservation data: " . $e->getMessage());
     $guest_details = $room_details = $billing_details = $check_in_details = $additional_services = [];
 }
-
-// Calculate nights if not already set
-$nights = $reservation['nights'] ?? ((strtotime($reservation['check_out_date']) - strtotime($reservation['check_in_date'])) / (60 * 60 * 24));
 
 // Set page title
 $page_title = 'View Reservation';
@@ -106,11 +120,11 @@ session_start(); echo date('M d', strtotime($reservation['check_out_date'])); ?>
                     
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-gradient-to-r from-orange-400 to-orange-600 rounded-full flex items-center justify-center mr-4">
-                            <i class="fas fa-dollar-sign text-white text-xl"></i>
+                            <i class="fas fa-peso-sign text-white text-xl"></i>
                         </div>
                         <div>
                             <h4 class="text-lg font-bold text-gray-800">₱<?php
-session_start(); echo number_format($reservation['total_amount'], 2); ?></h4>
+session_start(); echo number_format($computed_total_amount, 2); ?></h4>
                             <p class="text-gray-600">Total Amount</p>
                         </div>
                     </div>
@@ -203,17 +217,17 @@ session_start(); echo number_format(getRoomTypes()[$reservation['room_type'] ?? 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Additional Services</label>
                         <p class="text-gray-900">₱<?php
-session_start(); echo number_format($billing_details['services_total'] ?? 0, 2); ?></p>
+session_start(); echo number_format($services_total, 2); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Taxes & Fees</label>
                         <p class="text-gray-900">₱<?php
-session_start(); echo number_format($billing_details['taxes'] ?? 0, 2); ?></p>
+session_start(); echo number_format($taxes, 2); ?></p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Total Amount</label>
                         <p class="text-gray-900 font-bold text-lg">₱<?php
-session_start(); echo number_format($reservation['total_amount'], 2); ?></p>
+session_start(); echo number_format($computed_total_amount, 2); ?></p>
                     </div>
                 </div>
                 
@@ -229,7 +243,7 @@ session_start(); foreach ($additional_services as $service): ?>
                                 <span class="text-gray-700"><?php
 session_start(); echo htmlspecialchars($service['service_name']); ?></span>
                                 <span class="font-medium">₱<?php
-session_start(); echo number_format($service['amount'], 2); ?></span>
+session_start(); echo number_format($service['amount'] ?? $service['service_price'] ?? 0, 2); ?></span>
                             </div>
                             <?php
 session_start(); endforeach; ?>

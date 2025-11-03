@@ -146,7 +146,7 @@ session_start(); echo number_format($service_stats['completed_today']); ?></p>
                         <i class="fas fa-concierge-bell mr-2"></i>Additional Services
                     </button>
                     <button onclick="switchTab('service-charges')" id="tab-service-charges" class="tab-button py-4 px-1 border-b-2 border-transparent font-medium text-sm text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                        <i class="fas fa-dollar-sign mr-2"></i>Service Charges
+                        <i class="fas fa-peso-sign mr-2"></i>Service Charges
                     </button>
                 </nav>
             </div>

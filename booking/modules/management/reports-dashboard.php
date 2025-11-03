@@ -48,7 +48,7 @@ include '../../includes/sidebar-unified.php';
                 <div class="flex items-center">
                     <div class="flex-shrink-0">
                         <div class="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-dollar-sign text-green-600"></i>
+                            <i class="fas fa-peso-sign text-green-600"></i>
                         </div>
                     </div>
                     <div class="ml-4">

@@ -88,6 +88,15 @@ $navigation_items = [
         'access_level' => ['manager' => 'full'],
         'active' => strpos($current_url, 'items') !== false
     ],
+    'room-pricing' => [
+        'url' => $BASE_INV . 'room-pricing.php',
+        'icon' => 'fas fa-tags',
+        'label' => 'Room Pricing',
+        'description' => 'View and update room rates',
+        'roles' => ['manager'],
+        'access_level' => ['manager' => 'full'],
+        'active' => strpos($current_url, 'room-pricing') !== false
+    ],
     'reports' => [
         'url' => $BASE_INV . 'reports.php',
         'icon' => 'fas fa-chart-bar',

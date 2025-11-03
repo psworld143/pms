@@ -3,7 +3,7 @@
 // Database credentials for VPS hosting (Hostinger/CyberPanel)
 // These are your actual database credentials
 
-define('DB_HOST', 'seait.edu.ph'); // Usually 'localhost' for Hostinger
+define('DB_HOST', 'localhost'); // Usually 'localhost' for Hostinger
 
 define('DB_NAME', 'pms_pms_hotel'); // Database name
 // Common format: username_dbname or similar

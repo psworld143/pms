@@ -314,7 +314,7 @@ function displayServiceCharges(charges) {
     if (!charges || charges.length === 0) {
         container.innerHTML = `
             <div class="text-center py-8">
-                <i class="fas fa-dollar-sign text-gray-400 text-4xl mb-4"></i>
+                <i class="fas fa-peso-sign text-gray-400 text-4xl mb-4"></i>
                 <h3 class="text-lg font-medium text-gray-900 mb-2">No service charges found</h3>
                 <p class="text-gray-500">No service charges match your current filters.</p>
             </div>
@@ -400,7 +400,7 @@ function openMinibarModal() {
 function closeMinibarModal() {
     document.getElementById('minibar-modal').classList.add('hidden');
     document.getElementById('minibar-form').reset();
-    document.getElementById('minibar-total').textContent = '$0.00';
+    document.getElementById('minibar-total').textContent = '₱0.00';
 }
 
 function openLaundryModal() {
@@ -668,7 +668,7 @@ function loadMinibarItems() {
                             <span class="text-sm font-medium">${item.name}</span>
                             <span class="text-sm text-gray-500">₱${parseFloat(item.unit_price).toFixed(2)} each</span>
                         </div>
-                        <span class="minibar-item-total text-sm font-medium">$0.00</span>
+                        <span class="minibar-item-total text-sm font-medium">₱0.00</span>
                     </div>
                 `).join('');
             }

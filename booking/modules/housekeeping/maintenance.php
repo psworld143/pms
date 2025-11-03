@@ -128,7 +128,7 @@ session_start(); echo $pendingApproval; ?></p>
                     <div class="flex items-center">
                         <div class="flex-shrink-0">
                             <div class="w-8 h-8 bg-blue-500 rounded-md flex items-center justify-center">
-                                <i class="fas fa-dollar-sign text-white"></i>
+                                <i class="fas fa-peso-sign text-white"></i>
                             </div>
                         </div>
                         <div class="ml-4">

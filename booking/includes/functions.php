@@ -1082,6 +1082,28 @@ function getRecentBills($limit = 10) {
  */
 function getPaymentMetrics() {
     global $pdo;
+
+    // Ensure payments table exists (compatibility for fresh installs)
+    try {
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `payments` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `payment_number` VARCHAR(50) DEFAULT NULL,
+            `reservation_id` INT UNSIGNED DEFAULT NULL,
+            `bill_id` INT UNSIGNED DEFAULT NULL,
+            `amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+            `payment_method` VARCHAR(50) DEFAULT NULL,
+            `reference_number` VARCHAR(100) DEFAULT NULL,
+            `notes` TEXT DEFAULT NULL,
+            `processed_by` INT UNSIGNED DEFAULT NULL,
+            `payment_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`),
+            KEY `idx_payments_reservation` (`reservation_id`),
+            KEY `idx_payments_bill` (`bill_id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+    } catch (PDOException $e) {
+        // ignore, querying below will surface issues if any
+    }
     $metrics = [
         'total_amount' => 0,
         'today_amount' => 0,
@@ -1109,6 +1131,18 @@ function getPaymentMetrics() {
             ];
         }
 
+        // Fallback to formal invoices if no explicit payments exist
+        if ($metrics['total_amount'] <= 0.0001 && $metrics['transaction_count'] === 0) {
+            try {
+                $metrics['total_amount'] = (float)$pdo->query("SELECT COALESCE(SUM(total_amount),0) FROM bills WHERE status='paid'")->fetchColumn();
+                $metrics['transaction_count'] = (int)$pdo->query("SELECT COUNT(*) FROM bills WHERE status='paid'")->fetchColumn();
+                $stmt = $pdo->query("SELECT COALESCE(SUM(total_amount),0) AS amt, COUNT(*) AS cnt FROM bills WHERE status='paid' AND DATE(COALESCE(updated_at, bill_date)) = CURDATE()");
+                if ($row = $stmt->fetch()) {
+                    $metrics['today_amount'] = (float)$row['amt'];
+                    $metrics['today_count'] = (int)$row['cnt'];
+                }
+            } catch (Throwable $e) { /* ignore */ }
+        }
     } catch (PDOException $e) {
         error_log('Error getting payment metrics: ' . $e->getMessage());
     }
@@ -1124,18 +1158,36 @@ function getRecentPaymentsList($limit = 10) {
     $limit = max(1, (int)$limit);
 
     try {
+        // Ensure table exists for safety
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `payments` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `payment_number` VARCHAR(50) DEFAULT NULL,
+            `reservation_id` INT UNSIGNED DEFAULT NULL,
+            `bill_id` INT UNSIGNED DEFAULT NULL,
+            `amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+            `payment_method` VARCHAR(50) DEFAULT NULL,
+            `reference_number` VARCHAR(100) DEFAULT NULL,
+            `notes` TEXT DEFAULT NULL,
+            `processed_by` INT UNSIGNED DEFAULT NULL,
+            `payment_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
         $query = "
             SELECT p.payment_number,
                    p.payment_method,
                    p.amount,
                    p.payment_date,
                    p.reference_number,
-                   CONCAT(g.first_name, ' ', g.last_name) AS guest_name,
+                   COALESCE(CONCAT(g.first_name, ' ', g.last_name), 'Unknown Guest') AS guest_name,
                    b.bill_number
             FROM payments p
-            JOIN bills b ON p.bill_id = b.id
-            JOIN reservations res ON b.reservation_id = res.id
-            JOIN guests g ON res.guest_id = g.id
+            LEFT JOIN bills b
+                   ON b.id = p.bill_id
+                   OR (p.bill_id IS NULL AND b.reservation_id = p.reservation_id)
+            LEFT JOIN reservations res ON res.id = COALESCE(b.reservation_id, p.reservation_id)
+            LEFT JOIN guests g ON res.guest_id = g.id
             ORDER BY p.payment_date DESC
             LIMIT {$limit}
         ";
@@ -1678,7 +1730,8 @@ function getReservations($type = '', $status = '', $limit = 50) {
 }
 
 function getRoomTypes() {
-    return [
+    // Fallback defaults in case the rooms table is empty or unavailable
+    $defaults = [
         'standard' => [
             'name' => 'Standard Room',
             'rate' => 150.00,
@@ -1700,6 +1753,39 @@ function getRoomTypes() {
             'description' => 'Ultimate luxury with premium services'
         ]
     ];
+
+    try {
+        global $pdo;
+        $stmt = $pdo->query("SELECT room_type, MAX(rate) AS rate FROM rooms GROUP BY room_type");
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $result = [];
+        foreach ($rows as $row) {
+            $type = strtolower(trim($row['room_type']));
+            $rate = isset($row['rate']) ? (float)$row['rate'] : null;
+            $base = $defaults[$type] ?? [
+                'name' => ucfirst($type),
+                'rate' => 0.0,
+                'description' => ucfirst($type) . ' room'
+            ];
+            if ($rate !== null) {
+                $base['rate'] = $rate;
+            }
+            $result[$type] = $base;
+        }
+
+        // Ensure defaults exist for known types if not in DB
+        foreach ($defaults as $type => $base) {
+            if (!isset($result[$type])) {
+                $result[$type] = $base;
+            }
+        }
+
+        return $result;
+    } catch (Exception $e) {
+        error_log('getRoomTypes dynamic rates failed: ' . $e->getMessage());
+        return $defaults;
+    }
 }
 
 /**
@@ -3380,6 +3466,22 @@ function getPayments($method_filter = '', $date_filter = '', $limit = null) {
     global $pdo;
     
     try {
+        // Ensure table exists for safety
+        $pdo->exec("CREATE TABLE IF NOT EXISTS `payments` (
+            `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+            `payment_number` VARCHAR(50) DEFAULT NULL,
+            `reservation_id` INT UNSIGNED DEFAULT NULL,
+            `bill_id` INT UNSIGNED DEFAULT NULL,
+            `amount` DECIMAL(12,2) NOT NULL DEFAULT 0,
+            `payment_method` VARCHAR(50) DEFAULT NULL,
+            `reference_number` VARCHAR(100) DEFAULT NULL,
+            `notes` TEXT DEFAULT NULL,
+            `processed_by` INT UNSIGNED DEFAULT NULL,
+            `payment_date` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (`id`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;");
+
         $where_conditions = ["1=1"];
         $params = [];
         
@@ -3402,8 +3504,10 @@ function getPayments($method_filter = '', $date_filter = '', $limit = null) {
                    b.bill_number,
                    b.status as bill_status
             FROM payments p
-            JOIN bills b ON p.bill_id = b.id
-            LEFT JOIN reservations res ON b.reservation_id = res.id
+            LEFT JOIN bills b 
+                   ON b.id = p.bill_id 
+                   OR (p.bill_id IS NULL AND b.reservation_id = p.reservation_id)
+            LEFT JOIN reservations res ON res.id = COALESCE(b.reservation_id, p.reservation_id)
             LEFT JOIN guests g ON res.guest_id = g.id
             LEFT JOIN rooms r ON res.room_id = r.id
             WHERE {$where_clause}
@@ -3422,6 +3526,63 @@ function getPayments($method_filter = '', $date_filter = '', $limit = null) {
         
     } catch (PDOException $e) {
         error_log("Error getting payments: " . $e->getMessage());
+        return [];
+    }
+}
+
+/**
+ * Derive synthetic payments from billing when explicit payments are missing.
+ * Non-destructive and safe; used for Recent Payments fallback rendering only.
+ */
+function getSyntheticPaymentsFromBilling($limit = 10) {
+    global $pdo;
+    $limit = max(1, (int)$limit);
+    try {
+        // Prefer formal invoices first (bills.status updated on checkout)
+        $sqlBills = "
+            SELECT 
+                CONCAT('SYNB-', LPAD(CAST(b.id AS CHAR), 6, '0')) AS payment_number,
+                NULL AS payment_method,
+                b.total_amount AS amount,
+                COALESCE(b.updated_at, b.created_at, NOW()) AS payment_date,
+                COALESCE(CONCAT(g.first_name, ' ', g.last_name), 'Unknown Guest') AS guest_name,
+                COALESCE(r.room_number, 'N/A') AS room_number,
+                b.bill_number,
+                b.status AS bill_status
+            FROM bills b
+            LEFT JOIN reservations res ON res.id = b.reservation_id
+            LEFT JOIN guests g ON res.guest_id = g.id
+            LEFT JOIN rooms r ON res.room_id = r.id
+            WHERE LOWER(COALESCE(b.status,'')) IN ('paid','partial')
+            ORDER BY COALESCE(b.updated_at, b.created_at) DESC
+            LIMIT {$limit}
+        ";
+        $rows = $pdo->query($sqlBills)->fetchAll();
+        if (!empty($rows)) { return $rows; }
+
+        // Fallback to legacy billing table statuses if present
+        $sqlBilling = "
+            SELECT 
+                CONCAT('SYN-', LPAD(CAST(b.id AS CHAR), 6, '0')) AS payment_number,
+                NULL AS payment_method,
+                b.total_amount AS amount,
+                COALESCE(b.updated_at, b.created_at, NOW()) AS payment_date,
+                COALESCE(CONCAT(g.first_name, ' ', g.last_name), 'Unknown Guest') AS guest_name,
+                COALESCE(r.room_number, 'N/A') AS room_number,
+                b.bill_number,
+                CASE WHEN LOWER(COALESCE(b.payment_status,''))='paid' THEN 'paid' ELSE COALESCE(b.payment_status,'pending') END AS bill_status
+            FROM billing b
+            LEFT JOIN reservations res ON res.id = b.reservation_id
+            LEFT JOIN guests g ON res.guest_id = g.id
+            LEFT JOIN rooms r ON res.room_id = r.id
+            WHERE LOWER(COALESCE(b.payment_status,'')) IN ('paid','partial')
+            ORDER BY COALESCE(b.updated_at, b.created_at) DESC
+            LIMIT {$limit}
+        ";
+        $rows = $pdo->query($sqlBilling)->fetchAll();
+        return is_array($rows) ? $rows : [];
+    } catch (Throwable $e) {
+        error_log('Synthetic payments fallback error: ' . $e->getMessage());
         return [];
     }
 }

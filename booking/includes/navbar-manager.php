@@ -65,7 +65,7 @@ $user_name = $_SESSION['user_name'];
                         Staff Management
                     </a>
                     <a href="<?php echo booking_url('modules/billing/reports.php'); ?>" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                        <i class="fas fa-dollar-sign mr-3"></i>
+                        <i class="fas fa-peso-sign mr-3"></i>
                         Revenue Report
                     </a>
                 </div>

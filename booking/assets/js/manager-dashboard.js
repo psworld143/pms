@@ -93,7 +93,7 @@ function getActivityIcon(actionType) {
         'checkout': 'fa-sign-out-alt',
         'housekeeping_update': 'fa-broom',
         'maintenance_request': 'fa-tools',
-        'service_charge_added': 'fa-dollar-sign',
+        'service_charge_added': 'fa-peso-sign',
         'login': 'fa-sign-in-alt',
         'logout': 'fa-sign-out-alt'
     };

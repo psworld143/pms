@@ -52,13 +52,7 @@ function getAvailableRoomsForDates($room_type = null, $check_in_date = null, $ch
                        WHEN 'presidential' THEN 'Presidential Suite'
                        ELSE r.room_type
                    END as room_type_name,
-                   CASE r.room_type 
-                       WHEN 'standard' THEN 150.00
-                       WHEN 'deluxe' THEN 250.00
-                       WHEN 'suite' THEN 400.00
-                       WHEN 'presidential' THEN 800.00
-                       ELSE 150.00
-                   END as rate
+                   r.rate AS rate
             FROM rooms r
             WHERE r.status = 'available'
         ";

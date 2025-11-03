@@ -56,7 +56,7 @@ ini_set('log_errors', 1); echo $stats['occupancy_rate']; ?>%</h3>
                 <div class="bg-white rounded-lg p-6 shadow-md hover:shadow-lg transition-shadow">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-gradient-to-r from-green-400 to-green-600 rounded-full flex items-center justify-center mr-4">
-                            <i class="fas fa-dollar-sign text-white text-xl"></i>
+                            <i class="fas fa-peso-sign text-white text-xl"></i>
                         </div>
                         <div>
                             <h3 class="text-3xl font-bold text-gray-800">₱<?php
